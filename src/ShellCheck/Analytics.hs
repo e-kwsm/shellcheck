@@ -1108,6 +1108,7 @@ checkSingleQuotedVariables params t@(T_SingleQuoted id s) =
                 "trap"
                 ,"sh"
                 ,"bash"
+                ,"dash"
                 ,"ksh"
                 ,"zsh"
                 ,"ssh"
