@@ -36,6 +36,7 @@
 - Updates for Bash 5.3, including `${| cmd; }` and `source -p`
 
 ### Removed
+- SC3003: removed since specified in POSIX.1-2024
 - SC3013: removed since the operators `-ot/-nt/-ef` are specified in POSIX.1-2024
 
 
