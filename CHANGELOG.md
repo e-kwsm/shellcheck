@@ -12,7 +12,8 @@
 - SC2218 about function use-before-define is now more accurate.
 - SC2317 about unreachable commands is now less spammy for nested ones.
 - SC2292, optional suggestion for [[ ]], now triggers for Busybox.
-
+### Removed
+- SC3003: removed
 
 ## v0.10.0 - 2024-03-07
 ### Added
