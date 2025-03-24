@@ -455,7 +455,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             ("hash", Just $ if isDash then ["r", "v"] else ["r"]),
             ("jobs", Just ["l", "p"]),
             ("printf", Just []),
-            ("read", Just $ if isDash || isBusyboxSh then ["r", "p"] else ["r"]),
+            ("read", Just $ if isDash || isBusyboxSh then ["d", "r", "p"] else ["d", "r"]),
             ("readonly", Just ["p"]),
             ("trap", Just []),
             ("type", Just $ if isBusyboxSh then ["p"] else []),
