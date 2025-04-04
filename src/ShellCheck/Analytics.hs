@@ -123,6 +123,7 @@ nodeChecks = [
     ,checkCaseAgainstGlob
     ,checkCommarrays
     ,checkOrNeq
+    ,checkAndEq
     ,checkEchoWc
     ,checkConstantIfs
     ,checkPipedAssignment
@@ -1629,6 +1630,20 @@ checkOrNeq _ (T_OrIf id lhs rhs) = sequence_ $ do
 
 
 checkOrNeq _ _ = return ()
+
+
+prop_checkAndEq1 = verify checkAndEq "if [[ $lol -eq cow && $lol -eq foo ]]; then echo foo; fi"
+prop_checkAndEq3 = verify checkAndEq "[ \"$a\" = lol && \"$a\" = foo ]"
+prop_checkAndEq4 = verifyNot checkAndEq "[ a = $cow && b = $foo ]"
+prop_checkAndEq5 = verifyNot checkAndEq "[[ $a = /home && $a = */public_html/* ]]"
+prop_checkAndEq8 = verifyNot checkAndEq "[[ $a == x && $a == x ]]"
+
+-- For test-level "and": [ x = y -a x = z ]
+checkAndEq _ (TC_And id typ op (TC_Binary _ _ op1 lhs1 rhs1 ) (TC_Binary _ _ op2 lhs2 rhs2))
+    | (op1 == op2 && (op1 == "-eq" || op1 == "=" || op1 == "==")) && lhs1 == lhs2 && rhs1 /= rhs2 && not (any isGlob [rhs1,rhs2]) =
+        warn id 2055 $ "You probably wanted " ++ (if typ == SingleBracket then "-o" else "||") ++ " here, otherwise it's always false."
+
+checkAndEq _ _ = return ()
 
 
 prop_checkValidCondOps1 = verify checkValidCondOps "[[ a -xz b ]]"
