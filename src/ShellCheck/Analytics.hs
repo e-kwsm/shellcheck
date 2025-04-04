@@ -123,6 +123,7 @@ nodeChecks = [
     ,checkCaseAgainstGlob
     ,checkCommarrays
     ,checkOrNeq
+    ,checkAndEq
     ,checkEchoWc
     ,checkConstantIfs
     ,checkPipedAssignment
@@ -1629,6 +1630,16 @@ checkOrNeq _ (T_OrIf id lhs rhs) = sequence_ $ do
 
 
 checkOrNeq _ _ = return ()
+
+
+prop_checkAndEq2 = verify checkAndEq "(( a==lol && a==foo ))"
+
+-- For arithmetic context "and"
+checkAndEq _ (TA_Binary id "&&" (TA_Binary _ "==" word1 _) (TA_Binary _ "==" word2 _))
+    | word1 == word2 =
+        warn id 2056 "You probably wanted || here, otherwise it's always false."
+
+checkAndEq _ _ = return ()
 
 
 prop_checkValidCondOps1 = verify checkValidCondOps "[[ a -xz b ]]"
