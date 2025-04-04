@@ -123,6 +123,7 @@ nodeChecks = [
     ,checkCaseAgainstGlob
     ,checkCommarrays
     ,checkOrNeq
+    ,checkAndEq
     ,checkEchoWc
     ,checkConstantIfs
     ,checkPipedAssignment
@@ -1629,6 +1630,39 @@ checkOrNeq _ (T_OrIf id lhs rhs) = sequence_ $ do
 
 
 checkOrNeq _ _ = return ()
+
+
+prop_checkAndEq6 = verify checkAndEq "[ $a = a ] && [ $a = b ]"
+prop_checkAndEq7 = verify checkAndEq "[ $a = a ] && [ $a = b ] || true"
+prop_checkAndEq9 = verifyNot checkAndEq "[ 0 -eq $FOO ] && [ 0 -eq $BAR ]"
+
+-- For command level "and": [ x = y ] && [ x = z ]
+checkAndEq _ (T_AndIf id lhs rhs) = sequence_ $ do
+    (lhs1, op1, rhs1) <- getExpr lhs
+    (lhs2, op2, rhs2) <- getExpr rhs
+    guard $ op1 == op2 && op1 `elem` ["-eq", "=", "=="]
+    guard $ lhs1 == lhs2 && rhs1 /= rhs2
+    guard . not $ any isGlob [rhs1, rhs2]
+    return $ warn id 2252 "You probably wanted || here, otherwise it's always false."
+  where
+    getExpr x =
+        case x of
+            T_AndIf _ lhs _ -> getExpr lhs -- Fetches x and y in `T_AndIf x (T_AndIf y z)`
+            T_Pipeline _ _ [x] -> getExpr x
+            T_Redirecting _ _ c -> getExpr c
+            T_Condition _ _ c -> getExpr c
+            TC_Binary _ _ op lhs rhs -> orient (lhs, op, rhs)
+            _ -> Nothing
+
+    -- Swap items so that the constant side is rhs (or Nothing if both/neither is constant)
+    orient (lhs, op, rhs) =
+        case (isConstant lhs, isConstant rhs) of
+            (True, False) -> return (rhs, op, lhs)
+            (False, True) -> return (lhs, op, rhs)
+            _ -> Nothing
+
+
+checkAndEq _ _ = return ()
 
 
 prop_checkValidCondOps1 = verify checkValidCondOps "[[ a -xz b ]]"
