@@ -382,9 +382,9 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         validFlagsRegex      = mkRegex $ "^[-+]([" <> options <> "]+o?|o)$"
         beginsWithDoubleDash = (`matches` mkRegex "^--.+$")
         longOptions          = Set.fromList
-            [ "allexport", "errexit", "ignoreeof", "monitor", "noclobber"
-            , "noexec", "noglob", "nolog", "notify" , "nounset", "pipefail"
-            , "verbose", "vi", "xtrace" ]
+            [ "allexport", "braceexpand", "errexit", "ignoreeof", "monitor"
+            , "noclobber", "noexec", "noglob", "nolog", "notify" , "nounset"
+            , "pipefail", "verbose", "vi", "xtrace" ]
 
     bashism t@(T_SimpleCommand id _ (cmd:rest)) =
         let name = fromMaybe "" $ getCommandName t
