@@ -6,6 +6,7 @@
 ### Fixed
 
 ### Removed
+- SC3009: removed since specified in POSIX.1-2024
 
 
 ## v0.11.0 - 2025-08-03
