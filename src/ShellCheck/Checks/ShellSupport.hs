@@ -158,7 +158,7 @@ prop_checkBashisms63 = verifyNot checkBashisms "#!/bin/sh\nexport -p"
 prop_checkBashisms64 = verify checkBashisms "#!/bin/sh\nreadonly -a"
 prop_checkBashisms65 = verifyNot checkBashisms "#!/bin/sh\nreadonly -p"
 prop_checkBashisms66 = verifyNot checkBashisms "#!/bin/sh\ncd -P ."
-prop_checkBashisms67 = verify checkBashisms "#!/bin/sh\ncd -P -e ."
+prop_checkBashisms67 = verifyNot checkBashisms "#!/bin/sh\ncd -P -e ."
 prop_checkBashisms68 = verify checkBashisms "#!/bin/sh\numask -p"
 prop_checkBashisms69 = verifyNot checkBashisms "#!/bin/sh\numask -S"
 prop_checkBashisms70 = verify checkBashisms "#!/bin/sh\ntrap -l"
@@ -434,7 +434,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             "typeset"
             ]
         allowedFlags = Map.fromList [
-            ("cd", Just ["L", "P"]),
+            ("cd", Just ["L", "P", "e"]),
             ("exec", Just []),
             ("export", Just ["p"]),
             ("hash", Just $ if isDash then ["r", "v"] else ["r"]),
