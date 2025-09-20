@@ -444,7 +444,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             ("printf", Just []),
             ("read", Just $ if isDash || isBusyboxSh then ["r", "p"] else ["r"]),
             ("readonly", Just ["p"]),
-            ("trap", Just []),
+            ("trap", Just ["p"]),
             ("type", Just $ if isBusyboxSh then ["p"] else []),
             ("ulimit",
               Just $
