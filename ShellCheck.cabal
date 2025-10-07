@@ -71,11 +71,11 @@ library
       ShellCheck.Regex
   other-modules:
       Paths_ShellCheck
+  autogen-modules:
+      Paths_ShellCheck
   hs-source-dirs:
       src
-  if impl(ghc < 8.0)
-    build-depends:
-      semigroups
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       -- The lower bounds are based on GHC 7.10.3
       -- The upper bounds are based on GHC 9.12.1
@@ -103,6 +103,7 @@ library
 
 executable shellcheck
   main-is: shellcheck.hs
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   if impl(ghc < 8.0)
     build-depends:
       semigroups
@@ -128,6 +129,7 @@ executable shellcheck
 test-suite test-shellcheck
   type: exitcode-stdio-1.0
   main-is: test/shellcheck.hs
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       ShellCheck
     , Diff
