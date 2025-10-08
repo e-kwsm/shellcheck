@@ -45,7 +45,6 @@ import Data.Function (on)
 import Data.List
 import Data.Maybe
 import Data.Ord
-import Data.Semigroup
 import Debug.Trace -- STRIP
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map

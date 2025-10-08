@@ -27,7 +27,6 @@ import Control.Monad
 import Control.Monad.State
 import Data.Array
 import Data.List
-import Data.Semigroup
 import GHC.Exts (sortWith)
 import Test.QuickCheck
 
