@@ -19,12 +19,12 @@
 -}
 module ShellCheck.Formatter.Quiet (format) where
 
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
+import           ShellCheck.Formatter.Format
+import           ShellCheck.Interface
 
-import Control.Monad
-import Data.IORef
-import System.Exit
+import           Control.Monad
+import           Data.IORef
+import           System.Exit
 
 format :: FormatterOptions -> IO Formatter
 format options =
