@@ -20,16 +20,16 @@
 -}
 module ShellCheck.Formatter.JSON (format) where
 
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
+import           ShellCheck.Formatter.Format
+import           ShellCheck.Interface
 
-import Control.DeepSeq
-import Data.Aeson
-import Data.IORef
-import Data.Monoid
-import GHC.Exts
-import System.IO
-import qualified Data.ByteString.Lazy.Char8 as BL
+import           Control.DeepSeq
+import           Data.Aeson
+import qualified Data.ByteString.Lazy.Char8  as BL
+import           Data.IORef
+import           Data.Monoid
+import           GHC.Exts
+import           System.IO
 
 format :: IO Formatter
 format = do
