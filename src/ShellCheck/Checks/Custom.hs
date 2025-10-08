@@ -6,8 +6,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 module ShellCheck.Checks.Custom (checker, ShellCheck.Checks.Custom.runTests) where
 
-import ShellCheck.AnalyzerLib
-import Test.QuickCheck
+import           ShellCheck.AnalyzerLib
+import           Test.QuickCheck
 
 checker :: Parameters -> Checker
 checker params = Checker {

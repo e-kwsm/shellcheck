@@ -17,10 +17,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP             #-}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE RankNTypes      #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
-{-# LANGUAGE CPP #-}
 
 {-
     Data Flow Analysis on a Control Flow Graph.
@@ -64,26 +65,26 @@ module ShellCheck.CFGAnalysis (
     ,ShellCheck.CFGAnalysis.runTests -- STRIP
     ) where
 
-import Control.DeepSeq
-import Control.Monad
-import Control.Monad.ST
-import Data.Array.Unboxed
-import Data.Char
-import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Query.DFS
-import Data.List hiding (map)
-import Data.Maybe
-import Data.STRef
-import Debug.Trace -- STRIP
-import GHC.Generics (Generic)
-import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified ShellCheck.Data as Data
-import ShellCheck.AST
-import ShellCheck.CFG
-import ShellCheck.Prelude
+import           Control.DeepSeq
+import           Control.Monad
+import           Control.Monad.ST
+import           Data.Array.Unboxed
+import           Data.Char
+import           Data.Graph.Inductive.Graph
+import           Data.Graph.Inductive.Query.DFS
+import           Data.List                      hiding (map)
+import qualified Data.Map                       as M
+import           Data.Maybe
+import qualified Data.Set                       as S
+import           Data.STRef
+import           Debug.Trace
+import           GHC.Generics                   (Generic)
+import           ShellCheck.AST
+import           ShellCheck.CFG
+import qualified ShellCheck.Data                as Data
+import           ShellCheck.Prelude
 
-import Test.QuickCheck
+import           Test.QuickCheck
 
 
 -- The number of iterations for DFA to stabilize
@@ -103,18 +104,18 @@ logInfo log = do
 
 -- The result of the data flow analysis
 data CFGAnalysis = CFGAnalysis {
-    graph :: CFGraph,
-    tokenToRange :: M.Map Id (Node, Node),
-    tokenToNodes :: M.Map Id (S.Set Node),
+    graph          :: CFGraph,
+    tokenToRange   :: M.Map Id (Node, Node),
+    tokenToNodes   :: M.Map Id (S.Set Node),
     postDominators :: Array Node [Node],
-    nodeToData :: M.Map Node (ProgramState, ProgramState)
+    nodeToData     :: M.Map Node (ProgramState, ProgramState)
 } deriving (Show)
 
 -- The program state we expose externally
 data ProgramState = ProgramState {
     -- internalState :: InternalState, -- For debugging
     variablesInScope :: M.Map String VariableState,
-    exitCodes :: S.Set Id,
+    exitCodes        :: S.Set Id,
     stateIsReachable :: Bool
 } deriving (Show, Eq, Generic, NFData)
 
@@ -173,13 +174,13 @@ getDataForNode analysis node = M.lookup node $ nodeToData analysis
 
 -- The current state of data flow at a point in the program, potentially as a diff
 data InternalState = InternalState {
-    sVersion :: Integer,
-    sGlobalValues :: VersionedMap String VariableState,
-    sLocalValues :: VersionedMap String VariableState,
-    sPrefixValues :: VersionedMap String VariableState,
+    sVersion         :: Integer,
+    sGlobalValues    :: VersionedMap String VariableState,
+    sLocalValues     :: VersionedMap String VariableState,
+    sPrefixValues    :: VersionedMap String VariableState,
     sFunctionTargets :: VersionedMap String FunctionValue,
-    sExitCodes :: Maybe (S.Set Id),
-    sIsReachable :: Maybe Bool
+    sExitCodes       :: Maybe (S.Set Id),
+    sIsReachable     :: Maybe Bool
 } deriving (Show, Generic, NFData)
 
 newInternalState = InternalState {
@@ -297,7 +298,7 @@ depsToState set = foldl insert newInternalState $ S.toList set
             (mapToCheck, inserter) =
                 case scope of
                     PrefixScope -> (sPrefixValues, insertPrefix)
-                    LocalScope -> (sLocalValues, insertLocal)
+                    LocalScope  -> (sLocalValues, insertLocal)
                     GlobalScope -> (sGlobalValues, insertGlobal)
 
             alreadyExists = isJust $ vmLookup name $ mapToCheck state
@@ -310,14 +311,14 @@ unknownFunctionValue = S.singleton FunctionUnknown
 
 -- The information about the value of a single variable
 data VariableValue = VariableValue {
-    literalValue :: Maybe String, -- TODO: For debugging. Remove me.
-    spaceStatus :: SpaceStatus,
+    literalValue    :: Maybe String, -- TODO: For debugging. Remove me.
+    spaceStatus     :: SpaceStatus,
     numericalStatus :: NumericalStatus
 }
     deriving (Show, Eq, Ord, Generic, NFData)
 
 data VariableState = VariableState {
-    variableValue :: VariableValue,
+    variableValue      :: VariableValue,
     variableProperties :: VariableProperties
 }
     deriving (Show, Eq, Ord, Generic, NFData)
@@ -368,10 +369,10 @@ mergeVariableValue a b = VariableValue {
 
 mergeSpaceStatus a b =
     case (a,b) of
-        (SpaceStatusEmpty, y) -> y
-        (x, SpaceStatusEmpty) -> x
+        (SpaceStatusEmpty, y)                -> y
+        (x, SpaceStatusEmpty)                -> x
         (SpaceStatusClean, SpaceStatusClean) -> SpaceStatusClean
-        _ -> SpaceStatusDirty
+        _                                    -> SpaceStatusDirty
 
 mergeNumericalStatus a b =
     case (a,b) of
@@ -437,15 +438,15 @@ data Ctx s = Ctx {
 -- Whenever a function (or subshell) is invoked, a value like this is pushed onto the stack
 data StackEntry s = StackEntry {
     -- The entry point of this stack entry for the purpose of detecting recursion
-    entryPoint :: Node,
+    entryPoint     :: Node,
     -- Whether this is a function call (as opposed to a subshell)
     isFunctionCall :: Bool,
     -- The node where this entry point was invoked
-    callSite :: Node,
+    callSite       :: Node,
     -- A mutable set of dependencies we fetched from here or higher in the stack
-    dependencies :: STRef s (S.Set StateDependency),
+    dependencies   :: STRef s (S.Set StateDependency),
     -- The original input state for this stack entry
-    stackState :: InternalState
+    stackState     :: InternalState
 }
     deriving (Eq, Generic, NFData)
 
@@ -533,7 +534,7 @@ mergeState ctx a b = do
 mergeStates :: forall s. Ctx s -> InternalState -> [InternalState] -> ST s InternalState
 mergeStates ctx def list =
     case list of
-        [] -> return def
+        []           -> return def
         (first:rest) -> foldM (mergeState ctx) first rest
 
 -- Merge two maps, key by key. If both maps have a key, the 'merger' is used.
@@ -615,7 +616,7 @@ versionState ctx state =
 is2plus :: [a] -> Bool
 is2plus l = case l of
     _:_:_ -> True
-    _ -> False
+    _     -> False
 
 -- Use versions to see if two states are trivially identical
 stateIsQuickEqual a b =
@@ -681,7 +682,7 @@ writeVariable ctx name val = do
     typ <- readVariableScope ctx name
     case typ of
         GlobalScope -> writeGlobal ctx name val
-        LocalScope -> writeLocal ctx name val
+        LocalScope  -> writeLocal ctx name val
         -- Prefixed variables actually become local variables in the invoked function
         PrefixScope -> writeLocal ctx name val
 
@@ -698,7 +699,7 @@ updateVariableValue ctx name val = do
     (props, scope) <- readVariablePropertiesWithScope ctx name
     let f = case scope of
                 GlobalScope -> writeGlobal
-                LocalScope -> writeLocal
+                LocalScope  -> writeLocal
                 PrefixScope -> writeLocal -- Updates become local
     f ctx name $ VariableState { variableValue = val, variableProperties = props }
 
@@ -741,7 +742,7 @@ getVariableWithScope s name =
         (Just var, _, _) -> return (var, PrefixScope)
         (_, Just var, _) -> return (var, LocalScope)
         (_, _, Just var) -> return (var, GlobalScope)
-        _ -> Nothing
+        _                -> Nothing
 
 undefineFunction ctx name =
     writeFunction ctx name $ FunctionUnknown
@@ -821,7 +822,7 @@ lookupStack' :: forall s k v.
 lookupStack' functionOnly get dep def ctx key = do
     top <- readSTRef $ cInput ctx
     case get top key of
-        Just v -> return v
+        Just v  -> return v
         Nothing -> f (cStack ctx)
   where
     f [] = return def
@@ -840,13 +841,13 @@ lookupStackUntilFunction = lookupStack' True
 peekStack get def ctx key = do
     top <- readSTRef $ cInput ctx
     case get top key of
-        Just v -> return v
+        Just v  -> return v
         Nothing -> f (cStack ctx)
   where
     f [] = return def
     f (s:rest) =
         case get (stackState s) key of
-            Just v -> return v
+            Just v  -> return v
             Nothing -> f rest
 
 -- Check if the current context fulfills a StateDependency if entering `entry`
@@ -1103,7 +1104,7 @@ transferEffect ctx effect =
         CFReadVariable name ->
             case name of
                 "?" -> void $ readExitCodes ctx
-                _ -> void $ readVariable ctx name
+                _   -> void $ readVariable ctx name
         CFWriteVariable name value -> do
             val <- cfValueToVariableValue ctx value
             updateVariableValue ctx name val
@@ -1171,11 +1172,11 @@ transferEffect ctx effect =
 -- Transfer the CFG's idea of a value into our VariableState
 cfValueToVariableValue ctx val =
     case val of
-        CFValueArray -> return unknownVariableValue -- TODO: Track array status
+        CFValueArray            -> return unknownVariableValue -- TODO: Track array status
         CFValueComputed _ parts -> foldM f emptyVariableValue parts
-        CFValueInteger -> return unknownIntegerValue
-        CFValueString -> return unknownVariableValue
-        CFValueUninitialized -> return emptyVariableValue
+        CFValueInteger          -> return unknownIntegerValue
+        CFValueString           -> return unknownVariableValue
+        CFValueUninitialized    -> return emptyVariableValue
 --        _ -> error $ "Unknown value: " ++ show val
   where
     f val part = do
@@ -1185,9 +1186,9 @@ cfValueToVariableValue ctx val =
 -- A value can be computed from 0 or more parts, such as x="literal$y$z"
 computeValue ctx part =
     case part of
-        CFStringLiteral str -> return $ literalToVariableValue str
-        CFStringInteger -> return unknownIntegerValue
-        CFStringUnknown -> return unknownVariableValue
+        CFStringLiteral str   -> return $ literalToVariableValue str
+        CFStringInteger       -> return unknownIntegerValue
+        CFStringUnknown       -> return unknownVariableValue
         CFStringVariable name -> variableStateToValue <$> readVariable ctx name
    where
     variableStateToValue state =
@@ -1206,10 +1207,10 @@ appendVariableValue a b =
 
 appendSpaceStatus a b =
     case (a,b) of
-        (SpaceStatusEmpty, _) -> b
-        (_, SpaceStatusEmpty) -> a
+        (SpaceStatusEmpty, _)                -> b
+        (_, SpaceStatusEmpty)                -> a
         (SpaceStatusClean, SpaceStatusClean) -> a
-        _ ->SpaceStatusDirty
+        _                                    ->SpaceStatusDirty
 
 appendNumericalStatus a b =
     case (a,b) of
@@ -1245,9 +1246,9 @@ withoutChanges ctx f = do
 -- Get the SpaceStatus for a literal string, i.e. if it needs quoting
 literalToSpaceStatus str =
     case str of
-        "" -> SpaceStatusEmpty
+        ""                                 -> SpaceStatusEmpty
         _ | all (`notElem` " \t\n*?[") str -> SpaceStatusClean
-        _ -> SpaceStatusDirty
+        _                                  -> SpaceStatusDirty
 
 -- Get the NumericalStatus for a literal string, i.e. whether it's an integer
 literalToNumericalStatus str =
@@ -1297,7 +1298,7 @@ dataflow ctx entry = do
                 [] -> return newInternalState
                 _ ->
                     case inputs of
-                        [] -> return unreachableState
+                        []       -> return unreachableState
                         (x:rest) -> foldM (mergeState ctx) x rest
         writeSTRef (cInput ctx) $ input
         writeSTRef (cOutput ctx) $ input
@@ -1418,7 +1419,7 @@ analyzeControlFlow params t =
             getFunc d =
                 case d of
                     FunctionDefinition _ entry _ -> Just (entry, d)
-                    _ -> Nothing
+                    _                            -> Nothing
             funcs = mapMaybe getFunc $ S.toList declaredFuncs
         in
             M.fromList funcs

@@ -24,19 +24,19 @@ import           ShellCheck.Interface
 import           ShellCheck.Regex
 
 import qualified ShellCheck.Formatter.CheckStyle
-import           ShellCheck.Formatter.Format
 import qualified ShellCheck.Formatter.Diff
+import           ShellCheck.Formatter.Format
 import qualified ShellCheck.Formatter.GCC
 import qualified ShellCheck.Formatter.JSON
 import qualified ShellCheck.Formatter.JSON1
-import qualified ShellCheck.Formatter.TTY
 import qualified ShellCheck.Formatter.Quiet
+import qualified ShellCheck.Formatter.TTY
 
 import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Class
-import           Control.Monad.Except
 import           Data.Bits
 import           Data.Char
 import           Data.Either
@@ -558,13 +558,13 @@ ioInterface options files = do
             sources <- findM ((allowable rcSuggestsExternal inputs) `andM` doesFileExist) $
                         (adjustPath filename):(map ((</> filename) . adjustPath) $ sourcePathFlag ++ sourcePathAnnotation)
             case sources of
-                Nothing -> return deflt
+                Nothing    -> return deflt
                 Just first -> return first
         scriptdir = dropFileName currentScript
         adjustPath str =
             case (splitDirectories str) of
                 ("SCRIPTDIR":rest) -> joinPath (scriptdir:rest)
-                _ -> str
+                _                  -> str
 
 inputFile file = do
     (handle, shouldCache) <-
