@@ -17,8 +17,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 
 -- Constructs a Control Flow Graph from an AST
 module ShellCheck.CFG (
@@ -38,33 +39,35 @@ module ShellCheck.CFG (
     )
   where
 
-import GHC.Generics (Generic)
-import ShellCheck.AST
-import ShellCheck.ASTLib
-import ShellCheck.Data
-import ShellCheck.Interface
-import ShellCheck.Prelude
-import ShellCheck.Regex
-import Control.DeepSeq
-import Control.Monad
-import Control.Monad.Identity
-import Data.Array.Unboxed
-import Data.Array.ST
-import Data.List hiding (map)
-import qualified Data.List.NonEmpty as NE
-import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
-import Control.Monad.RWS.Lazy
-import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Query.DFS
-import Data.Graph.Inductive.Basic
-import Data.Graph.Inductive.Query.Dominators
-import Data.Graph.Inductive.PatriciaTree as G
-import Debug.Trace -- STRIP
+import           Control.DeepSeq
+import           Control.Monad
+import           Control.Monad.Identity
+import           Control.Monad.RWS.Lazy
+import           Data.Array.ST
+import           Data.Array.Unboxed
+import           Data.Graph.Inductive.Basic
+import           Data.Graph.Inductive.Graph
+import           Data.Graph.Inductive.PatriciaTree     as G
+import           Data.Graph.Inductive.Query.DFS
+import           Data.Graph.Inductive.Query.Dominators
+import           Data.List                             hiding (map)
+import qualified Data.List.NonEmpty                    as NE
+import qualified Data.Map                              as M
+import           Data.Maybe
+import qualified Data.Set                              as S
+import           Debug.Trace
+import           GHC.Generics                          (Generic)
+import           ShellCheck.AST
+import           ShellCheck.ASTLib
+import           ShellCheck.Data
+import           ShellCheck.Interface
+import           ShellCheck.Prelude
+import           ShellCheck.Regex
 
-import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
+import           Test.QuickCheck.All                   (forAllProperties)
+import           Test.QuickCheck.Test                  (maxSuccess,
+                                                        quickCheckWithResult,
+                                                        stdArgs)
 
 
 -- Our basic Graph type
@@ -173,11 +176,11 @@ data CFGParameters = CFGParameters {
 
 data CFGResult = CFGResult {
     -- The graph itself
-    cfGraph :: CFGraph,
+    cfGraph          :: CFGraph,
     -- Map from Id to nominal start&end node (i.e. assuming normal execution without exits)
-    cfIdToRange :: M.Map Id (Node, Node),
+    cfIdToRange      :: M.Map Id (Node, Node),
     -- A set of all nodes belonging to an Id, recursively
-    cfIdToNodes :: M.Map Id (S.Set Node),
+    cfIdToNodes      :: M.Map Id (S.Set Node),
     -- An array (from,to) saying whether 'from' postdominates 'to'
     cfPostDominators :: Array Node [Node]
 }
@@ -309,13 +312,13 @@ removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
     orderEdge (a,b,_) = if a < b then (b,a) else (a,b)
     counter = M.fromListWith (+) . map (\key -> (key, 1))
     isRegularEdge (_, _, CFEFlow) = True
-    isRegularEdge _ = False
+    isRegularEdge _               = False
 
     recursiveLookup :: M.Map Node Node -> Node -> Node
     recursiveLookup map node =
         case M.lookup node map of
             Nothing -> node
-            Just x -> recursiveLookup map x
+            Just x  -> recursiveLookup map x
 
     isLinear node =
         M.findWithDefault 0 node inDegree == 1
@@ -344,13 +347,13 @@ data Range = Range Node Node
   deriving (Eq, Show)
 
 data CFContext = CFContext {
-    cfIsCondition :: Bool,
-    cfIsFunction :: Bool,
-    cfLoopStack :: [(Node, Node)],
-    cfTokenStack :: [Id],
-    cfExitTarget :: Maybe Node,
+    cfIsCondition  :: Bool,
+    cfIsFunction   :: Bool,
+    cfLoopStack    :: [(Node, Node)],
+    cfTokenStack   :: [Id],
+    cfExitTarget   :: Maybe Node,
     cfReturnTarget :: Maybe Node,
-    cfParameters :: CFGParameters
+    cfParameters   :: CFGParameters
 }
 newCFContext params = CFContext {
     cfIsCondition = False,
@@ -420,7 +423,7 @@ spanRange :: Range -> Range -> Range
 spanRange (Range start mid1) (Range mid2 end) = Range start end
 
 linkRanges :: [Range] -> CFM Range
-linkRanges [] = error "Empty range"
+linkRanges []           = error "Empty range"
 linkRanges (first:rest) = foldM linkRange first rest
 
 sequentially :: [Token] -> CFM Range
@@ -652,9 +655,9 @@ build t = do
                 linkRange cond nextCond
                 -- After body
                 case typ of
-                    CaseBreak -> linkRange body end
+                    CaseBreak       -> linkRange body end
                     CaseFallThrough -> linkRange body nextBody
-                    CaseContinue -> linkRange body nextCond
+                    CaseContinue    -> linkRange body nextCond
 
             -- Find a *) if any
 
@@ -671,7 +674,7 @@ build t = do
         T_CoProc id maybeNameToken t -> do
             -- If unspecified, "COPROC". If not a constant string, Nothing.
             let maybeName = case maybeNameToken of
-                    Just x -> getLiteralString x
+                    Just x  -> getLiteralString x
                     Nothing -> Just "COPROC"
 
             let parentNode = case maybeName of
@@ -996,7 +999,7 @@ handleCommand cmd vars args literalCmd = do
                 _ | "n" `elem` flagNames -> unsetWith CFUndefineNameref
                 _ | "v" `elem` flagNames -> unsetWith CFUndefineVariable
                 _ | "f" `elem` flagNames -> unsetWith CFUndefineFunction
-                _ -> unsetWith CFUndefine
+                _                        -> unsetWith CFUndefine
       where
         pairs :: [(String, Token)] -- [(Flag string, token)] e.g. [("-f", t), ("", myfunc)]
         pairs = map (\(str, (flag, val)) -> (str, flag)) $ fromMaybe (map (\c -> ("", (c,c))) args) $ getGnuOpts "vfn" args
@@ -1033,13 +1036,13 @@ handleCommand cmd vars args literalCmd = do
             case () of
                 _ | global -> CFWriteGlobal
                 _ | isFunc -> CFWriteLocal
-                _ -> CFWriteVariable
+                _          -> CFWriteVariable
 
         scope isFunc =
             case () of
                 _ | global -> Just GlobalScope
                 _ | isFunc -> Just LocalScope
-                _ -> Nothing
+                _          -> Nothing
 
         addedProps = S.fromList $ concat $ [
             [ CFVPArray | array ],
@@ -1219,9 +1222,9 @@ buildAssignment scope t = do
                 let scoper =
                                 case scope of
                                     Just PrefixScope -> CFWritePrefix
-                                    Just LocalScope -> CFWriteLocal
+                                    Just LocalScope  -> CFWriteLocal
                                     Just GlobalScope -> CFWriteGlobal
-                                    Nothing -> CFWriteVariable
+                                    Nothing          -> CFWriteVariable
                 write <- newNodeRange $ applySingle $ IdTagged id $ scoper var valueType
                 linkRanges [expand, index, read, write]
               where
@@ -1278,7 +1281,7 @@ findEntryNodes graph = ufold find [] graph
     find (incoming, node, label, _) list =
         case label of
             CFEntryPoint {} | null incoming -> node:list
-            _ -> list
+            _                               -> list
 
 findDominators main graph = asSetMap
   where
@@ -1292,9 +1295,9 @@ findTerminalNodes graph = ufold find [] graph
   where
     find (_, node, label, _) list =
         case label of
-            CFUnresolvedExit -> node:list
+            CFUnresolvedExit       -> node:list
             CFApplyEffects effects -> f effects list
-            _ -> list
+            _                      -> list
 
     f [] list = list
     f (IdTagged _ (CFDefineFunction _ id start end):rest) list = f rest (end:list)

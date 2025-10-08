@@ -21,31 +21,32 @@
 {-# LANGUAGE TemplateHaskell  #-}
 module ShellCheck.AnalyzerLib where
 
-import ShellCheck.AST
-import ShellCheck.ASTLib
+import           ShellCheck.AST
+import           ShellCheck.ASTLib
 import qualified ShellCheck.CFGAnalysis as CF
-import ShellCheck.Data
-import ShellCheck.Interface
-import ShellCheck.Parser
-import ShellCheck.Prelude
-import ShellCheck.Regex
+import           ShellCheck.Data
+import           ShellCheck.Interface
+import           ShellCheck.Parser
+import           ShellCheck.Prelude
+import           ShellCheck.Regex
 
-import Control.Arrow (first)
-import Control.DeepSeq
-import Control.Monad
-import Control.Monad.Identity
-import Control.Monad.RWS
-import Control.Monad.State
-import Control.Monad.Writer
-import Data.Char
-import Data.List
-import Data.Maybe
-import Data.Semigroup
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as Map
+import           Control.Arrow          (first)
+import           Control.DeepSeq
+import           Control.Monad
+import           Control.Monad.Identity
+import           Control.Monad.RWS
+import           Control.Monad.State
+import           Control.Monad.Writer
+import           Data.Char
+import           Data.List
+import qualified Data.List.NonEmpty     as NE
+import qualified Data.Map               as Map
+import           Data.Maybe
+import           Data.Semigroup
 
-import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (maxSuccess, quickCheckWithResult, stdArgs)
+import           Test.QuickCheck.All    (forAllProperties)
+import           Test.QuickCheck.Test   (maxSuccess, quickCheckWithResult,
+                                         stdArgs)
 
 type Analysis = AnalyzerM ()
 type AnalyzerM a = RWS Parameters [TokenComment] Cache a
@@ -106,7 +107,7 @@ data Parameters = Parameters {
     -- map from token id to start and end position
     tokenPositions     :: Map.Map Id (Position, Position),
     -- Result from Control Flow Graph analysis (including data flow analysis)
-    cfgAnalysis :: Maybe CF.CFGAnalysis
+    cfgAnalysis        :: Maybe CF.CFGAnalysis
     } deriving (Show)
 
 -- TODO: Cache results of common AST ops here
@@ -209,29 +210,29 @@ makeParameters spec = params
         hasSetE = containsSetE root,
         hasLastpipe =
             case shellType params of
-                Bash -> isOptionSet "lastpipe" root
-                Dash -> False
+                Bash      -> isOptionSet "lastpipe" root
+                Dash      -> False
                 BusyboxSh -> False
-                Sh   -> False
-                Ksh  -> True,
+                Sh        -> False
+                Ksh       -> True,
         hasInheritErrexit =
             case shellType params of
-                Bash -> isOptionSet "inherit_errexit" root
-                Dash -> True
+                Bash      -> isOptionSet "inherit_errexit" root
+                Dash      -> True
                 BusyboxSh -> True
-                Sh   -> True
-                Ksh  -> False,
+                Sh        -> True
+                Ksh       -> False,
         hasPipefail =
             case shellType params of
-                Bash -> isOptionSet "pipefail" root
-                Dash -> isOptionSet "pipefail" root
+                Bash      -> isOptionSet "pipefail" root
+                Dash      -> isOptionSet "pipefail" root
                 BusyboxSh -> isOptionSet "pipefail" root
-                Sh -> isOptionSet "pipefail" root
-                Ksh  -> isOptionSet "pipefail" root,
+                Sh        -> isOptionSet "pipefail" root
+                Ksh       -> isOptionSet "pipefail" root,
         hasExecfail =
             case shellType params of
                 Bash -> isOptionSet "execfail" root
-                _ -> False,
+                _    -> False,
         shellTypeSpecified = isJust (asShellType spec) || isJust (asFallbackShell spec),
         idMap = getTokenMap root,
         parentMap = getParentTree root,
@@ -386,7 +387,7 @@ isQuoteFreeNode strict shell tree t =
     isAssignmentParamToCommand id =
         case Map.lookup id tree of
             Just (T_SimpleCommand _ _ (_:args)) -> id `elem` (map getId args)
-            _ -> False
+            _                                   -> False
 
 -- Check if a token is a parameter to a certain command by name:
 -- Example: isParamTo (parentMap params) "sed" t
@@ -459,11 +460,11 @@ findFirst p = foldr go Nothing
 
 -- Check whether a word is entirely output from a single command
 tokenIsJustCommandOutput t = case t of
-    T_NormalWord id [T_DollarExpansion _ cmds] -> check cmds
+    T_NormalWord id [T_DollarExpansion _ cmds]                    -> check cmds
     T_NormalWord id [T_DoubleQuoted _ [T_DollarExpansion _ cmds]] -> check cmds
-    T_NormalWord id [T_Backticked _ cmds] -> check cmds
-    T_NormalWord id [T_DoubleQuoted _ [T_Backticked _ cmds]] -> check cmds
-    _ -> False
+    T_NormalWord id [T_Backticked _ cmds]                         -> check cmds
+    T_NormalWord id [T_DoubleQuoted _ [T_Backticked _ cmds]]      -> check cmds
+    _                                                             -> False
   where
     check [x] = not $ isOnlyRedirection x
     check _   = False
@@ -485,10 +486,10 @@ getVariableFlow params t =
             unless (assignFirst t) $ setWritten t
             when (scopeType /= NoneScope) $ modify (StackScopeEnd:)
 
-    assignFirst T_ForIn {}    = True
-    assignFirst T_SelectIn {} = True
+    assignFirst T_ForIn {}      = True
+    assignFirst T_SelectIn {}   = True
     assignFirst (T_BatsTest {}) = True
-    assignFirst _             = False
+    assignFirst _               = False
 
     setRead t =
         let read    = getReferencedVariables (parentMap params) t
@@ -523,7 +524,7 @@ leadType params t =
         (T_Pipeline _ _ list) <- parentPipeline
         return $ case list of
             _:_:_ -> not (hasLastpipe params) || getId (last list) /= getId t
-            _ -> False
+            _     -> False
 
 getModifiedVariables t =
     case t of
@@ -779,7 +780,7 @@ getVariableForTestDashV t = do
     toStr (T_Glob _ s) = return s
     -- Turn foo[$x] into foo[\0] so that we can get the constant array name
     -- in a non-constant expression (while filtering out foo$x[$y])
-    toStr _ = return "\0"
+    toStr _            = return "\0"
 
 getReferencedVariables parents t =
     case t of
@@ -833,7 +834,7 @@ getReferencedVariables parents t =
 
     isArithmeticAssignment t = case getPath parents t of
         this NE.:| TA_Assignment _ "=" lhs _ :_ -> lhs == t
-        _                                  -> False
+        _                                       -> False
 
 isDereferencingBinaryOp = (`elem` ["-eq", "-ne", "-lt", "-le", "-gt", "-ge"])
 
@@ -886,7 +887,7 @@ filterByAnnotation asSpec params =
         any (shouldIgnoreFor (getCode note)) $
             getPath parents (T_Bang $ tcId note)
     shouldIgnoreFor _ T_Include {} = not $ asCheckSourced asSpec
-    shouldIgnoreFor code t = isAnnotationIgnoringCode code t
+    shouldIgnoreFor code t         = isAnnotationIgnoringCode code t
     parents = parentMap params
     getCode = cCode . tcComment
 
@@ -911,16 +912,16 @@ isQuotedAlternativeReference t =
     re = mkRegex "(^|\\]):?\\+"
 
 supportsArrays Bash = True
-supportsArrays Ksh = True
-supportsArrays _ = False
+supportsArrays Ksh  = True
+supportsArrays _    = False
 
 isTrueAssignmentSource c =
     case c of
-        DataString SourceChecked -> False
+        DataString SourceChecked     -> False
         DataString SourceDeclaration -> False
-        DataArray SourceChecked -> False
-        DataArray SourceDeclaration -> False
-        _ -> True
+        DataArray SourceChecked      -> False
+        DataArray SourceDeclaration  -> False
+        _                            -> True
 
 modifiesVariable params token name =
     or $ map check flow
@@ -933,12 +934,12 @@ modifiesVariable params token name =
 
 isTestCommand t =
     case t of
-        T_Condition {} -> True
-        T_SimpleCommand {} -> t `isCommand` "test"
+        T_Condition {}      -> True
+        T_SimpleCommand {}  -> t `isCommand` "test"
         T_Redirecting _ _ t -> isTestCommand t
-        T_Annotation _ _ t -> isTestCommand t
-        T_Pipeline _ _ [t] -> isTestCommand t
-        _ -> False
+        T_Annotation _ _ t  -> isTestCommand t
+        T_Pipeline _ _ [t]  -> isTestCommand t
+        _                   -> False
 
 return []
 runTests =  $( [| $(forAllProperties) (quickCheckWithResult (stdArgs { maxSuccess = 1 }) ) |])

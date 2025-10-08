@@ -20,22 +20,22 @@
 {-# LANGUAGE TemplateHaskell #-}
 module ShellCheck.ASTLib where
 
-import ShellCheck.AST
-import ShellCheck.Prelude
-import ShellCheck.Regex
+import           ShellCheck.AST
+import           ShellCheck.Prelude
+import           ShellCheck.Regex
 
-import Control.Monad.Writer
-import Control.Monad
-import Data.Char
-import Data.Functor
-import Data.Functor.Identity
-import Data.List
-import Data.Maybe
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as Map
-import Numeric (showHex)
+import           Control.Monad
+import           Control.Monad.Writer
+import           Data.Char
+import           Data.Functor
+import           Data.Functor.Identity
+import           Data.List
+import qualified Data.List.NonEmpty    as NE
+import qualified Data.Map              as Map
+import           Data.Maybe
+import           Numeric               (showHex)
 
-import Test.QuickCheck
+import           Test.QuickCheck
 
 arguments (T_SimpleCommand _ _ (cmd:args)) = args
 
@@ -43,29 +43,29 @@ arguments (T_SimpleCommand _ _ (cmd:args)) = args
 isLoop t = case t of
         T_WhileExpression {} -> True
         T_UntilExpression {} -> True
-        T_ForIn {} -> True
-        T_ForArithmetic {} -> True
-        T_SelectIn {}  -> True
-        _ -> False
+        T_ForIn {}           -> True
+        T_ForArithmetic {}   -> True
+        T_SelectIn {}        -> True
+        _                    -> False
 
 -- Will this split into multiple words when used as an argument?
 willSplit x =
   case x of
-    T_DollarBraced {} -> True
+    T_DollarBraced {}    -> True
     T_DollarExpansion {} -> True
-    T_Backticked {} -> True
-    T_BraceExpansion {} -> True
-    T_Glob {} -> True
-    T_Extglob {} -> True
-    T_DoubleQuoted _ l -> any willBecomeMultipleArgs l
-    T_NormalWord _ l -> any willSplit l
-    _ -> False
+    T_Backticked {}      -> True
+    T_BraceExpansion {}  -> True
+    T_Glob {}            -> True
+    T_Extglob {}         -> True
+    T_DoubleQuoted _ l   -> any willBecomeMultipleArgs l
+    T_NormalWord _ l     -> any willSplit l
+    _                    -> False
 
 isGlob t = case t of
-    T_Extglob {} -> True
-    T_Glob {} -> True
+    T_Extglob {}     -> True
+    T_Glob {}        -> True
     T_NormalWord _ l -> any isGlob l || hasSplitRange l
-    _ -> False
+    _                -> False
   where
     -- foo[x${var}y] gets parsed as foo,[,x,$var,y],
     -- so check if there's such an interval
@@ -76,33 +76,33 @@ isGlob t = case t of
     isHalfOpenRange t =
         case t of
             T_Literal _ "[" -> True
-            _ -> False
+            _               -> False
 
     isClosingRange t =
         case t of
             T_Literal _ str -> ']' `elem` str
-            _ -> False
+            _               -> False
 
 
 -- Is this shell word a constant?
 isConstant token =
     case token of
         -- This ignores some cases like ~"foo":
-        T_NormalWord _ (T_Literal _ ('~':_) : _)  -> False
-        T_NormalWord _ l   -> all isConstant l
-        T_DoubleQuoted _ l -> all isConstant l
-        T_SingleQuoted _ _ -> True
-        T_Literal _ _ -> True
-        _ -> False
+        T_NormalWord _ (T_Literal _ ('~':_) : _) -> False
+        T_NormalWord _ l                         -> all isConstant l
+        T_DoubleQuoted _ l                       -> all isConstant l
+        T_SingleQuoted _ _                       -> True
+        T_Literal _ _                            -> True
+        _                                        -> False
 
 -- Is this an empty literal?
 isEmpty token =
     case token of
-        T_NormalWord _ l   -> all isEmpty l
-        T_DoubleQuoted _ l -> all isEmpty l
+        T_NormalWord _ l    -> all isEmpty l
+        T_DoubleQuoted _ l  -> all isEmpty l
         T_SingleQuoted _ "" -> True
-        T_Literal _ "" -> True
-        _ -> False
+        T_Literal _ ""      -> True
+        _                   -> False
 
 -- Quick&lazy oversimplification of commands, throwing away details
 -- and returning a list like  ["find", ".", "-name", "${VAR}*" ].
@@ -138,8 +138,8 @@ getFlagsUntil stopCondition (T_SimpleCommand _ _ (_:args)) =
         concatMap flag flagArgs ++ map (\(t, _) -> (t, "")) rest
   where
     flag (x, '-':'-':arg) = [ (x, takeWhile (/= '=') arg) ]
-    flag (x, '-':args) = map (\v -> (x, [v])) args
-    flag (x, _) = [ (x, "") ]
+    flag (x, '-':args)    = map (\v -> (x, [v])) args
+    flag (x, _)           = [ (x, "") ]
 getFlagsUntil _ _ = error $ pleaseReport "getFlags on non-command"
 
 -- Get all flags in a GNU way, up until --
@@ -155,13 +155,13 @@ hasFlag cmd str = str `elem` (map snd $ getAllFlags cmd)
 isFlag token =
     case getWordParts token of
         T_Literal _ ('-':_) : _ -> True
-        _ -> False
+        _                       -> False
 
 -- Is this token a flag where the - is unquoted?
 isUnquotedFlag token =
     case getLeadingUnquotedString token of
         Just ('-':_) -> True
-        _ -> False
+        _            -> False
 
 -- getGnuOpts "erd:u:" will parse a list of arguments tokens like `read`
 --     -re -d : -u 3 bar
@@ -302,19 +302,19 @@ mayBecomeMultipleArgs t = willBecomeMultipleArgs t || f False t
 -- Is it certain that this word will becomes multiple words?
 willBecomeMultipleArgs t = willConcatInAssignment t || f t
   where
-    f T_Extglob {} = True
-    f T_Glob {} = True
-    f T_BraceExpansion {} = True
+    f T_Extglob {}           = True
+    f T_Glob {}              = True
+    f T_BraceExpansion {}    = True
     f (T_NormalWord _ parts) = any f parts
-    f _ = False
+    f _                      = False
 
 -- This does token cause implicit concatenation in assignments?
 willConcatInAssignment token =
     case token of
-        t@T_DollarBraced {} -> isArrayExpansion t
+        t@T_DollarBraced {}      -> isArrayExpansion t
         (T_DoubleQuoted _ parts) -> any willConcatInAssignment parts
-        (T_NormalWord _ parts) -> any willConcatInAssignment parts
-        _ -> False
+        (T_NormalWord _ parts)   -> any willConcatInAssignment parts
+        _                        -> False
 
 -- Maybe get the literal string corresponding to this token
 getLiteralString :: Token -> Maybe String
@@ -333,14 +333,14 @@ getUnquotedLiteral (T_NormalWord _ list) =
     concat <$> mapM str list
   where
     str (T_Literal _ s) = return s
-    str _ = Nothing
+    str _               = Nothing
 getUnquotedLiteral _ = Nothing
 
 isQuotes t =
     case t of
         T_DoubleQuoted {} -> True
         T_SingleQuoted {} -> True
-        _ -> False
+        _                 -> False
 
 -- Get the last unquoted T_Literal in a word like "${var}foo"THIS
 -- or nothing if the word does not end in an unquoted literal.
@@ -354,23 +354,23 @@ getTrailingUnquotedLiteral t =
     from t =
         case t of
             T_Literal {} -> return t
-            _ -> Nothing
+            _            -> Nothing
 
 -- Get the leading, unquoted, literal string of a token (if any).
 getLeadingUnquotedString :: Token -> Maybe String
 getLeadingUnquotedString t =
     case t of
         T_NormalWord _ ((T_Literal _ s) : rest) -> return $ s ++ from rest
-        _ -> Nothing
+        _                                       -> Nothing
   where
     from ((T_Literal _ s):rest) = s ++ from rest
-    from _ = ""
+    from _                      = ""
 
 -- Maybe get the literal string of this token and any globs in it.
 getGlobOrLiteralString = getLiteralStringExt f
   where
     f (T_Glob _ str) = return str
-    f _ = Nothing
+    f _              = Nothing
 
 
 prop_getLiteralString1 = getLiteralString (T_DollarSingleQuoted (Id 0) "\\x01") == Just "\1"
@@ -393,15 +393,15 @@ getLiteralStringExt :: Monad m => (Token -> m String) -> Token -> m String
 getLiteralStringExt more = g
   where
     allInList = fmap concat . mapM g
-    g (T_DoubleQuoted _ l) = allInList l
-    g (T_DollarDoubleQuoted _ l) = allInList l
-    g (T_NormalWord _ l) = allInList l
-    g (TA_Expansion _ l) = allInList l
-    g (T_SingleQuoted _ s) = return s
-    g (T_Literal _ s) = return s
+    g (T_DoubleQuoted _ l)        = allInList l
+    g (T_DollarDoubleQuoted _ l)  = allInList l
+    g (T_NormalWord _ l)          = allInList l
+    g (TA_Expansion _ l)          = allInList l
+    g (T_SingleQuoted _ s)        = return s
+    g (T_Literal _ s)             = return s
     g (T_ParamSubSpecialChar _ s) = return s
-    g (T_DollarSingleQuoted _ s) = return $ decodeEscapes s
-    g x = more x
+    g (T_DollarSingleQuoted _ s)  = return $ decodeEscapes s
+    g x                           = more x
 
     -- Bash style $'..' decoding
     decodeEscapes ('\\':c:cs) =
@@ -433,7 +433,7 @@ getLiteralStringExt more = g
         rest = decodeEscapes cs
         parseOct = f 0
           where
-            f n "" = n
+            f n ""       = n
             f n (c:rest) = f (n * 8 + digitToInt c) rest
         spanMax f n list =
             let (first, second) = span f list
@@ -504,10 +504,10 @@ braceExpand (T_NormalWord id list) = take 1000 $ do
 -- Maybe get a SimpleCommand from immediate wrappers like T_Redirections
 getCommand t =
     case t of
-        T_Redirecting _ _ w -> getCommand w
+        T_Redirecting _ _ w       -> getCommand w
         T_SimpleCommand _ _ (w:_) -> return t
-        T_Annotation _ _ t -> getCommand t
-        _ -> Nothing
+        T_Annotation _ _ t        -> getCommand t
+        _                         -> Nothing
 
 -- Maybe get the command name string of a token representing a command
 getCommandName :: Token -> Maybe String
@@ -559,13 +559,13 @@ getCommandNameAndToken direct t = fromMaybe (Nothing, t) $ do
 getCommandNameFromExpansion :: Token -> Maybe String
 getCommandNameFromExpansion t =
     case t of
-        T_DollarExpansion _ [c] -> extract c
-        T_Backticked _ [c] -> extract c
+        T_DollarExpansion _ [c]               -> extract c
+        T_Backticked _ [c]                    -> extract c
         T_DollarBraceCommandExpansion _ _ [c] -> extract c
-        _ -> Nothing
+        _                                     -> Nothing
   where
     extract (T_Pipeline _ _ [cmd]) = getCommandName cmd
-    extract _ = Nothing
+    extract _                      = Nothing
 
 -- Get the basename of a token representing a command
 getCommandBasename = fmap basename . getCommandName
@@ -574,19 +574,19 @@ basename = reverse . takeWhile (/= '/') . reverse
 
 isAssignment t =
     case t of
-        T_Redirecting _ _ w -> isAssignment w
+        T_Redirecting _ _ w        -> isAssignment w
         T_SimpleCommand _ (w:_) [] -> True
-        T_Assignment {} -> True
-        T_Annotation _ _ w -> isAssignment w
-        _ -> False
+        T_Assignment {}            -> True
+        T_Annotation _ _ w         -> isAssignment w
+        _                          -> False
 
 isOnlyRedirection t =
     case t of
-        T_Pipeline _ _ [x] -> isOnlyRedirection x
-        T_Annotation _ _ w -> isOnlyRedirection w
+        T_Pipeline _ _ [x]      -> isOnlyRedirection x
+        T_Annotation _ _ w      -> isOnlyRedirection w
         T_Redirecting _ (_:_) c -> isOnlyRedirection c
         T_SimpleCommand _ [] [] -> True
-        _ -> False
+        _                       -> False
 
 isFunction t = case t of T_Function {} -> True; _ -> False
 
@@ -595,7 +595,7 @@ isFunctionLike t =
     case t of
         T_Function {} -> True
         T_BatsTest {} -> True
-        _ -> False
+        _             -> False
 
 
 isBraceExpansion t = case t of T_BraceExpansion {} -> True; _ -> False
@@ -639,7 +639,7 @@ getAssociativeArrays t =
     nameAssignments t =
         case t of
             T_Assignment _ _ name _ _ -> return name
-            _ -> Nothing
+            _                         -> Nothing
 
 -- A Pseudoglob is a wildcard pattern used for checking if a match can succeed.
 -- For example, [[ $(cmd).jpg == [a-z] ]] will give the patterns *.jpg and ?, which
@@ -702,9 +702,9 @@ pseudoGlobsCanOverlap = matchable
         case (xf, yf) of
             (PGMany, _) -> matchable x ys || matchable xs y
             (_, PGMany) -> matchable x ys || matchable xs y
-            (PGAny, _) -> matchable xs ys
-            (_, PGAny) -> matchable xs ys
-            (_, _) -> xf == yf && matchable xs ys
+            (PGAny, _)  -> matchable xs ys
+            (_, PGAny)  -> matchable xs ys
+            (_, _)      -> xf == yf && matchable xs ys
 
     matchable [] [] = True
     matchable (PGMany : rest) [] = matchable rest []
@@ -718,11 +718,11 @@ pseudoGlobIsSuperSetof = matchable
     matchable x@(xf:xs) y@(yf:ys) =
         case (xf, yf) of
             (PGMany, PGMany) -> matchable x ys
-            (PGMany, _) -> matchable x ys || matchable xs y
-            (_, PGMany) -> False
-            (PGAny, _) -> matchable xs ys
-            (_, PGAny) -> False
-            (_, _) -> xf == yf && matchable xs ys
+            (PGMany, _)      -> matchable x ys || matchable xs y
+            (_, PGMany)      -> False
+            (PGAny, _)       -> matchable xs ys
+            (_, PGAny)       -> False
+            (_, _)           -> xf == yf && matchable xs ys
 
     matchable [] [] = True
     matchable (PGMany : rest) [] = matchable rest []
@@ -734,28 +734,28 @@ wordsCanBeEqual x y = pseudoGlobsCanOverlap (wordToPseudoGlob x) (wordToPseudoGl
 -- e.g. $(foo) `foo` $foo (but not {foo,})?
 isQuoteableExpansion t = case t of
     T_DollarBraced {} -> True
-    _ -> isCommandSubstitution t
+    _                 -> isCommandSubstitution t
 
 isCommandSubstitution t = case t of
-    T_DollarExpansion {} -> True
+    T_DollarExpansion {}             -> True
     T_DollarBraceCommandExpansion {} -> True
-    T_Backticked {} -> True
-    _ -> False
+    T_Backticked {}                  -> True
+    _                                -> False
 
 -- Is this an expansion that results in a simple string?
 isStringExpansion t = isCommandSubstitution t || case t of
     T_DollarArithmetic {} -> True
-    T_DollarBraced {} -> not (isArrayExpansion t)
-    _ -> False
+    T_DollarBraced {}     -> not (isArrayExpansion t)
+    _                     -> False
 
 -- Is this a T_Annotation that ignores a specific code?
 isAnnotationIgnoringCode code t =
     case t of
         T_Annotation _ anns _ -> any hasNum anns
-        _ -> False
+        _                     -> False
   where
     hasNum (DisableComment from to) = code >= from && code < to
-    hasNum _                   = False
+    hasNum _                        = False
 
 prop_executableFromShebang1 = executableFromShebang "/bin/sh" == "sh"
 prop_executableFromShebang2 = executableFromShebang "/bin/bash" == "bash"
@@ -777,16 +777,16 @@ executableFromShebang = shellFor
     shellFor s | s `matches` re =
         case matchRegex re s of
             Just [flag, shell] -> fromEnvArgs (words shell)
-            _ -> ""
+            _                  -> ""
     shellFor sb =
         case words sb of
             [] -> ""
             [x] -> basename x
             (first:second:args) | basename first == "busybox" ->
                 case basename second of
-                   "sh" -> "busybox sh"
+                   "sh"  -> "busybox sh"
                    "ash" -> "busybox ash"
-                   x -> x
+                   x     -> x
             (first:args) | basename first == "env" ->
                 fromEnvArgs args
             (first:_) -> basename first
@@ -914,13 +914,13 @@ isClosingFileOp op =
 getEnableDirectives root =
     case root of
         T_Annotation _ list _ -> [s | EnableComment s <- list]
-        _ -> []
+        _                     -> []
 
 getExtendedAnalysisDirective :: Token -> Maybe Bool
 getExtendedAnalysisDirective root =
     case root of
         T_Annotation _ list _ -> listToMaybe $ [s | ExtendedAnalysis s <- list]
-        _ -> Nothing
+        _                     -> Nothing
 
 return []
 runTests = $quickCheckAll

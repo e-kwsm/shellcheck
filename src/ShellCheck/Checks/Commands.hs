@@ -17,39 +17,40 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE MultiWayIf       #-}
+{-# LANGUAGE PatternGuards    #-}
+{-# LANGUAGE TemplateHaskell  #-}
 
 -- This module contains checks that examine specific commands by name.
 module ShellCheck.Checks.Commands (checker, optionalChecks, ShellCheck.Checks.Commands.runTests) where
 
-import ShellCheck.AST
-import ShellCheck.ASTLib
-import ShellCheck.AnalyzerLib
-import ShellCheck.CFG
-import qualified ShellCheck.CFGAnalysis as CF
-import ShellCheck.Data
-import ShellCheck.Interface
-import ShellCheck.Parser
-import ShellCheck.Prelude
-import ShellCheck.Regex
+import           ShellCheck.AnalyzerLib
+import           ShellCheck.AST
+import           ShellCheck.ASTLib
+import           ShellCheck.CFG
+import qualified ShellCheck.CFGAnalysis     as CF
+import           ShellCheck.Data
+import           ShellCheck.Interface
+import           ShellCheck.Parser
+import           ShellCheck.Prelude
+import           ShellCheck.Regex
 
-import Control.Monad
-import Control.Monad.RWS
-import Data.Char
-import Data.Functor.Identity
+import           Control.Monad
+import           Control.Monad.RWS
+import           Data.Char
+import           Data.Functor.Identity
 import qualified Data.Graph.Inductive.Graph as G
-import Data.List
-import Data.Maybe
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
-import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
+import           Data.List
+import qualified Data.List.NonEmpty         as NE
+import qualified Data.Map.Strict            as M
+import           Data.Maybe
+import qualified Data.Set                   as S
+import           Test.QuickCheck.All        (forAllProperties)
+import           Test.QuickCheck.Test       (maxSuccess, quickCheckWithResult,
+                                             stdArgs)
 
-import Debug.Trace -- STRIP
+import           Debug.Trace
 
 data CommandName = Exactly String | Basename String
     deriving (Eq, Ord)
@@ -254,7 +255,7 @@ prop_checkFindNameGlob2 = verify checkFindNameGlob "find / -type f -ipath *(foo)
 prop_checkFindNameGlob3 = verifyNot checkFindNameGlob "find * -name '*.php'"
 checkFindNameGlob = CommandCheck (Basename "find") (f . arguments)  where
     acceptsGlob s = s `elem` [ "-ilname", "-iname", "-ipath", "-iregex", "-iwholename", "-lname", "-name", "-path", "-regex", "-wholename" ]
-    f [] = return ()
+    f []     = return ()
     f (x:xs) = foldr g (const $ return ()) xs x
     g b acc a = do
         forM_ (getLiteralString a) $ \s -> when (acceptsGlob s && isGlob b) $
@@ -395,7 +396,7 @@ checkGrepRe = CommandCheck (Basename "grep") check where
 
     getSuspiciousRegexWildcard str = case matchRegex suspicious str of
         Just [[c]] | not (str `matches` contra) -> Just c
-        _ -> fail "looks good"
+        _                                       -> fail "looks good"
     suspicious = mkRegex "([A-Za-z1-9])\\*"
     contra = mkRegex "[^a-zA-Z1-9]\\*|[][^$+\\\\]"
 
@@ -406,15 +407,15 @@ prop_checkTrapQuotes2 = verifyNot checkTrapQuotes "trap 'echo $num' INT"
 prop_checkTrapQuotes3 = verify checkTrapQuotes "trap \"echo $((1+num))\" EXIT DEBUG"
 checkTrapQuotes = CommandCheck (Exactly "trap") (f . arguments) where
     f (x:_) = checkTrap x
-    f _ = return ()
+    f _     = return ()
     checkTrap (T_NormalWord _ [T_DoubleQuoted _ rs]) = mapM_ checkExpansions rs
-    checkTrap _ = return ()
+    checkTrap _                                      = return ()
     warning id = warn id 2064 "Use single quotes, otherwise this expands now rather than when signalled."
-    checkExpansions (T_DollarExpansion id _) = warning id
-    checkExpansions (T_Backticked id _) = warning id
-    checkExpansions (T_DollarBraced id _ _) = warning id
+    checkExpansions (T_DollarExpansion id _)  = warning id
+    checkExpansions (T_Backticked id _)       = warning id
+    checkExpansions (T_DollarBraced id _ _)   = warning id
     checkExpansions (T_DollarArithmetic id _) = warning id
-    checkExpansions _ = return ()
+    checkExpansions _                         = return ()
 
 
 prop_checkReturn1 = verifyNot checkReturn "return"
@@ -452,11 +453,11 @@ returnOrExit multi invalid = (f . arguments)
         || let value = (read s :: Integer) in value > 255
 
     literal token = runIdentity $ getLiteralStringExt lit token
-    lit (T_DollarBraced {}) = return "0"
+    lit (T_DollarBraced {})     = return "0"
     lit (T_DollarArithmetic {}) = return "0"
-    lit (T_DollarExpansion {}) = return "0"
-    lit (T_Backticked {}) = return "0"
-    lit _ = return "WTF"
+    lit (T_DollarExpansion {})  = return "0"
+    lit (T_Backticked {})       = return "0"
+    lit _                       = return "WTF"
 
 
 prop_checkFindExecWithSingleArgument1 = verify checkFindExecWithSingleArgument "find . -exec 'cat {} | wc -l' \\;"
@@ -595,7 +596,7 @@ checkNonportableSignals = CommandCheck (Exactly "trap") (f . arguments)
   where
     f args = case args of
         first:rest | not $ isFlag first -> mapM_ check rest
-        _ -> return ()
+        _                               -> return ()
 
     check param = sequence_ $ do
         str <- getLiteralString param
@@ -631,10 +632,10 @@ checkInteractiveSu = CommandCheck (Basename "su") f
             info (getId cmd) 2117
                 "To run commands as another user, use su -c or sudo."
 
-    undirected (T_Pipeline _ _ (_:_:_)) = False
+    undirected (T_Pipeline _ _ (_:_:_))  = False
     -- This should really just be modifications to stdin, but meh
     undirected (T_Redirecting _ (_:_) _) = False
-    undirected _ = True
+    undirected _                         = True
 
 
 -- This is hard to get right without properly parsing ssh args
@@ -648,7 +649,7 @@ checkSshCommandString = CommandCheck (Basename "ssh") (f . arguments)
     f args =
         case partition isOption args of
             ([], hostport:r@(_:_)) -> checkArg $ last r
-            _ -> return ()
+            _                      -> return ()
     checkArg (T_NormalWord _ [T_DoubleQuoted id parts]) =
         forM_ (find (not . isConstant) parts) $
             \x -> info (getId x) 2029
@@ -739,7 +740,7 @@ getPrintfFormats = getFormats
             '%':'(':rest ->
                 case dropWhile (/= ')') rest of
                     ')':c:trailing -> c : getFormats trailing
-                    _ -> ""
+                    _              -> ""
             '%':rest -> regexBasedGetFormats rest
             _:rest -> getFormats rest
             [] -> ""
@@ -770,7 +771,7 @@ prop_checkUuoeCmd6 = verifyNot checkUuoeCmd "echo \"$(<file)\""
 checkUuoeCmd = CommandCheck (Exactly "echo") (f . arguments) where
     msg id = style id 2005 "Useless echo? Instead of 'echo $(cmd)', just use 'cmd'."
     f [token] = when (tokenIsJustCommandOutput token) $ msg (getId token)
-    f _ = return ()
+    f _       = return ()
 
 
 prop_checkSetAssignment1 = verify checkSetAssignment "set foo 42"
@@ -789,8 +790,8 @@ checkSetAssignment = CommandCheck (Exactly "set") (f . arguments)
 
     isAssignment str = '=' `elem` str
     literal (T_NormalWord _ l) = concatMap literal l
-    literal (T_Literal _ str) = str
-    literal _ = "*"
+    literal (T_Literal _ str)  = str
+    literal _                  = "*"
 
 
 prop_checkExportedExpansions1 = verify checkExportedExpansions "export $foo"
@@ -838,7 +839,7 @@ checkReadExpansions = CommandCheck (Exactly "read") check
     isUnquotedBracket t =
         case t of
             T_Glob _ ('[':_) -> True
-            _ -> False
+            _                -> False
 
 -- Return the single variable expansion that makes up this word, if any.
 -- e.g. $foo -> $foo, "$foo"'' -> $foo , "hello $name" -> Nothing
@@ -944,16 +945,16 @@ checkTimedCommand = CommandCheck (Exactly "time") f where
     isPiped cmd =
         case cmd of
             T_Pipeline _ _ (_:_:_) -> True
-            _ -> False
+            _                      -> False
     getCommand cmd =
         case cmd of
             T_Pipeline _ _ (T_Redirecting _ _ a : _) -> return a
-            _ -> fail ""
+            _                                        -> fail ""
     isSimple cmd = do
         innerCommand <- getCommand cmd
         case innerCommand of
             T_SimpleCommand {} -> return True
-            _ -> return False
+            _                  -> return False
 
 prop_checkLocalScope1 = verify checkLocalScope "local foo=3"
 prop_checkLocalScope2 = verifyNot checkLocalScope "f() { local foo=3; }"
@@ -1058,22 +1059,22 @@ checkWhileGetoptsCase = CommandCheck (Exactly "getopts") f
     fromGlob t =
         case t of
             T_Glob _ ['[', c, ']'] -> return [c]
-            T_Glob _ "*" -> return "*"
-            T_Glob _ "?" -> return "?"
-            _ -> Nothing
+            T_Glob _ "*"           -> return "*"
+            T_Glob _ "?"           -> return "?"
+            _                      -> Nothing
 
     whileLoop t =
         case t of
             T_WhileExpression {} -> return True
-            T_Script {} -> return False
-            _ -> Nothing
+            T_Script {}          -> return False
+            _                    -> Nothing
 
     findCase t =
         case t of
-            T_Annotation _ _ x -> findCase x
-            T_Pipeline _ _ [x] -> findCase x
+            T_Annotation _ _ x                        -> findCase x
+            T_Pipeline _ _ [x]                        -> findCase x
             T_Redirecting _ _ x@(T_CaseExpression {}) -> return x
-            _ -> Nothing
+            _                                         -> Nothing
 
 prop_checkCatastrophicRm1 = verify checkCatastrophicRm "rm -r $1/$2"
 prop_checkCatastrophicRm2 = verify checkCatastrophicRm "rm -r /home/$foo"
@@ -1319,7 +1320,7 @@ checkArgComparison cmd = CommandCheck (Exactly cmd) wordsWithEqual
     headId t =
         case t of
             T_NormalWord _ (x:_) -> getId x
-            _ -> getId t
+            _                    -> getId t
 
 
 prop_checkMaskedReturns1 = verify (checkMaskedReturns "local") "f() { local a=$(false); }"
@@ -1372,10 +1373,10 @@ checkMaskedReturns str = CommandCheck (Exactly str) checkCmd
             _ -> False
 
     hasReturn t = case t of
-        T_Backticked {} -> True
-        T_DollarExpansion {} -> True
+        T_Backticked {}                  -> True
+        T_DollarExpansion {}             -> True
         T_DollarBraceCommandExpansion {} -> True
-        _ -> False
+        _                                -> False
 
 
 prop_checkUnquotedEchoSpaces1 = verify checkUnquotedEchoSpaces "echo foo         bar"
@@ -1464,11 +1465,11 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
     refFromLabel lab =
         case lab of
             CFApplyEffects effects -> mapMaybe refFromEffect effects
-            _ -> []
+            _                      -> []
     refFromEffect e =
         case e of
             IdTagged id (CFReadVariable name) -> return (name, id)
-            _ -> Nothing
+            _                                 -> Nothing
 
 
 return []

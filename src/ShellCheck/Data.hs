@@ -1,7 +1,7 @@
 module ShellCheck.Data where
 
-import ShellCheck.Interface
-import Data.Version (showVersion)
+import           Data.Version         (showVersion)
+import           ShellCheck.Interface
 
 
 {-
@@ -20,7 +20,7 @@ Use:
 
 -}
 
-import Paths_ShellCheck (version)
+import           Paths_ShellCheck     (version)
 shellcheckVersion = showVersion version  -- VERSIONSTRING
 
 
@@ -158,19 +158,19 @@ unaryTestOps = [
 shellForExecutable :: String -> Maybe Shell
 shellForExecutable name =
     case name of
-        "sh"    -> return Sh
-        "bash"  -> return Bash
-        "bats"  -> return Bash
-        "busybox"  -> return BusyboxSh -- Used for directives and --shell=busybox
+        "sh"          -> return Sh
+        "bash"        -> return Bash
+        "bats"        -> return Bash
+        "busybox"     -> return BusyboxSh -- Used for directives and --shell=busybox
         "busybox sh"  -> return BusyboxSh
-        "busybox ash"  -> return BusyboxSh
-        "dash"  -> return Dash
-        "ash"   -> return Dash -- There's also a warning for this.
-        "ksh"   -> return Ksh
-        "ksh88" -> return Ksh
-        "ksh93" -> return Ksh
-        "oksh"  -> return Ksh
-        _ -> Nothing
+        "busybox ash" -> return BusyboxSh
+        "dash"        -> return Dash
+        "ash"         -> return Dash -- There's also a warning for this.
+        "ksh"         -> return Ksh
+        "ksh88"       -> return Ksh
+        "ksh93"       -> return Ksh
+        "oksh"        -> return Ksh
+        _             -> Nothing
 
 flagsForRead = "sreu:n:N:i:p:a:t:"
 flagsForMapfile = "d:n:O:s:u:C:c:t"

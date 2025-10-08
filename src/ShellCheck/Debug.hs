@@ -76,24 +76,24 @@ Afterwards, you can run the ShellCheck tool, as if from the shell, with:
 
 module ShellCheck.Debug () where
 
-import ShellCheck.Analyzer
-import ShellCheck.AST
-import ShellCheck.CFG
-import ShellCheck.Checker
-import ShellCheck.CFGAnalysis as CF
-import ShellCheck.Interface
-import ShellCheck.Parser
-import ShellCheck.Prelude
+import           ShellCheck.Analyzer
+import           ShellCheck.AST
+import           ShellCheck.CFG
+import           ShellCheck.CFGAnalysis     as CF
+import           ShellCheck.Checker
+import           ShellCheck.Interface
+import           ShellCheck.Parser
+import           ShellCheck.Prelude
 
-import Control.Monad
-import Control.Monad.Identity
-import Control.Monad.RWS
-import Control.Monad.Writer
-import Data.Graph.Inductive.Graph as G
-import Data.List
-import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
+import           Control.Monad
+import           Control.Monad.Identity
+import           Control.Monad.RWS
+import           Control.Monad.Writer
+import           Data.Graph.Inductive.Graph as G
+import           Data.List
+import qualified Data.Map                   as M
+import           Data.Maybe
+import qualified Data.Set                   as S
 
 
 -- Run all of ShellCheck (minus output formatters)
@@ -149,7 +149,7 @@ stringToAst :: String -> Token
 stringToAst scriptString =
     case maybeRoot of
         Just root -> root
-        Nothing -> error $ "Script failed to parse: " ++ show parserWarnings
+        Nothing   -> error $ "Script failed to parse: " ++ show parserWarnings
   where
     parseResult :: ParseResult
     parseResult = parseScriptString scriptString
@@ -265,8 +265,8 @@ cfgToGraphVizWith nodeLabel graph = concat [
   where
     dumpNode l@(node, label) = show node ++ " [label=" ++ quoteViz (nodeLabel l) ++ "]\n"
     dumpLink (from, to, typ) = show from ++ " -> " ++ show to ++ " [style=" ++ quoteViz (edgeStyle typ)  ++ "]\n"
-    edgeStyle CFEFlow = "solid"
-    edgeStyle CFEExit = "bold"
+    edgeStyle CFEFlow      = "solid"
+    edgeStyle CFEExit      = "bold"
     edgeStyle CFEFalseFlow = "dotted"
 
 quoteViz str = "\"" ++ escapeViz str ++ "\""
@@ -276,7 +276,7 @@ escapeViz (c:rest) =
         '\"' -> '\\' : '\"' : escapeViz rest
         '\n' -> '\\' : 'l' : escapeViz rest
         '\\' -> '\\' : '\\' : escapeViz rest
-        _ -> c : escapeViz rest
+        _    -> c : escapeViz rest
 
 
 -- Dump an Abstract Syntax Tree (or branch thereof) to GraphViz format
@@ -295,7 +295,7 @@ astToGraphViz token = concat [
         stack <- get
         put (n : stack)
         case stack of
-            [] -> return ()
+            []      -> return ()
             (top:_) -> tell $ show top ++ " -> " ++ show n ++ "\n"
         tell $ show n ++ " [label=" ++ quoteViz (show n ++ ": " ++ take 32 (show inner)) ++ "]\n"
 
@@ -309,5 +309,5 @@ tagVizEntries graph = "{ rank=same " ++ rank ++ " }"
   where
     entries = mapMaybe find $ labNodes graph
     find (node, CFEntryPoint name) = return (node, name)
-    find _ = Nothing
+    find _                         = Nothing
     rank = unwords $ map (\(c, _) -> show c) entries
