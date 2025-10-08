@@ -19,23 +19,23 @@
 -}
 module ShellCheck.Formatter.Format where
 
-import ShellCheck.Data
-import ShellCheck.Interface
-import ShellCheck.Fixer
+import           ShellCheck.Data
+import           ShellCheck.Fixer
+import           ShellCheck.Interface
 
-import Control.Monad
-import Data.Array
-import Data.List
-import System.IO
-import System.Info
-import System.Environment
+import           Control.Monad
+import           Data.Array
+import           Data.List
+import           System.Environment
+import           System.Info
+import           System.IO
 
 -- A formatter that carries along an arbitrary piece of data
 data Formatter = Formatter {
-    header ::  IO (),
-    onResult :: CheckResult -> SystemInterface IO -> IO (),
+    header    ::  IO (),
+    onResult  :: CheckResult -> SystemInterface IO -> IO (),
     onFailure :: FilePath -> ErrorMessage -> IO (),
-    footer :: IO ()
+    footer    :: IO ()
 }
 
 sourceFile = posFile . pcStartPos

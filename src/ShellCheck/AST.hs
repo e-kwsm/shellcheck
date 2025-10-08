@@ -17,15 +17,18 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveTraversable, PatternSynonyms #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE PatternSynonyms   #-}
 module ShellCheck.AST where
 
-import GHC.Generics (Generic)
-import Control.Monad.Identity
-import Control.DeepSeq
-import Text.Parsec
-import qualified ShellCheck.Regex as Re
-import Prelude hiding (id)
+import           Control.DeepSeq
+import           Control.Monad.Identity
+import           GHC.Generics           (Generic)
+import           Prelude                hiding (id)
+import qualified ShellCheck.Regex       as Re
+import           Text.Parsec
 
 newtype Id = Id Int deriving (Show, Eq, Ord, Generic, NFData)
 

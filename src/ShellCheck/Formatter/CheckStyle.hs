@@ -19,13 +19,13 @@
 -}
 module ShellCheck.Formatter.CheckStyle (format) where
 
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
+import           ShellCheck.Formatter.Format
+import           ShellCheck.Interface
 
-import Data.Char
-import Data.List
-import System.IO
-import qualified Data.List.NonEmpty as NE
+import           Data.Char
+import           Data.List
+import qualified Data.List.NonEmpty          as NE
+import           System.IO
 
 format :: IO Formatter
 format = return Formatter {
@@ -90,6 +90,6 @@ escape = concatMap escape'
 escape' c = if isOk c then [c] else "&#" ++ show (ord c) ++ ";"
 isOk x = any ($ x) [isAsciiUpper, isAsciiLower, isDigit, (`elem` " ./")]
 
-severity "error" = "error"
+severity "error"   = "error"
 severity "warning" = "warning"
-severity _ = "info"
+severity _         = "info"
