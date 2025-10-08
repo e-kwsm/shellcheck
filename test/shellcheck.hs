@@ -1,7 +1,6 @@
 module Main where
 
-import Control.Monad
-import System.Exit
+import           Control.Monad
 import qualified ShellCheck.Analytics
 import qualified ShellCheck.AnalyzerLib
 import qualified ShellCheck.ASTLib
@@ -15,6 +14,7 @@ import qualified ShellCheck.Checks.ShellSupport
 import qualified ShellCheck.Fixer
 import qualified ShellCheck.Formatter.Diff
 import qualified ShellCheck.Parser
+import           System.Exit
 
 main = do
     putStrLn "Running ShellCheck tests..."

@@ -19,21 +19,21 @@
 -}
 module ShellCheck.Formatter.TTY (format) where
 
-import ShellCheck.Fixer
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
+import           ShellCheck.Fixer
+import           ShellCheck.Formatter.Format
+import           ShellCheck.Interface
 
-import Control.DeepSeq
-import Control.Monad
-import Data.Array
-import Data.Foldable
-import Data.Ord
-import Data.IORef
-import Data.List
-import Data.Maybe
-import System.IO
-import System.Info
-import qualified Data.List.NonEmpty as NE
+import           Control.DeepSeq
+import           Control.Monad
+import           Data.Array
+import           Data.Foldable
+import           Data.IORef
+import           Data.List
+import qualified Data.List.NonEmpty          as NE
+import           Data.Maybe
+import           Data.Ord
+import           System.Info
+import           System.IO
 
 wikiLink = "https://www.shellcheck.net/wiki/"
 
@@ -61,7 +61,7 @@ colorForLevel level =
         "verbose" -> 32 -- green
         "message" -> 1 -- bold
         "source"  -> 0 -- none
-        _ -> 0         -- none
+        _         -> 0         -- none
 
 rankError :: PositionedComment -> Ranking
 rankError err = (ranking, cSeverity $ pcComment err, cCode $ pcComment err)
