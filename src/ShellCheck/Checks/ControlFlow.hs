@@ -24,24 +24,25 @@
 
 module ShellCheck.Checks.ControlFlow (checker, optionalChecks, ShellCheck.Checks.ControlFlow.runTests) where
 
-import ShellCheck.AST
-import ShellCheck.ASTLib
-import ShellCheck.CFG hiding (cfgAnalysis)
-import ShellCheck.CFGAnalysis
-import ShellCheck.AnalyzerLib
-import ShellCheck.Data
-import ShellCheck.Interface
+import           ShellCheck.AnalyzerLib
+import           ShellCheck.AST
+import           ShellCheck.ASTLib
+import           ShellCheck.CFG             hiding (cfgAnalysis)
+import           ShellCheck.CFGAnalysis
+import           ShellCheck.Data
+import           ShellCheck.Interface
 
-import Control.Monad
-import Control.Monad.Reader
-import Data.Graph.Inductive.Graph
-import qualified Data.Map as M
-import qualified Data.Set as S
-import Data.List
-import Data.Maybe
+import           Control.Monad
+import           Control.Monad.Reader
+import           Data.Graph.Inductive.Graph
+import           Data.List
+import qualified Data.Map                   as M
+import           Data.Maybe
+import qualified Data.Set                   as S
 
-import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
+import           Test.QuickCheck.All        (forAllProperties)
+import           Test.QuickCheck.Test       (maxSuccess, quickCheckWithResult,
+                                             stdArgs)
 
 
 optionalChecks :: [CheckDescription]
