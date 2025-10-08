@@ -20,24 +20,24 @@
 {-# LANGUAGE TemplateHaskell #-}
 module ShellCheck.Checker (checkScript, ShellCheck.Checker.runTests) where
 
-import ShellCheck.Analyzer
-import ShellCheck.ASTLib
-import ShellCheck.Interface
-import ShellCheck.Parser
+import           ShellCheck.Analyzer
+import           ShellCheck.ASTLib
+import           ShellCheck.Interface
+import           ShellCheck.Parser
 
-import Debug.Trace -- DO NOT SUBMIT
-import Data.Either
-import Data.Functor
-import Data.List
-import Data.Maybe
-import Data.Ord
-import Control.Monad.Identity
-import qualified Data.Map as Map
+import           Control.Monad
+import           Control.Monad.Identity
+import           Data.Either
+import           Data.Functor
+import           Data.List
+import qualified Data.Map               as Map
+import           Data.Maybe
+import           Data.Ord
+import           Debug.Trace
+import           Prelude                hiding (readFile)
 import qualified System.IO
-import Prelude hiding (readFile)
-import Control.Monad
 
-import Test.QuickCheck.All
+import           Test.QuickCheck.All
 
 tokenToPosition startMap t = fromMaybe fail $ do
     span <- Map.lookup (tcId t) startMap
@@ -102,7 +102,7 @@ checkScript sys spec = do
     shouldInclude pc =
             severity <= csMinSeverity spec &&
             case csIncludedWarnings spec of
-                Nothing -> code `notElem` csExcludedWarnings spec
+                Nothing               -> code `notElem` csExcludedWarnings spec
                 Just includedWarnings -> code `elem` includedWarnings
         where
             code     = cCode (pcComment pc)
@@ -441,7 +441,7 @@ prop_sourcePathWorksWithSpaces = result == [2086]
 prop_sourcePathRedirectsDirective = result == [2086]
   where
     f "dir/myscript" _ _ "lib" = return "foo/lib"
-    f _ _ _ _ = return "/dev/null"
+    f _ _ _ _                  = return "/dev/null"
     result = checkWithIncludesAndSourcePath [("foo/lib", "echo $1")] f emptyCheckSpec {
         csScript = "#!/bin/bash\n# shellcheck source=lib\nsource kittens",
         csFilename = "dir/myscript",
@@ -471,7 +471,7 @@ prop_rcCanDenyExternalSources = result == [2086]
 prop_rcCanLeaveExternalSourcesUnspecified = result == [2086]
   where
     f "dir/myscript" Nothing _ "mylib" = return "resolved/mylib"
-    f a b c d = error $ show ("Unexpected", a, b, c, d)
+    f a b c d                          = error $ show ("Unexpected", a, b, c, d)
     result = checkWithRcIncludesAndSourcePath "" [("resolved/mylib", "echo $1")] f emptyCheckSpec {
         csScript = "#!/bin/bash\nsource mylib",
         csFilename = "dir/myscript",
@@ -492,7 +492,7 @@ prop_fileCanDisableExternalSources = result == [2006, 2086]
 prop_fileCannotEnableExternalSources = result == [1144]
   where
     f "dir/myscript" Nothing _ "foo" = return "foo"
-    f a b c d = error $ show ("Unexpected", a, b, c, d)
+    f a b c d                        = error $ show ("Unexpected", a, b, c, d)
     result = checkWithRcIncludesAndSourcePath "" [("foo", "true")] f emptyCheckSpec {
         csScript = "#!/bin/bash\n# shellcheck external-sources=true\nsource foo",
         csFilename = "dir/myscript",

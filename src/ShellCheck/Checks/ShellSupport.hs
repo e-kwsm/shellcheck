@@ -17,28 +17,29 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE ViewPatterns     #-}
 module ShellCheck.Checks.ShellSupport (checker , ShellCheck.Checks.ShellSupport.runTests) where
 
-import ShellCheck.AST
-import ShellCheck.ASTLib
-import ShellCheck.AnalyzerLib
-import ShellCheck.Interface
-import ShellCheck.Prelude
-import ShellCheck.Regex
+import           ShellCheck.AnalyzerLib
+import           ShellCheck.AST
+import           ShellCheck.ASTLib
+import           ShellCheck.Interface
+import           ShellCheck.Prelude
+import           ShellCheck.Regex
 
-import Control.Monad
-import Control.Monad.RWS
-import Data.Char
-import Data.Functor.Identity
-import Data.List
-import Data.Maybe
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
+import           Control.Monad
+import           Control.Monad.RWS
+import           Data.Char
+import           Data.Functor.Identity
+import           Data.List
+import qualified Data.Map               as Map
+import           Data.Maybe
+import qualified Data.Set               as Set
+import           Test.QuickCheck.All    (forAllProperties)
+import           Test.QuickCheck.Test   (maxSuccess, quickCheckWithResult,
+                                         stdArgs)
 
 data ForShell = ForShell [Shell] (Token -> Analysis)
 
@@ -346,7 +347,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
           where
             go first rest = case getLiteralString first of
                 Just str -> (getId first, str) : rest
-                Nothing -> []
+                Nothing  -> []
 
         -- Check a flag-option pair (such as -o errexit)
         checkOptions (flag@(fid,flag') : opt@(oid,opt') : rest)
@@ -505,7 +506,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
       where
         f x = case x of
                 Assignment (_, _, name, _) -> name == var
-                _ -> False
+                _                          -> False
 
     checkTestOp table op id = sequence_ $ do
         (code, shells, msg) <- Map.lookup op table
@@ -609,10 +610,10 @@ checkBraceExpansionVars = ForShell [Bash] f
 
     literalExt t =
         case t of
-            T_DollarBraced {} -> return "$"
-            T_DollarExpansion {} -> return "$"
+            T_DollarBraced {}     -> return "$"
+            T_DollarExpansion {}  -> return "$"
             T_DollarArithmetic {} -> return "$"
-            _ -> return "-"
+            _                     -> return "-"
     toString t = runIdentity $ getLiteralStringExt literalExt t
     isEvaled t = do
         cmd <- getClosestCommandM t
@@ -653,7 +654,7 @@ checkPS1Assignments = ForShell [Bash] f
   where
     f token = case token of
         (T_Assignment _ _ "PS1" _ word) -> warnFor word
-        _ -> return ()
+        _                               -> return ()
 
     warnFor word =
         let contents = concat $ oversimplify word in
@@ -683,7 +684,7 @@ checkBangAfterPipe = ForShell [Dash, BusyboxSh, Sh, Bash] f
   where
     f token = case token of
         T_Pipeline _ _ cmds -> mapM_ check cmds
-        _ -> return ()
+        _                   -> return ()
 
     check token = case token of
         T_Banged id _ ->
