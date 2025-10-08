@@ -26,14 +26,14 @@
 -- .shellcheckrc files.
 module ShellCheck.EditorConfig (parseEditorConfig, isEditorConfigRoot, invalidRootLines, invalidDirectiveLines, editorConfigDirectives, globToRegexString, runTests) where
 
-import Data.Char
-import Data.List
-import Data.Maybe
+import           Data.Char
+import           Data.List
+import           Data.Maybe
 
-import ShellCheck.Data (shellForExecutable)
-import ShellCheck.Regex
+import           ShellCheck.Data  (shellForExecutable)
+import           ShellCheck.Regex
 
-import Test.QuickCheck
+import           Test.QuickCheck
 
 -- Given the contents of an EditorConfig style file and the name of the
 -- file being checked, return the shellcheck directives (as a
@@ -79,7 +79,7 @@ parseEditorConfig contents name =
         let t = trim (dropLineComment l)
         in case t of
             ('[':cs@(_:_)) | last cs == ']' -> Just (init cs)
-            _ -> Nothing
+            _                               -> Nothing
 
     -- All 'shellcheck.*' directives (as (line, key, value) tuples) found
     -- in sections whose glob matches the file being checked.
@@ -153,7 +153,7 @@ invalidDirectiveLines contents name =
         let t = trim (dropLineComment l)
         in case t of
             ('[':cs@(_:_)) | last cs == ']' -> Just (init cs)
-            _ -> Nothing
+            _                               -> Nothing
 
     allDirectives name = concatMap (sectionDirectives name)
 
@@ -198,7 +198,7 @@ isEditorConfigRoot contents =
     isSectionHeader l =
         case trim (dropLineComment l) of
             ('[':cs@(_:_)) -> last cs == ']'
-            _ -> False
+            _              -> False
     preSectionLines = takeWhile (not . isSectionHeader) . lines
 
     rootValue l =
@@ -214,12 +214,12 @@ invalidRootLines contents =
     [ n | (n, l) <- zip [1..] (preSectionLines contents)
         , case rootValue l of
             Just value -> value `notElem` ["true", "false"]
-            Nothing -> False ]
+            Nothing    -> False ]
   where
     isSectionHeader l =
         case trim (dropLineComment l) of
             ('[':cs@(_:_)) -> last cs == ']'
-            _ -> False
+            _              -> False
     preSectionLines = takeWhile (not . isSectionHeader) . lines
 
     rootValue l =
@@ -261,7 +261,7 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
         let (cls, rest') = break (== ']') rest
         in case rest' of
             (']':rest'') -> "[" ++ translateClass cls ++ "]" ++ go rest''
-            _ -> "\\[" ++ go rest
+            _            -> "\\[" ++ go rest
     go ('{':rest) =
         case findMatchingBrace rest of
             Just (body, rest'') ->
@@ -274,7 +274,7 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
     regexSpecials = ".\\+()^$|"
 
     translateClass ('!':cs) = '^' : escapeClass cs
-    translateClass cs = escapeClass cs
+    translateClass cs       = escapeClass cs
     escapeClass = concatMap (\c -> if c == '\\' then "\\\\" else [c])
 
     -- Scan past a balanced '{' ... '}' pair, returning the contents of
@@ -329,7 +329,7 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
     readInt s =
         case reads s :: [(Int, String)] of
             [(n, "")] -> Just n
-            _ -> Nothing
+            _         -> Nothing
 
 prop_globStar = matchesGlob "*.ebuild" "foo.ebuild"
 prop_globBraceExt = matchesGlob "*.{ebuild,eclass}" "foo.eclass"

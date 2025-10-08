@@ -21,15 +21,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 module ShellCheck.Fixer (applyFix, removeTabStops, mapPositions, Ranged(..), runTests) where
 
-import ShellCheck.Interface
-import ShellCheck.Prelude
-import Control.Monad
-import Control.Monad.State
-import Data.Array
-import Data.List
-import Data.Semigroup
-import GHC.Exts (sortWith)
-import Test.QuickCheck
+import           Control.Monad
+import           Control.Monad.State
+import           Data.Array
+import           Data.List
+import           Data.Semigroup
+import           GHC.Exts             (sortWith)
+import           ShellCheck.Interface
+import           ShellCheck.Prelude
+import           Test.QuickCheck
 
 -- The Ranged class is used for types that has a start and end position.
 class Ranged a where
