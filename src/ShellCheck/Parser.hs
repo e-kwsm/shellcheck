@@ -17,41 +17,43 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE MultiWayIf                #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NondecreasingIndentation #-}
+{-# LANGUAGE NondecreasingIndentation  #-}
+{-# LANGUAGE TemplateHaskell           #-}
 module ShellCheck.Parser (parseScript, runTests) where
 
-import ShellCheck.AST
-import ShellCheck.ASTLib hiding (runTests)
-import ShellCheck.Data
-import ShellCheck.Interface
-import ShellCheck.Prelude
+import           ShellCheck.AST
+import           ShellCheck.ASTLib      hiding (runTests)
+import           ShellCheck.Data
+import           ShellCheck.Interface
+import           ShellCheck.Prelude
 
-import Control.Applicative ((<*), (*>))
-import Control.Monad
-import Control.Monad.Identity
-import Control.Monad.Trans
-import Data.Char
-import Data.Functor
-import Data.List (isPrefixOf, isInfixOf, isSuffixOf, partition, sortBy, intercalate, nub, find)
-import Data.Maybe
-import Data.Monoid
-import GHC.Exts (sortWith)
-import Prelude hiding (readList)
-import System.IO
-import Text.Parsec hiding (runParser, (<?>))
-import Text.Parsec.Error
-import Text.Parsec.Pos
-import qualified Control.Monad.Reader as Mr
-import qualified Control.Monad.State as Ms
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map.Strict as Map
-import Debug.Trace
+import           Control.Applicative    ((*>), (<*))
+import           Control.Monad
+import           Control.Monad.Identity
+import qualified Control.Monad.Reader   as Mr
+import qualified Control.Monad.State    as Ms
+import           Control.Monad.Trans
+import           Data.Char
+import           Data.Functor
+import           Data.List              (find, intercalate, isInfixOf,
+                                         isPrefixOf, isSuffixOf, nub, partition,
+                                         sortBy)
+import qualified Data.List.NonEmpty     as NE
+import qualified Data.Map.Strict        as Map
+import           Data.Maybe
+import           Data.Monoid
+import           Debug.Trace
+import           GHC.Exts               (sortWith)
+import           Prelude                hiding (readList)
+import           System.IO
+import           Text.Parsec            hiding (runParser, (<?>))
+import           Text.Parsec.Error
+import           Text.Parsec.Pos
 
-import Test.QuickCheck.All (quickCheckAll)
+import           Test.QuickCheck.All    (quickCheckAll)
 
 type SCBase m = Mr.ReaderT (Environment m) (Ms.StateT SystemState m)
 type SCParser m v = ParsecT String UserState (SCBase m) v
@@ -165,12 +167,12 @@ data HereDocContext =
     deriving (Show)
 
 data UserState = UserState {
-    lastId :: Id,
-    positionMap :: Map.Map Id (SourcePos, SourcePos),
-    parseNotes :: [ParseNote],
-    hereDocMap :: Map.Map Id [Token],
+    lastId          :: Id,
+    positionMap     :: Map.Map Id (SourcePos, SourcePos),
+    parseNotes      :: [ParseNote],
+    hereDocMap      :: Map.Map Id [Token],
     pendingHereDocs :: [HereDocContext],
-    parseShellType :: Shell
+    parseShellType  :: Shell
 }
 initialUserState = UserState {
     lastId = Id $ -1,
@@ -284,10 +286,10 @@ contextItemDisablesCode alsoCheckSourced code = disabling alsoCheckSourced
     disabling checkSourced item =
         case item of
             ContextAnnotation list -> any disabling' list
-            ContextSource _ -> not $ checkSourced
-            _ -> False
+            ContextSource _        -> not $ checkSourced
+            _                      -> False
     disabling' (DisableComment n m) = code >= n && code < m
-    disabling' _ = False
+    disabling' _                    = False
 
 
 
@@ -295,9 +297,9 @@ getCurrentAnnotations includeSource =
     concatMap get . takeWhile (not . isBoundary) <$> getCurrentContexts
   where
     get (ContextAnnotation list) = list
-    get _ = []
+    get _                        = []
     isBoundary (ContextSource _) = not includeSource
-    isBoundary _ = False
+    isBoundary _                 = False
 
 
 shouldFollow file = do
@@ -313,7 +315,7 @@ shouldFollow file = do
             return True
   where
     isSource (ContextSource _) = True
-    isSource _ = False
+    isSource _                 = False
     isThisFile (ContextSource name) | name == file = True
     isThisFile _= False
 
@@ -322,17 +324,17 @@ getSourceOverride = do
     return . msum . map findFile $ takeWhile isSameFile context
   where
     isSameFile (ContextSource _) = False
-    isSameFile _ = True
+    isSameFile _                 = True
 
     findFile (ContextAnnotation list) = msum $ map getFile list
-    findFile _ = Nothing
+    findFile _                        = Nothing
     getFile (SourceOverride str) = Just str
-    getFile _ = Nothing
+    getFile _                    = Nothing
 
 -- Store potential parse problems outside of parsec
 
 data SystemState = SystemState {
-    contextStack :: [Context],
+    contextStack  :: [Context],
     parseProblems :: [ParseNote]
 }
 initialSystemState = SystemState {
@@ -341,10 +343,10 @@ initialSystemState = SystemState {
 }
 
 data Environment m = Environment {
-    systemInterface :: SystemInterface m,
-    checkSourced :: Bool,
-    ignoreRC :: Bool,
-    currentFilename :: String,
+    systemInterface   :: SystemInterface m,
+    checkSourced      :: Bool,
+    ignoreRC          :: Bool,
+    currentFilename   :: String,
     shellTypeOverride :: Maybe Shell
 }
 
@@ -571,10 +573,10 @@ readConditionContents single =
         return x
       where endedWith str (T_NormalWord id s@(_:_)) =
                 case last s of T_Literal id s -> str `isSuffixOf` s
-                               _ -> False
+                               _              -> False
             endedWith _ _ = False
             notArrayIndex (T_NormalWord id s@(_:T_Literal _ t:_)) = t /= "["
-            notArrayIndex _ = True
+            notArrayIndex _                                       = True
             containsLiteral x s = s `isInfixOf` onlyLiteralString x
 
     readCondAndOp = readAndOrOp TC_And "&&" False <|> readAndOrOp TC_And "-a" True
@@ -1011,7 +1013,7 @@ prop_readAnnotationBadDisableMessage =
   where
     rendered = case res of
         Left err -> getStringFromParsec $ errorMessages err
-        Right _ -> ""
+        Right _  -> ""
     (res, _) = runIdentity $
         runParser testEnvironment readAnnotation "-" "# shellcheck disable=foo\n"
 
@@ -1409,7 +1411,7 @@ readDoubleQuoted = called "double quoted string" $ do
     return $ T_DoubleQuoted id x
   where
     startsWithLineFeed (T_Literal _ ('\n':_):_) = True
-    startsWithLineFeed _ = False
+    startsWithLineFeed _                        = False
     hasLineFeed (T_Literal _ str) | '\n' `elem` str = True
     hasLineFeed _ = False
 
@@ -1516,11 +1518,11 @@ readNormalEscaped = called "escaped char" $ do
             return [next]
   where
     alternative 'n' = "a quoted, literal line feed"
-    alternative t = "\"$(printf '\\" ++ [t] ++ "')\""
+    alternative t   = "\"$(printf '\\" ++ [t] ++ "')\""
     escapedChar 'n' = Just "line feed"
     escapedChar 't' = Just "tab"
     escapedChar 'r' = Just "carriage return"
-    escapedChar _ = Nothing
+    escapedChar _   = Nothing
 
     checkTrailingSpaces pos = lookAhead . try $ do
         many linewhitespace
@@ -1626,8 +1628,8 @@ readBraced = try braceExpansion
             guard $
                 case elements of
                     (_:_:_) -> True
-                    [t] -> ".." `isInfixOf` onlyLiteralString t
-                    [] -> False
+                    [t]     -> ".." `isInfixOf` onlyLiteralString t
+                    []      -> False
             char '}'
             return elements
     bracedElement =
@@ -2204,7 +2206,7 @@ readSimpleCommand = called "simple command" $ do
                 _ -> return result
   where
     isCommand strings (T_NormalWord _ [T_Literal _ s]) = s `elem` strings
-    isCommand _ _ = False
+    isCommand _ _                                      = False
     getParser def cmd [] = def
     getParser def cmd ((list, action):rest) =
         if isCommand list cmd
@@ -2248,9 +2250,9 @@ readSimpleCommand = called "simple command" $ do
             T_Redirecting id1 redirs $ T_SimpleCommand id2 assigns args
       where
         assignment (T_Assignment {}) = True
-        assignment _ = False
+        assignment _                 = False
         redirection (T_FdRedirect {}) = True
-        redirection _ = False
+        redirection _                 = False
 
 
 readSource :: Monad m => Token -> SCParser m Token
@@ -2314,18 +2316,18 @@ readSource t@(T_Redirecting _ _ (T_SimpleCommand cmdId _ (cmd:args'))) = do
         case getLiteralString first of
             Just "--" -> rest !!! 0
             Just "-p" -> rest !!! 1
-            _ -> return first
+            _         -> return first
     getFile _ = Nothing
 
     getSourcePath t =
         case t of
             SourcePath x -> Just x
-            _ -> Nothing
+            _            -> Nothing
 
     getExternalSources t =
         case t of
             ExternalSources b -> Just b
-            _ -> Nothing
+            _                 -> Nothing
 
     -- If the word has a single expansion as the directory, try stripping it
     -- This affects `$foo/bar` but not `${foo}-dir/bar` or `/foo/$file`
@@ -2423,7 +2425,7 @@ readTerm = do
       where
         transformWithSeparator i (Just Ampersand) = T_Backgrounded i
         transformWithSeparator i (Just Coprocess) = T_KshCoprocess i
-        transformWithSeparator _ Nothing = id
+        transformWithSeparator _ Nothing          = id
 
 
 readPipeSequence = do
@@ -2615,8 +2617,8 @@ readBatsTest = called "bats @test" $ do
 
     -- We want everything before the last " {" in a string, so we find everything after "{ " in its reverse
     f ('{':' ':rest) = dropWhile isSpace rest
-    f (a:rest) = f rest
-    f [] = ""
+    f (a:rest)       = f rest
+    f []             = ""
 
 prop_readWhileClause = isOk readWhileClause "while [[ -e foo ]]; do sleep 1; done"
 readWhileClause = called "while loop" $ do
@@ -2919,11 +2921,11 @@ readConditionCommand = do
 
     return $ T_Redirecting id redirs cmd
   where
-    alt "or" = "||"
-    alt "-o" = "||"
+    alt "or"  = "||"
+    alt "-o"  = "||"
     alt "and" = "&&"
-    alt "-a" = "&&"
-    alt _ = "|| or &&"
+    alt "-a"  = "&&"
+    alt _     = "|| or &&"
 
 prop_readCompoundCommand = isOk readCompoundCommand "{ echo foo; }>/dev/null"
 readCompoundCommand = do
@@ -3167,7 +3169,7 @@ tryParseWordToken keyword t = try $ do
             '#' -> warning 1099
             '!' -> warning 1129
             ':' -> warning 1130
-            _ -> return ()
+            _   -> return ()
 
     lookAhead keywordSeparator
     when (str /= keyword) $ do
@@ -3348,7 +3350,7 @@ readConfigFile filename = do
         sys <- Mr.asks systemInterface
         contents <- system $ siGetConfig sys filename
         case contents of
-            Nothing -> return []
+            Nothing          -> return []
             Just (file, str) -> readConfig file str
 
     readConfig filename contents = do
@@ -3548,7 +3550,7 @@ getParseOutput parser string = runIdentity $ do
 parsesCleanly parser string =
     case getParseOutput parser string of
         Right list -> Just $ null list
-        Left _ -> Nothing
+        Left _     -> Nothing
 
 parseWithNotes parser = do
     item <- parser

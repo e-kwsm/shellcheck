@@ -19,12 +19,12 @@
 -}
 module ShellCheck.Formatter.GCC (format) where
 
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
+import           ShellCheck.Formatter.Format
+import           ShellCheck.Interface
 
-import Data.List
-import System.IO
-import qualified Data.List.NonEmpty as NE
+import           Data.List
+import qualified Data.List.NonEmpty          as NE
+import           System.IO
 
 format :: IO Formatter
 format = return Formatter {
@@ -56,9 +56,9 @@ formatComment filename c = concat [
     show $ lineNo c, ":",
     show $ colNo c, ": ",
     case severityText c of
-        "error" -> "error"
+        "error"   -> "error"
         "warning" -> "warning"
-        _ -> "note",
+        _         -> "note",
     ": ",
     concat . lines $ messageText c,
     " [SC", show $ codeNo c, "]"

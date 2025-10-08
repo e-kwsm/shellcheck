@@ -1,11 +1,11 @@
 module ShellCheck.Data where
 
-import ShellCheck.AST (Annotation(ShellOverride))
-import ShellCheck.Interface
-import ShellCheck.Prelude (headOrDefault)
-import Data.List (isSuffixOf)
-import Data.Maybe (listToMaybe)
-import Data.Version (showVersion)
+import           Data.List            (isSuffixOf)
+import           Data.Maybe           (listToMaybe)
+import           Data.Version         (showVersion)
+import           ShellCheck.AST       (Annotation (ShellOverride))
+import           ShellCheck.Interface
+import           ShellCheck.Prelude   (headOrDefault)
 
 
 {-
@@ -24,7 +24,7 @@ Use:
 
 -}
 
-import Paths_ShellCheck (version)
+import           Paths_ShellCheck     (version)
 shellcheckVersion = showVersion version  -- VERSIONSTRING
 
 
@@ -163,19 +163,19 @@ supportedShellDialects = [
 shellForExecutable :: String -> Maybe Shell
 shellForExecutable name =
     case name of
-        "sh"    -> return Sh
-        "bash"  -> return Bash
-        "bats"  -> return Bash
-        "busybox"  -> return BusyboxSh -- Used for directives and --shell=busybox
+        "sh"          -> return Sh
+        "bash"        -> return Bash
+        "bats"        -> return Bash
+        "busybox"     -> return BusyboxSh -- Used for directives and --shell=busybox
         "busybox sh"  -> return BusyboxSh
-        "busybox ash"  -> return BusyboxSh
-        "dash"  -> return Dash
-        "ash"   -> return Dash -- There's also a warning for this.
-        "ksh"   -> return Ksh
-        "ksh88" -> return Ksh
-        "ksh93" -> return Ksh
-        "oksh"  -> return Ksh
-        _ -> Nothing
+        "busybox ash" -> return BusyboxSh
+        "dash"        -> return Dash
+        "ash"         -> return Dash -- There's also a warning for this.
+        "ksh"         -> return Ksh
+        "ksh88"       -> return Ksh
+        "ksh93"       -> return Ksh
+        "oksh"        -> return Ksh
+        _             -> Nothing
 
 shellFromAnnotations :: [Annotation] -> String -> Maybe Shell
 shellFromAnnotations annotations executable =

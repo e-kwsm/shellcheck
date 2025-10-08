@@ -19,15 +19,15 @@
 -}
 module ShellCheck.Analyzer (analyzeScript, ShellCheck.Analyzer.optionalChecks) where
 
-import ShellCheck.Analytics
-import ShellCheck.AnalyzerLib
-import ShellCheck.Interface
-import Data.List
-import Data.Monoid
+import           Data.List
+import           Data.Monoid
+import           ShellCheck.Analytics
+import           ShellCheck.AnalyzerLib
 import qualified ShellCheck.Checks.Commands
 import qualified ShellCheck.Checks.ControlFlow
 import qualified ShellCheck.Checks.Custom
 import qualified ShellCheck.Checks.ShellSupport
+import           ShellCheck.Interface
 
 
 -- TODO: Clean up the cruft this is layered on

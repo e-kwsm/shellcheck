@@ -21,12 +21,12 @@
 -- shellcheck-dev is primarily meant for the potential benefits of AI.
 -- It can be run with `cabal run -fdev-mode shellcheck-dev -- ast 'myshellcommand'`
 
-import ShellCheck.Debug
-import System.Environment
-import System.Exit
-import System.IO
-import Data.List
-import qualified Data.Map as Map
+import           Data.List
+import qualified Data.Map           as Map
+import           ShellCheck.Debug
+import           System.Environment
+import           System.Exit
+import           System.IO
 
 commands :: Map.Map String (String -> String)
 commands = Map.fromList [

@@ -21,7 +21,7 @@
 -- Generic basic utility functions
 module ShellCheck.Prelude where
 
-import Data.Semigroup
+import           Data.Semigroup
 
 
 -- Get element 0 or a default. Like `head` but safe.
@@ -41,7 +41,7 @@ lastOrDefault _ list = last list
 
 -- Like mconcat but for Semigroups
 sconcat1 :: (Semigroup t) => [t] -> t
-sconcat1 [x] = x
+sconcat1 [x]    = x
 sconcat1 (x:xs) = x <> sconcat1 xs
 
 sconcatOrDefault def [] = def
