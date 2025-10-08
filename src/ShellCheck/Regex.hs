@@ -22,10 +22,10 @@
 -- Basically Text.Regex based on regex-tdfa instead of the buggy regex-posix.
 module ShellCheck.Regex where
 
-import Data.List
-import Data.Maybe
-import Control.Monad
-import Text.Regex.TDFA
+import           Control.Monad
+import           Data.List
+import           Data.Maybe
+import           Text.Regex.TDFA
 
 -- Precompile the regex
 mkRegex :: String -> Regex
@@ -77,4 +77,4 @@ splitOn :: String -> Regex -> [String]
 splitOn input re =
     case matchM re input :: Maybe (String, String, String) of
         Just (before, match, after) -> before : after `splitOn` re
-        Nothing -> [input]
+        Nothing                     -> [input]
