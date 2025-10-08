@@ -20,23 +20,23 @@
 {-# LANGUAGE TemplateHaskell #-}
 module ShellCheck.Formatter.Diff (format, ShellCheck.Formatter.Diff.runTests) where
 
-import ShellCheck.Interface
-import ShellCheck.Fixer
-import ShellCheck.Formatter.Format
+import           ShellCheck.Fixer
+import           ShellCheck.Formatter.Format
+import           ShellCheck.Interface
 
-import Control.Monad
-import Data.Algorithm.Diff
-import Data.Array
-import Data.IORef
-import Data.List
-import qualified Data.Monoid as Monoid
-import Data.Maybe
-import qualified Data.Map as M
-import GHC.Exts (sortWith)
-import System.IO
-import System.FilePath
+import           Control.Monad
+import           Data.Algorithm.Diff
+import           Data.Array
+import           Data.IORef
+import           Data.List
+import qualified Data.Map                    as M
+import           Data.Maybe
+import qualified Data.Monoid                 as Monoid
+import           GHC.Exts                    (sortWith)
+import           System.FilePath
+import           System.IO
 
-import Test.QuickCheck
+import           Test.QuickCheck
 
 format :: FormatterOptions -> IO Formatter
 format options = do
@@ -97,12 +97,12 @@ reportResult foundIssues reportedIssues color result sys = do
 hasTrailingLinefeed str =
     case str of
         [] -> True
-        _ -> last str == '\n'
+        _  -> last str == '\n'
 
 coversLastLine regions =
     case regions of
         [] -> False
-        _ -> (fst $ last regions)
+        _  -> (fst $ last regions)
 
 -- TODO: Factor this out into a unified diff library because we're doing a lot
 -- of the heavy lifting anyways.
@@ -164,8 +164,8 @@ countDelta = count' 0 0
     count' left right [] = (left, right)
     count' left right (x:rest) =
         case x of
-            Both {} -> count' (left+1) (right+1) rest
-            First {} -> count' (left+1) right rest
+            Both {}   -> count' (left+1) (right+1) rest
+            First {}  -> count' (left+1) right rest
             Second {} -> count' left (right+1) rest
 
 formatRegion :: ColorFunc -> LFStatus -> DiffRegion String -> String
@@ -183,7 +183,7 @@ formatRegion color lf (DiffRegion left right diffs) =
 
     tup (a,b) = (show a) ++ "," ++ (show b)
     format (Both x _) = ' ':x
-    format (First x) = color red $ '-':x
+    format (First x)  = color red $ '-':x
     format (Second x) = color green $ '+':x
 
 splitLast [] = ([], [])
@@ -195,7 +195,7 @@ splitLast x =
 normalizePath path =
     case path of
         c:rest -> (if c == pathSeparator then '/' else c) : normalizePath rest
-        [] -> []
+        []     -> []
 
 formatDoc color (DiffDoc name lf regions) =
     let (most, last) = splitLast regions

@@ -17,7 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
 module ShellCheck.Interface
     (
     SystemInterface(..)
@@ -61,16 +62,16 @@ module ShellCheck.Interface
     , newCheckDescription
     ) where
 
-import ShellCheck.AST
+import           ShellCheck.AST
 
-import Control.DeepSeq
-import Control.Monad.Identity
-import Data.List
-import Data.Monoid
-import Data.Ord
-import Data.Semigroup
-import GHC.Generics (Generic)
-import qualified Data.Map as Map
+import           Control.DeepSeq
+import           Control.Monad.Identity
+import           Data.List
+import qualified Data.Map               as Map
+import           Data.Monoid
+import           Data.Ord
+import           Data.Semigroup
+import           GHC.Generics           (Generic)
 
 
 data SystemInterface m = SystemInterface {
@@ -78,7 +79,7 @@ data SystemInterface m = SystemInterface {
     --   What annotations say about including external files (if anything)
     --   A resolved filename from siFindSource
     --   Read the file or return an error
-    siReadFile :: Maybe Bool -> String -> m (Either ErrorMessage String),
+    siReadFile   :: Maybe Bool -> String -> m (Either ErrorMessage String),
     -- | Given:
     --   the current script,
     --   what annotations say about including external files (if anything)
@@ -87,21 +88,21 @@ data SystemInterface m = SystemInterface {
     --   find the sourced file
     siFindSource :: String -> Maybe Bool -> [String] -> String -> m FilePath,
     -- | Get the configuration file (name, contents) for a filename
-    siGetConfig :: String -> m (Maybe (FilePath, String))
+    siGetConfig  :: String -> m (Maybe (FilePath, String))
 }
 
 -- ShellCheck input and output
 data CheckSpec = CheckSpec {
-    csFilename :: String,
-    csScript :: String,
-    csCheckSourced :: Bool,
-    csIgnoreRC :: Bool,
-    csExcludedWarnings :: [Integer],
-    csIncludedWarnings :: Maybe [Integer],
+    csFilename          :: String,
+    csScript            :: String,
+    csCheckSourced      :: Bool,
+    csIgnoreRC          :: Bool,
+    csExcludedWarnings  :: [Integer],
+    csIncludedWarnings  :: Maybe [Integer],
     csShellTypeOverride :: Maybe Shell,
-    csMinSeverity :: Severity,
-    csExtendedAnalysis :: Maybe Bool,
-    csOptionalChecks :: [String]
+    csMinSeverity       :: Severity,
+    csExtendedAnalysis  :: Maybe Bool,
+    csOptionalChecks    :: [String]
 } deriving (Show, Eq)
 
 data CheckResult = CheckResult {
@@ -148,17 +149,17 @@ newSystemInterface =
 
 -- Parser input and output
 data ParseSpec = ParseSpec {
-    psFilename :: String,
-    psScript :: String,
-    psCheckSourced :: Bool,
-    psIgnoreRC :: Bool,
+    psFilename          :: String,
+    psScript            :: String,
+    psCheckSourced      :: Bool,
+    psIgnoreRC          :: Bool,
     psShellTypeOverride :: Maybe Shell
 } deriving (Show, Eq)
 
 data ParseResult = ParseResult {
-    prComments :: [PositionedComment],
+    prComments       :: [PositionedComment],
     prTokenPositions :: Map.Map Id (Position, Position),
-    prRoot :: Maybe Token
+    prRoot           :: Maybe Token
 } deriving (Show, Eq)
 
 newParseResult :: ParseResult
@@ -170,14 +171,14 @@ newParseResult = ParseResult {
 
 -- Analyzer input and output
 data AnalysisSpec = AnalysisSpec {
-    asScript :: Token,
-    asShellType :: Maybe Shell,
-    asFallbackShell :: Maybe Shell,
-    asExecutionMode :: ExecutionMode,
-    asCheckSourced :: Bool,
-    asOptionalChecks :: [String],
+    asScript           :: Token,
+    asShellType        :: Maybe Shell,
+    asFallbackShell    :: Maybe Shell,
+    asExecutionMode    :: ExecutionMode,
+    asCheckSourced     :: Bool,
+    asOptionalChecks   :: [String],
     asExtendedAnalysis :: Maybe Bool,
-    asTokenPositions :: Map.Map Id (Position, Position)
+    asTokenPositions   :: Map.Map Id (Position, Position)
 }
 
 newAnalysisSpec token = AnalysisSpec {
@@ -201,7 +202,7 @@ newAnalysisResult = AnalysisResult {
 
 -- Formatter options
 data FormatterOptions = FormatterOptions {
-    foColorOption :: ColorOption,
+    foColorOption   :: ColorOption,
     foWikiLinkCount :: Integer
 }
 
@@ -211,10 +212,10 @@ newFormatterOptions = FormatterOptions {
 }
 
 data CheckDescription = CheckDescription {
-    cdName :: String,
+    cdName        :: String,
     cdDescription :: String,
-    cdPositive :: String,
-    cdNegative :: String
+    cdPositive    :: String,
+    cdNegative    :: String
     }
 
 newCheckDescription = CheckDescription {
@@ -234,8 +235,8 @@ type Code = Integer
 data Severity = ErrorC | WarningC | InfoC | StyleC
     deriving (Show, Eq, Ord, Generic, NFData)
 data Position = Position {
-    posFile :: String,    -- Filename
-    posLine :: Integer,   -- 1 based source line
+    posFile   :: String,    -- Filename
+    posLine   :: Integer,   -- 1 based source line
     posColumn :: Integer  -- 1 based source column, where tabs are 8
 } deriving (Show, Eq, Generic, NFData, Ord)
 
@@ -261,11 +262,11 @@ newComment = Comment {
 
 -- only support single line for now
 data Replacement = Replacement {
-    repStartPos :: Position,
-    repEndPos :: Position,
-    repString :: String,
+    repStartPos       :: Position,
+    repEndPos         :: Position,
+    repString         :: String,
     -- Order in which the replacements should happen: highest precedence first.
-    repPrecedence :: Int,
+    repPrecedence     :: Int,
     -- Whether to insert immediately before or immediately after the specified region.
     repInsertionPoint :: InsertionPoint
 } deriving (Show, Eq, Generic, NFData)
@@ -305,9 +306,9 @@ newPositionedComment = PositionedComment {
 }
 
 data TokenComment = TokenComment {
-    tcId :: Id,
+    tcId      :: Id,
     tcComment :: Comment,
-    tcFix :: Maybe Fix
+    tcFix     :: Maybe Fix
 } deriving (Show, Eq, Generic, NFData)
 
 newTokenComment = TokenComment {
@@ -332,7 +333,7 @@ mockedSystemInterface files = (newSystemInterface :: SystemInterface Identity) {
   where
     rf _ file = return $
         case find ((== file) . fst) files of
-            Nothing -> Left "File not included in mock."
+            Nothing            -> Left "File not included in mock."
             Just (_, contents) -> Right contents
     fs _ _ _ file = return file
 
