@@ -23,7 +23,6 @@ import ShellCheck.Analytics
 import ShellCheck.AnalyzerLib
 import ShellCheck.Interface
 import Data.List
-import Data.Monoid
 import qualified ShellCheck.Checks.Commands
 import qualified ShellCheck.Checks.ControlFlow
 import qualified ShellCheck.Checks.Custom

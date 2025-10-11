@@ -27,7 +27,6 @@ import ShellCheck.Regex
 import Control.Monad.Writer
 import Control.Monad
 import Data.Char
-import Data.Functor
 import Data.Functor.Identity
 import Data.List
 import Data.Maybe

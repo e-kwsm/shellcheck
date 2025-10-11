@@ -32,7 +32,6 @@ import ShellCheck.CFG
 import qualified ShellCheck.CFGAnalysis as CF
 import ShellCheck.Data
 import ShellCheck.Interface
-import ShellCheck.Parser
 import ShellCheck.Prelude
 import ShellCheck.Regex
 
@@ -48,8 +47,6 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
-
-import Debug.Trace -- STRIP
 
 data CommandName = Exactly String | Basename String
     deriving (Eq, Ord)

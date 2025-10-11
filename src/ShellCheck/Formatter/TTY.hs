@@ -27,12 +27,10 @@ import Control.DeepSeq
 import Control.Monad
 import Data.Array
 import Data.Foldable
-import Data.Ord
 import Data.IORef
 import Data.List
 import Data.Maybe
 import System.IO
-import System.Info
 import qualified Data.List.NonEmpty as NE
 
 wikiLink = "https://www.shellcheck.net/wiki/"
