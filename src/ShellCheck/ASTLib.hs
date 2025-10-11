@@ -18,52 +18,53 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+
 module ShellCheck.ASTLib where
 
 import ShellCheck.AST
 import ShellCheck.Prelude
 import ShellCheck.Regex
 
-import Control.Monad.Writer
 import Control.Monad
+import Control.Monad.Writer
 import Data.Char
 import Data.Functor
 import Data.Functor.Identity
 import Data.List
-import Data.Maybe
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
+import Data.Maybe
 import Numeric (showHex)
 
 import Test.QuickCheck
 
-arguments (T_SimpleCommand _ _ (cmd:args)) = args
+arguments (T_SimpleCommand _ _ (cmd : args)) = args
 
 -- Is this a type of loop?
 isLoop t = case t of
-        T_WhileExpression {} -> True
-        T_UntilExpression {} -> True
-        T_ForIn {} -> True
-        T_ForArithmetic {} -> True
-        T_SelectIn {}  -> True
-        _ -> False
+    T_WhileExpression{} -> True
+    T_UntilExpression{} -> True
+    T_ForIn{} -> True
+    T_ForArithmetic{} -> True
+    T_SelectIn{} -> True
+    _ -> False
 
 -- Will this split into multiple words when used as an argument?
 willSplit x =
-  case x of
-    T_DollarBraced {} -> True
-    T_DollarExpansion {} -> True
-    T_Backticked {} -> True
-    T_BraceExpansion {} -> True
-    T_Glob {} -> True
-    T_Extglob {} -> True
-    T_DoubleQuoted _ l -> any willBecomeMultipleArgs l
-    T_NormalWord _ l -> any willSplit l
-    _ -> False
+    case x of
+        T_DollarBraced{} -> True
+        T_DollarExpansion{} -> True
+        T_Backticked{} -> True
+        T_BraceExpansion{} -> True
+        T_Glob{} -> True
+        T_Extglob{} -> True
+        T_DoubleQuoted _ l -> any willBecomeMultipleArgs l
+        T_NormalWord _ l -> any willSplit l
+        _ -> False
 
 isGlob t = case t of
-    T_Extglob {} -> True
-    T_Glob {} -> True
+    T_Extglob{} -> True
+    T_Glob{} -> True
     T_NormalWord _ l -> any isGlob l || hasSplitRange l
     _ -> False
   where
@@ -71,7 +72,7 @@ isGlob t = case t of
     -- so check if there's such an interval
     hasSplitRange l =
         let afterBracket = dropWhile (not . isHalfOpenRange) l
-        in any isClosingRange afterBracket
+         in any isClosingRange afterBracket
 
     isHalfOpenRange t =
         case t of
@@ -83,13 +84,12 @@ isGlob t = case t of
             T_Literal _ str -> ']' `elem` str
             _ -> False
 
-
 -- Is this shell word a constant?
 isConstant token =
     case token of
         -- This ignores some cases like ~"foo":
-        T_NormalWord _ (T_Literal _ ('~':_) : _)  -> False
-        T_NormalWord _ l   -> all isConstant l
+        T_NormalWord _ (T_Literal _ ('~' : _) : _) -> False
+        T_NormalWord _ l -> all isConstant l
         T_DoubleQuoted _ l -> all isConstant l
         T_SingleQuoted _ _ -> True
         T_Literal _ _ -> True
@@ -98,7 +98,7 @@ isConstant token =
 -- Is this an empty literal?
 isEmpty token =
     case token of
-        T_NormalWord _ l   -> all isEmpty l
+        T_NormalWord _ l -> all isEmpty l
         T_DoubleQuoted _ l -> all isEmpty l
         T_SingleQuoted _ "" -> True
         T_Literal _ "" -> True
@@ -127,24 +127,23 @@ oversimplify token =
         (TA_Sequence _ [TA_Expansion _ v]) -> concatMap oversimplify v
         _ -> []
 
-
 -- Turn a SimpleCommand foo -avz --bar=baz into args "a", "v", "z", "bar",
 -- each in a tuple of (token, stringFlag). Non-flag arguments are added with
 -- stringFlag == "".
-getFlagsUntil stopCondition (T_SimpleCommand _ _ (_:args)) =
+getFlagsUntil stopCondition (T_SimpleCommand _ _ (_ : args)) =
     let tokenAndText = map (\x -> (x, concat $ oversimplify x)) args
         (flagArgs, rest) = break (stopCondition . snd) tokenAndText
-    in
-        concatMap flag flagArgs ++ map (\(t, _) -> (t, "")) rest
+     in concatMap flag flagArgs ++ map (\(t, _) -> (t, "")) rest
   where
-    flag (x, '-':'-':arg) = [ (x, takeWhile (/= '=') arg) ]
-    flag (x, '-':args) = map (\v -> (x, [v])) args
-    flag (x, _) = [ (x, "") ]
+    flag (x, '-' : '-' : arg) = [(x, takeWhile (/= '=') arg)]
+    flag (x, '-' : args) = map (\v -> (x, [v])) args
+    flag (x, _) = [(x, "")]
 getFlagsUntil _ _ = error $ pleaseReport "getFlags on non-command"
 
 -- Get all flags in a GNU way, up until --
 getAllFlags :: Token -> [(Token, String)]
 getAllFlags = getFlagsUntil (== "--")
+
 -- Get all flags in a BSD way, up until first non-flag argument or --
 getLeadingFlags = getFlagsUntil (\x -> x == "--" || (not $ "-" `isPrefixOf` x))
 
@@ -154,13 +153,13 @@ hasFlag cmd str = str `elem` (map snd $ getAllFlags cmd)
 -- Is this token a word that starts with a dash?
 isFlag token =
     case getWordParts token of
-        T_Literal _ ('-':_) : _ -> True
+        T_Literal _ ('-' : _) : _ -> True
         _ -> False
 
 -- Is this token a flag where the - is unquoted?
 isUnquotedFlag token =
     case getLeadingUnquotedString token of
-        Just ('-':_) -> True
+        Just ('-' : _) -> True
         _ -> False
 
 -- getGnuOpts "erd:u:" will parse a list of arguments tokens like `read`
@@ -183,72 +182,69 @@ getBsdOpts str args = getOpts (False, False) str [] args
 -- Tests for this are in Commands.hs where it's more frequently used
 getOpts ::
     -- Behavioral config: gnu style, allow arbitrary long options
-    (Bool, Bool)
+    (Bool, Bool) ->
     -- A getopts style string
-    -> String
+    String ->
     -- List of long options and whether they take arguments
-    -> [(String, Bool)]
+    [(String, Bool)] ->
     -- List of arguments (excluding command)
-    -> [Token]
+    [Token] ->
     -- List of flags to tuple of (optionToken, valueToken)
-    -> Maybe [(String, (Token, Token))]
-
+    Maybe [(String, (Token, Token))]
 getOpts (gnu, arbitraryLongOpts) string longopts args = process args
   where
-    flagList (c:':':rest) = ([c], True) : flagList rest
-    flagList (c:rest)     = ([c], False) : flagList rest
-    flagList []           = longopts
+    flagList (c : ':' : rest) = ([c], True) : flagList rest
+    flagList (c : rest) = ([c], False) : flagList rest
+    flagList [] = longopts
     flagMap = Map.fromList $ ("", False) : flagList string
 
     process [] = return []
-    process (token:rest) = do
+    process (token : rest) = do
         case getLiteralStringDef "\0" token of
             "--" -> return $ listToArgs rest
-            '-':'-':word -> do
+            '-' : '-' : word -> do
                 let (name, arg) = span (/= '=') word
                 needsArg <-
                     if arbitraryLongOpts
-                    then return $ Map.findWithDefault False name flagMap
-                    else Map.lookup name flagMap
+                        then return $ Map.findWithDefault False name flagMap
+                        else Map.lookup name flagMap
 
                 if needsArg && null arg
-                  then
-                    case rest of
-                        (arg:rest2) -> do
+                    then case rest of
+                        (arg : rest2) -> do
                             more <- process rest2
                             return $ (name, (token, arg)) : more
                         _ -> fail "Missing arg"
-                  else do
-                    more <- process rest
-                    -- Consider splitting up token to get arg
-                    return $ (name, (token, token)) : more
-            '-':opts -> shortToOpts opts token rest
+                    else do
+                        more <- process rest
+                        -- Consider splitting up token to get arg
+                        return $ (name, (token, token)) : more
+            '-' : opts -> shortToOpts opts token rest
             arg ->
                 if gnu
-                then do
-                    more <- process rest
-                    return $ ("", (token, token)):more
-                else return $ listToArgs (token:rest)
+                    then do
+                        more <- process rest
+                        return $ ("", (token, token)) : more
+                    else return $ listToArgs (token : rest)
 
     shortToOpts opts token args =
         case opts of
-            c:rest -> do
+            c : rest -> do
                 needsArg <- Map.lookup [c] flagMap
                 case () of
                     _ | needsArg && null rest -> do
-                        (next:restArgs) <- return args
+                        (next : restArgs) <- return args
                         more <- process restArgs
-                        return $ ([c], (token, next)):more
+                        return $ ([c], (token, next)) : more
                     _ | needsArg -> do
                         more <- process args
-                        return $ ([c], (token, token)):more
+                        return $ ([c], (token, token)) : more
                     _ -> do
                         more <- shortToOpts rest token args
-                        return $ ([c], (token, token)):more
+                        return $ ([c], (token, token)) : more
             [] -> process args
 
     listToArgs = map (\x -> ("", (x, x)))
-
 
 -- Generic getOpts that doesn't rely on a format string, but may also be inaccurate.
 -- This provides a best guess interpretation instead of failing when new options are added.
@@ -260,19 +256,19 @@ getOpts (gnu, arbitraryLongOpts) string longopts args = process args
 getGenericOpts :: [Token] -> [(String, (Token, Token))]
 getGenericOpts = process
   where
-    process (token:rest) =
+    process (token : rest) =
         case getLiteralStringDef "\0" token of
-            "--" -> map (\c -> ("", (c,c))) rest
-            '-':'-':word -> (takeWhile (`notElem` "\0=") word, (token, token)) : process rest
-            '-':optString ->
+            "--" -> map (\c -> ("", (c, c))) rest
+            '-' : '-' : word -> (takeWhile (`notElem` "\0=") word, (token, token)) : process rest
+            '-' : optString ->
                 let opts = takeWhile (/= '\0') optString
-                in
-                    case rest of
-                        next:_ | "-" `isPrefixOf` getLiteralStringDef "\0" next  ->
-                            map (\c -> ([c], (token, token))) opts ++ process rest
-                        next:remainder ->
+                 in case rest of
+                        next : _
+                            | "-" `isPrefixOf` getLiteralStringDef "\0" next ->
+                                map (\c -> ([c], (token, token))) opts ++ process rest
+                        next : remainder ->
                             case reverse opts of
-                                last:initial ->
+                                last : initial ->
                                     map (\c -> ([c], (token, token))) (reverse initial)
                                         ++ [([last], (token, next))]
                                         ++ process remainder
@@ -281,20 +277,19 @@ getGenericOpts = process
             _ -> ("", (token, token)) : process rest
     process [] = []
 
-
 -- Is this an expansion of multiple items of an array?
 isArrayExpansion (T_DollarBraced _ _ l) =
-    let string = concat $ oversimplify l in
-        "@" `isPrefixOf` string ||
-            not ("#" `isPrefixOf` string) && "[@]" `isInfixOf` string
+    let string = concat $ oversimplify l
+     in "@" `isPrefixOf` string
+            || not ("#" `isPrefixOf` string) && "[@]" `isInfixOf` string
 isArrayExpansion _ = False
 
 -- Is it possible that this arg becomes multiple args?
 mayBecomeMultipleArgs t = willBecomeMultipleArgs t || f False t
   where
     f quoted (T_DollarBraced _ _ l) =
-        let string = concat $ oversimplify l in
-            not quoted || "!" `isPrefixOf` string
+        let string = concat $ oversimplify l
+         in not quoted || "!" `isPrefixOf` string
     f quoted (T_DoubleQuoted _ parts) = any (f True) parts
     f quoted (T_NormalWord _ parts) = any (f quoted) parts
     f _ _ = False
@@ -302,16 +297,16 @@ mayBecomeMultipleArgs t = willBecomeMultipleArgs t || f False t
 -- Is it certain that this word will becomes multiple words?
 willBecomeMultipleArgs t = willConcatInAssignment t || f t
   where
-    f T_Extglob {} = True
-    f T_Glob {} = True
-    f T_BraceExpansion {} = True
+    f T_Extglob{} = True
+    f T_Glob{} = True
+    f T_BraceExpansion{} = True
     f (T_NormalWord _ parts) = any f parts
     f _ = False
 
 -- This does token cause implicit concatenation in assignments?
 willConcatInAssignment token =
     case token of
-        t@T_DollarBraced {} -> isArrayExpansion t
+        t@T_DollarBraced{} -> isArrayExpansion t
         (T_DoubleQuoted _ parts) -> any willConcatInAssignment parts
         (T_NormalWord _ parts) -> any willConcatInAssignment parts
         _ -> False
@@ -338,8 +333,8 @@ getUnquotedLiteral _ = Nothing
 
 isQuotes t =
     case t of
-        T_DoubleQuoted {} -> True
-        T_SingleQuoted {} -> True
+        T_DoubleQuoted{} -> True
+        T_SingleQuoted{} -> True
         _ -> False
 
 -- Get the last unquoted T_Literal in a word like "${var}foo"THIS
@@ -347,13 +342,13 @@ isQuotes t =
 getTrailingUnquotedLiteral :: Token -> Maybe Token
 getTrailingUnquotedLiteral t =
     case t of
-        (T_NormalWord _ list@(_:_)) ->
+        (T_NormalWord _ list@(_ : _)) ->
             from (last list)
         _ -> Nothing
   where
     from t =
         case t of
-            T_Literal {} -> return t
+            T_Literal{} -> return t
             _ -> Nothing
 
 -- Get the leading, unquoted, literal string of a token (if any).
@@ -363,7 +358,7 @@ getLeadingUnquotedString t =
         T_NormalWord _ ((T_Literal _ s) : rest) -> return $ s ++ from rest
         _ -> Nothing
   where
-    from ((T_Literal _ s):rest) = s ++ from rest
+    from ((T_Literal _ s) : rest) = s ++ from rest
     from _ = ""
 
 -- Maybe get the literal string of this token and any globs in it.
@@ -371,7 +366,6 @@ getGlobOrLiteralString = getLiteralStringExt f
   where
     f (T_Glob _ str) = return str
     f _ = Nothing
-
 
 prop_getLiteralString1 = getLiteralString (T_DollarSingleQuoted (Id 0) "\\x01") == Just "\1"
 prop_getLiteralString2 = getLiteralString (T_DollarSingleQuoted (Id 0) "\\xyz") == Just "\\xyz"
@@ -389,7 +383,7 @@ prop_getLiteralString13 = getLiteralString (T_DollarSingleQuoted (Id 0) "\\123")
 
 -- Maybe get the literal value of a token, using a custom function
 -- to map unrecognized Tokens into strings.
-getLiteralStringExt :: Monad m => (Token -> m String) -> Token -> m String
+getLiteralStringExt :: (Monad m) => (Token -> m String) -> Token -> m String
 getLiteralStringExt more = g
   where
     allInList = fmap concat . mapM g
@@ -404,7 +398,7 @@ getLiteralStringExt more = g
     g x = more x
 
     -- Bash style $'..' decoding
-    decodeEscapes ('\\':c:cs) =
+    decodeEscapes ('\\' : c : cs) =
         case c of
             'a' -> '\a' : rest
             'b' -> '\b' : rest
@@ -419,28 +413,30 @@ getLiteralStringExt more = g
             '\\' -> '\\' : rest
             'x' ->
                 case cs of
-                    (x:y:more) | isHexDigit x && isHexDigit y ->
-                        chr (16*(digitToInt x) + (digitToInt y)) : decodeEscapes more
-                    (x:more) | isHexDigit x ->
-                        chr (digitToInt x) : decodeEscapes more
+                    (x : y : more)
+                        | isHexDigit x && isHexDigit y ->
+                            chr (16 * (digitToInt x) + (digitToInt y)) : decodeEscapes more
+                    (x : more)
+                        | isHexDigit x ->
+                            chr (digitToInt x) : decodeEscapes more
                     more -> '\\' : 'x' : decodeEscapes more
-            _ | isOctDigit c ->
-                let (digits, more) = spanMax isOctDigit 3 (c:cs)
-                    num = (parseOct digits) `mod` 256
-                in (chr num) : decodeEscapes more
+            _
+                | isOctDigit c ->
+                    let (digits, more) = spanMax isOctDigit 3 (c : cs)
+                        num = (parseOct digits) `mod` 256
+                     in (chr num) : decodeEscapes more
             _ -> '\\' : c : rest
       where
         rest = decodeEscapes cs
         parseOct = f 0
           where
             f n "" = n
-            f n (c:rest) = f (n * 8 + digitToInt c) rest
+            f n (c : rest) = f (n * 8 + digitToInt c) rest
         spanMax f n list =
             let (first, second) = span f list
                 (prefix, suffix) = splitAt n first
-            in
-                (prefix, suffix ++ second)
-    decodeEscapes (c:cs) = c : decodeEscapes cs
+             in (prefix, suffix ++ second)
+    decodeEscapes (c : cs) = c : decodeEscapes cs
     decodeEscapes [] = []
 
 -- Is this token a string literal?
@@ -465,31 +461,31 @@ escapeForMessage str = concatMap f str
     f '\x1B' = "\\e"
     f c =
         if shouldEscape c
-        then
-            if ord c < 256
-            then "\\x" ++ (pad0 2 $ toHex c)
-            else "\\U" ++ (pad0 4 $ toHex c)
-        else [c]
+            then
+                if ord c < 256
+                    then "\\x" ++ (pad0 2 $ toHex c)
+                    else "\\U" ++ (pad0 4 $ toHex c)
+            else [c]
 
     shouldEscape c =
         (not $ isPrint c)
-        || (not (isAscii c) && not (isLetter c))
+            || (not (isAscii c) && not (isLetter c))
 
     pad0 :: Int -> String -> String
     pad0 n s =
-        let l = length s in
-            if l < n
-            then (replicate (n-l) '0') ++ s
-            else s
+        let l = length s
+         in if l < n
+                then (replicate (n - l) '0') ++ s
+                else s
     toHex :: Char -> String
     toHex c = map toUpper $ showHex (ord c) ""
 
 -- Turn a NormalWord like foo="bar $baz" into a series of constituent elements like [foo=,bar ,$baz]
-getWordParts (T_NormalWord _ l)   = concatMap getWordParts l
+getWordParts (T_NormalWord _ l) = concatMap getWordParts l
 getWordParts (T_DoubleQuoted _ l) = l
 -- TA_Expansion is basically T_NormalWord for arithmetic expressions
-getWordParts (TA_Expansion _ l)   = concatMap getWordParts l
-getWordParts other                = [other]
+getWordParts (TA_Expansion _ l) = concatMap getWordParts l
+getWordParts other = [other]
 
 -- Return a list of NormalWords that would result from brace expansion
 braceExpand (T_NormalWord id list) = take 1000 $ do
@@ -505,7 +501,7 @@ braceExpand (T_NormalWord id list) = take 1000 $ do
 getCommand t =
     case t of
         T_Redirecting _ _ w -> getCommand w
-        T_SimpleCommand _ _ (w:_) -> return t
+        T_SimpleCommand _ _ (w : _) -> return t
         T_Annotation _ _ t -> getCommand t
         _ -> Nothing
 
@@ -515,7 +511,7 @@ getCommandName = fst . getCommandNameAndToken False
 
 -- Maybe get the name+arguments of a command.
 getCommandArgv t = do
-    (T_SimpleCommand _ _ args@(_:_)) <- getCommand t
+    (T_SimpleCommand _ _ args@(_ : _)) <- getCommand t
     return args
 
 -- Get the command name token from a command, i.e.
@@ -529,7 +525,7 @@ getCommandTokenOrThis = snd . getCommandNameAndToken False
 
 getCommandNameAndToken :: Bool -> Token -> (Maybe String, Token)
 getCommandNameAndToken direct t = fromMaybe (Nothing, t) $ do
-    cmd@(T_SimpleCommand _ _ (w:rest)) <- getCommand t
+    cmd@(T_SimpleCommand _ _ (w : rest)) <- getCommand t
     s <- getLiteralString w
     return $ fromMaybe (Just s, w) $ do
         guard $ not direct
@@ -542,7 +538,7 @@ getCommandNameAndToken direct t = fromMaybe (Nothing, t) $ do
                 arg <- listToMaybe args
                 guard . not $ isFlag arg
                 return arg
-        in
+         in
             case str of
                 "busybox" -> firstArg
                 "builtin" -> firstArg
@@ -575,8 +571,8 @@ basename = reverse . takeWhile (/= '/') . reverse
 isAssignment t =
     case t of
         T_Redirecting _ _ w -> isAssignment w
-        T_SimpleCommand _ (w:_) [] -> True
-        T_Assignment {} -> True
+        T_SimpleCommand _ (w : _) [] -> True
+        T_Assignment{} -> True
         T_Annotation _ _ w -> isAssignment w
         _ -> False
 
@@ -584,21 +580,20 @@ isOnlyRedirection t =
     case t of
         T_Pipeline _ _ [x] -> isOnlyRedirection x
         T_Annotation _ _ w -> isOnlyRedirection w
-        T_Redirecting _ (_:_) c -> isOnlyRedirection c
+        T_Redirecting _ (_ : _) c -> isOnlyRedirection c
         T_SimpleCommand _ [] [] -> True
         _ -> False
 
-isFunction t = case t of T_Function {} -> True; _ -> False
+isFunction t = case t of T_Function{} -> True; _ -> False
 
 -- Bats tests are functions for the purpose of 'local' and such
 isFunctionLike t =
     case t of
-        T_Function {} -> True
-        T_BatsTest {} -> True
+        T_Function{} -> True
+        T_BatsTest{} -> True
         _ -> False
 
-
-isBraceExpansion t = case t of T_BraceExpansion {} -> True; _ -> False
+isBraceExpansion t = case t of T_BraceExpansion{} -> True; _ -> False
 
 -- Get the lists of commands from tokens that contain them, such as
 -- the conditions and bodies of while loops or branches of if statements.
@@ -612,9 +607,8 @@ getCommandSequences t =
         T_UntilExpression _ cond cmds -> [cond, cmds]
         T_ForIn _ _ _ cmds -> [cmds]
         T_ForArithmetic _ _ _ _ cmds -> [cmds]
-        T_IfExpression _ thens elses -> (concatMap (\(a,b) -> [a,b]) thens) ++ [elses]
+        T_IfExpression _ thens elses -> (concatMap (\(a, b) -> [a, b]) thens) ++ [elses]
         T_Annotation _ _ t -> getCommandSequences t
-
         T_DollarExpansion _ cmds -> [cmds]
         T_DollarBraceCommandExpansion _ _ cmds -> [cmds]
         T_Backticked _ cmds -> [cmds]
@@ -625,9 +619,9 @@ getAssociativeArrays t =
     nub . execWriter $ doAnalysis f t
   where
     f :: Token -> Writer [String] ()
-    f t@T_SimpleCommand {} = sequence_ $ do
+    f t@T_SimpleCommand{} = sequence_ $ do
         name <- getCommandName t
-        let assocNames = ["declare","local","typeset"]
+        let assocNames = ["declare", "local", "typeset"]
         guard $ name `elem` assocNames
         let flags = getAllFlags t
         guard $ "A" `elem` map snd flags
@@ -664,7 +658,7 @@ wordToPseudoGlob' exact word =
     toGlob :: Token -> Maybe [PseudoGlob]
     toGlob word =
         case word of
-            T_NormalWord _ (T_Literal _ ('~':str):rest) -> do
+            T_NormalWord _ (T_Literal _ ('~' : str) : rest) -> do
                 guard $ not exact
                 let this = (PGMany : (map PGChar $ dropWhile (/= '/') str))
                 tail <- concat <$> (mapM f $ concatMap getWordParts rest)
@@ -672,13 +666,12 @@ wordToPseudoGlob' exact word =
             _ -> concat <$> (mapM f $ getWordParts word)
 
     f x = case x of
-        T_Literal _ s      -> return $ map PGChar s
+        T_Literal _ s -> return $ map PGChar s
         T_SingleQuoted _ s -> return $ map PGChar s
-        T_Glob _ "?"       -> return [PGAny]
-        T_Glob _ "*"       -> return [PGMany]
-        T_Glob _ ('[':_) | not exact -> return [PGAny]
+        T_Glob _ "?" -> return [PGAny]
+        T_Glob _ "*" -> return [PGMany]
+        T_Glob _ ('[' : _) | not exact -> return [PGAny]
         _ -> if exact then fail "" else return [PGMany]
-
 
 -- Reorder a PseudoGlob for more efficient matching, e.g.
 -- f?*?**g -> f??*g
@@ -686,36 +679,36 @@ simplifyPseudoGlob :: [PseudoGlob] -> [PseudoGlob]
 simplifyPseudoGlob = f
   where
     f [] = []
-    f (x@(PGChar _) : rest ) = x : f rest
+    f (x@(PGChar _) : rest) = x : f rest
     f list =
-        let (anys, rest) = span (\x -> x == PGMany || x == PGAny) list in
-            order anys ++ f rest
+        let (anys, rest) = span (\x -> x == PGMany || x == PGAny) list
+         in order anys ++ f rest
 
-    order s = let (any, many) = partition (== PGAny) s in
-        any ++ take 1 many
+    order s =
+        let (any, many) = partition (== PGAny) s
+         in any ++ take 1 many
 
 -- Check whether the two patterns can ever overlap.
 pseudoGlobsCanOverlap :: [PseudoGlob] -> [PseudoGlob] -> Bool
 pseudoGlobsCanOverlap = matchable
   where
-    matchable x@(xf:xs) y@(yf:ys) =
+    matchable x@(xf : xs) y@(yf : ys) =
         case (xf, yf) of
             (PGMany, _) -> matchable x ys || matchable xs y
             (_, PGMany) -> matchable x ys || matchable xs y
             (PGAny, _) -> matchable xs ys
             (_, PGAny) -> matchable xs ys
             (_, _) -> xf == yf && matchable xs ys
-
     matchable [] [] = True
     matchable (PGMany : rest) [] = matchable rest []
-    matchable (_:_) [] = False
+    matchable (_ : _) [] = False
     matchable [] r = matchable r []
 
 -- Check whether the first pattern always overlaps the second.
 pseudoGlobIsSuperSetof :: [PseudoGlob] -> [PseudoGlob] -> Bool
 pseudoGlobIsSuperSetof = matchable
   where
-    matchable x@(xf:xs) y@(yf:ys) =
+    matchable x@(xf : xs) y@(yf : ys) =
         case (xf, yf) of
             (PGMany, PGMany) -> matchable x ys
             (PGMany, _) -> matchable x ys || matchable xs y
@@ -723,7 +716,6 @@ pseudoGlobIsSuperSetof = matchable
             (PGAny, _) -> matchable xs ys
             (_, PGAny) -> False
             (_, _) -> xf == yf && matchable xs ys
-
     matchable [] [] = True
     matchable (PGMany : rest) [] = matchable rest []
     matchable _ _ = False
@@ -733,20 +725,21 @@ wordsCanBeEqual x y = pseudoGlobsCanOverlap (wordToPseudoGlob x) (wordToPseudoGl
 -- Is this an expansion that can be quoted,
 -- e.g. $(foo) `foo` $foo (but not {foo,})?
 isQuoteableExpansion t = case t of
-    T_DollarBraced {} -> True
+    T_DollarBraced{} -> True
     _ -> isCommandSubstitution t
 
 isCommandSubstitution t = case t of
-    T_DollarExpansion {} -> True
-    T_DollarBraceCommandExpansion {} -> True
-    T_Backticked {} -> True
+    T_DollarExpansion{} -> True
+    T_DollarBraceCommandExpansion{} -> True
+    T_Backticked{} -> True
     _ -> False
 
 -- Is this an expansion that results in a simple string?
-isStringExpansion t = isCommandSubstitution t || case t of
-    T_DollarArithmetic {} -> True
-    T_DollarBraced {} -> not (isArrayExpansion t)
-    _ -> False
+isStringExpansion t =
+    isCommandSubstitution t || case t of
+        T_DollarArithmetic{} -> True
+        T_DollarBraced{} -> not (isArrayExpansion t)
+        _ -> False
 
 -- Is this a T_Annotation that ignores a specific code?
 isAnnotationIgnoringCode code t =
@@ -755,7 +748,7 @@ isAnnotationIgnoringCode code t =
         _ -> False
   where
     hasNum (DisableComment from to) = code >= from && code < to
-    hasNum _                   = False
+    hasNum _ = False
 
 prop_executableFromShebang1 = executableFromShebang "/bin/sh" == "sh"
 prop_executableFromShebang2 = executableFromShebang "/bin/bash" == "bash"
@@ -782,19 +775,19 @@ executableFromShebang = shellFor
         case words sb of
             [] -> ""
             [x] -> basename x
-            (first:second:args) | basename first == "busybox" ->
+            (first : second : args) | basename first == "busybox" ->
                 case basename second of
-                   "sh" -> "busybox sh"
-                   "ash" -> "busybox ash"
-                   x -> x
-            (first:args) | basename first == "env" ->
-                fromEnvArgs args
-            (first:_) -> basename first
+                    "sh" -> "busybox sh"
+                    "ash" -> "busybox ash"
+                    x -> x
+            (first : args)
+                | basename first == "env" ->
+                    fromEnvArgs args
+            (first : _) -> basename first
 
     fromEnvArgs args = fromMaybe "" $ find (notElem '=') $ skipFlags args
     basename s = reverse . takeWhile (/= '/') . reverse $ s
     skipFlags = dropWhile ("-" `isPrefixOf`)
-
 
 -- Determining if a name is a variable
 isVariableStartChar x = x == '_' || isAsciiLower x || isAsciiUpper x
@@ -805,9 +798,8 @@ variableNameRegex = mkRegex "[_a-zA-Z][_a-zA-Z0-9]*"
 prop_isVariableName1 = isVariableName "_fo123"
 prop_isVariableName2 = not $ isVariableName "4"
 prop_isVariableName3 = not $ isVariableName "test: "
-isVariableName (x:r) = isVariableStartChar x && all isVariableChar r
-isVariableName _     = False
-
+isVariableName (x : r) = isVariableStartChar x && all isVariableChar r
+isVariableName _ = False
 
 -- Get the variable name from an expansion like ${var:-foo}
 prop_getBracedReference1 = getBracedReference "foo" == "foo"
@@ -824,20 +816,22 @@ prop_getBracedReference11 = getBracedReference "!os*" == ""
 prop_getBracedReference11b = getBracedReference "!os@" == ""
 prop_getBracedReference12 = getBracedReference "!os?bar**" == ""
 prop_getBracedReference13 = getBracedReference "foo[bar]" == "foo"
-getBracedReference s = fromMaybe s $
-    nameExpansion s `mplus` takeName noPrefix `mplus` getSpecial noPrefix `mplus` getSpecial s
+getBracedReference s =
+    fromMaybe s $
+        nameExpansion s `mplus` takeName noPrefix `mplus` getSpecial noPrefix `mplus` getSpecial s
   where
     noPrefix = dropPrefix s
-    dropPrefix (c:rest) | c `elem` "!#" = rest
+    dropPrefix (c : rest) | c `elem` "!#" = rest
     dropPrefix cs = cs
     takeName s = do
         let name = takeWhile isVariableChar s
         guard . not $ null name
         return name
-    getSpecial (c:_) | isSpecialVariableChar c = return [c]
+    getSpecial (c : _) | isSpecialVariableChar c = return [c]
     getSpecial _ = fail "empty or not special"
 
-    nameExpansion ('!':next:rest) = do -- e.g. ${!foo*bar*}
+    nameExpansion ('!' : next : rest) = do
+        -- e.g. ${!foo*bar*}
         guard $ isVariableChar next -- e.g. ${!@}
         first <- find (not . isVariableChar) rest
         guard $ first `elem` "*?@"
@@ -855,17 +849,17 @@ getBracedModifier s = headOrDefault "" $ do
     a <- dropModifier s
     dropPrefix var a
   where
-    dropPrefix [] t        = return t
-    dropPrefix (a:b) (c:d) | a == c = dropPrefix b d
-    dropPrefix _ _         = []
+    dropPrefix [] t = return t
+    dropPrefix (a : b) (c : d) | a == c = dropPrefix b d
+    dropPrefix _ _ = []
 
-    dropModifier (c:rest) | c `elem` "#!" = [rest, c:rest]
-    dropModifier x        = [x]
+    dropModifier (c : rest) | c `elem` "#!" = [rest, c : rest]
+    dropModifier x = [x]
 
 -- Get the variables from indices like ["x", "y"] in ${var[x+y+1]}
 prop_getIndexReferences1 = getIndexReferences "var[x+y+1]" == ["x", "y"]
 getIndexReferences s = fromMaybe [] $ do
-    index:_ <- matchRegex re s
+    index : _ <- matchRegex re s
     return $ matchAllStrings variableNameRegex index
   where
     re = mkRegex "(\\[.*\\])"
@@ -875,12 +869,11 @@ prop_getOffsetReferences2 = getOffsetReferences ":bar:baz" == ["bar", "baz"]
 prop_getOffsetReferences3 = getOffsetReferences "[foo]:bar" == ["bar"]
 prop_getOffsetReferences4 = getOffsetReferences "[foo]:bar:baz" == ["bar", "baz"]
 getOffsetReferences mods = fromMaybe [] $ do
--- if mods start with [, then drop until ]
-    _:offsets:_ <- matchRegex re mods
+    -- if mods start with [, then drop until ]
+    _ : offsets : _ <- matchRegex re mods
     return $ matchAllStrings variableNameRegex offsets
   where
     re = mkRegex "^(\\[.+\\])? *:([^-=?+].*)"
-
 
 -- Returns whether a token is a parameter expansion without any modifiers.
 -- True for $var ${var} $1 $#
@@ -890,7 +883,7 @@ isUnmodifiedParameterExpansion t =
         T_DollarBraced _ False _ -> True
         T_DollarBraced _ _ list ->
             let str = concat $ oversimplify list
-            in getBracedReference str == str
+             in getBracedReference str == str
         _ -> False
 
 -- Return the referenced variable if (and only if) it's an unmodified parameter expansion.
@@ -908,8 +901,8 @@ getPath tree = NE.unfoldr $ \t -> (t, Map.lookup (getId t) tree)
 isClosingFileOp op =
     case op of
         T_IoDuplicate _ (T_GREATAND _) "-" -> True
-        T_IoDuplicate _ (T_LESSAND  _) "-" -> True
-        _                                  -> False
+        T_IoDuplicate _ (T_LESSAND _) "-" -> True
+        _ -> False
 
 getEnableDirectives root =
     case root of

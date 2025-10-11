@@ -53,7 +53,6 @@ Crash course in printf debugging in Haskell:
         -- Print a value before passing it on
         greet $ traceShowId (n - 1)
 
-
 ===========================================================================
 
 If you want to invoke `ghci` directly, such as on `shellcheck.hs`, to
@@ -76,11 +75,11 @@ Afterwards, you can run the ShellCheck tool, as if from the shell, with:
 
 module ShellCheck.Debug () where
 
-import ShellCheck.Analyzer
 import ShellCheck.AST
+import ShellCheck.Analyzer
 import ShellCheck.CFG
-import ShellCheck.Checker
 import ShellCheck.CFGAnalysis as CF
+import ShellCheck.Checker
 import ShellCheck.Interface
 import ShellCheck.Parser
 import ShellCheck.Prelude
@@ -91,10 +90,9 @@ import Control.Monad.RWS
 import Control.Monad.Writer
 import Data.Graph.Inductive.Graph as G
 import Data.List
-import Data.Maybe
 import qualified Data.Map as M
+import Data.Maybe
 import qualified Data.Set as S
-
 
 -- Run all of ShellCheck (minus output formatters)
 shellcheckString :: String -> CheckResult
@@ -102,35 +100,39 @@ shellcheckString scriptString =
     runIdentity $ checkScript dummySystemInterface checkSpec
   where
     checkSpec :: CheckSpec
-    checkSpec = emptyCheckSpec {
-        csScript = scriptString
-    }
+    checkSpec =
+        emptyCheckSpec
+            { csScript = scriptString
+            }
 
 dummySystemInterface :: SystemInterface Identity
-dummySystemInterface = mockedSystemInterface [
-    -- A tiny, fake filesystem for sourced files
-    ("lib/mylib1.sh", "foo=$(cat $1 | wc -l)"),
-    ("lib/mylib2.sh", "bar=42")
-    ]
+dummySystemInterface =
+    mockedSystemInterface
+        [ -- A tiny, fake filesystem for sourced files
+          ("lib/mylib1.sh", "foo=$(cat $1 | wc -l)")
+        , ("lib/mylib2.sh", "bar=42")
+        ]
 
 -- Parameters used when generating Control Flow Graphs
 cfgParams :: CFGParameters
-cfgParams = CFGParameters {
-    cfLastpipe = False,
-    cfPipefail = False
-}
+cfgParams =
+    CFGParameters
+        { cfLastpipe = False
+        , cfPipefail = False
+        }
 
 -- An example script to play with
 exampleScript :: String
-exampleScript = unlines [
-    "#!/bin/sh",
-    "count=0",
-    "for file in *",
-    "do",
-    "  (( count++ ))",
-    "done",
-    "echo $count"
-    ]
+exampleScript =
+    unlines
+        [ "#!/bin/sh"
+        , "count=0"
+        , "for file in *"
+        , "do"
+        , "  (( count++ ))"
+        , "done"
+        , "echo $count"
+        ]
 
 -- Parse the script string into ShellCheck's ParseResult
 parseScriptString :: String -> ParseResult
@@ -138,11 +140,11 @@ parseScriptString scriptString =
     runIdentity $ parseScript dummySystemInterface parseSpec
   where
     parseSpec :: ParseSpec
-    parseSpec = newParseSpec {
-        psFilename = "myscript",
-        psScript = scriptString
-    }
-
+    parseSpec =
+        newParseSpec
+            { psFilename = "myscript"
+            , psScript = scriptString
+            }
 
 -- Parse the script string into an Abstract Syntax Tree
 stringToAst :: String -> Token
@@ -159,7 +161,6 @@ stringToAst scriptString =
 
     parserWarnings :: [PositionedComment]
     parserWarnings = prComments parseResult
-
 
 astToCfgResult :: Token -> CFGResult
 astToCfgResult = buildGraph cfgParams
@@ -227,12 +228,12 @@ stringToDetailedCfgViz scriptString = cfgToGraphVizWith nodeLabel graph
     formatGroup :: S.Set Id -> String
     formatGroup set = intercalate ", " $ map formatId $ S.toList set
 
-    nodeLabel (node, label) = unlines [
-        show node ++ ". " ++ show label,
-        "Begin: " ++ formatGroup (M.findWithDefault S.empty node nodeToStartIds),
-        "End: " ++ formatGroup (M.findWithDefault S.empty node nodeToEndIds)
-        ]
-
+    nodeLabel (node, label) =
+        unlines
+            [ show node ++ ". " ++ show label
+            , "Begin: " ++ formatGroup (M.findWithDefault S.empty node nodeToStartIds)
+            , "End: " ++ formatGroup (M.findWithDefault S.empty node nodeToEndIds)
+            ]
 
 -- Dump a Control Flow Graph with Data Flow Analysis as GraphViz
 dfaToGraphViz :: CF.CFGAnalysis -> String
@@ -241,51 +242,52 @@ dfaToGraphViz analysis = cfgToGraphVizWith label $ CF.graph analysis
     label (node, label) =
         let
             desc = show node ++ ". " ++ show label
-        in
+         in
             fromMaybe ("No DFA available\n\n" ++ desc) $ do
                 (pre, post) <- M.lookup node $ CF.nodeToData analysis
-                return $ unlines [
-                    "Precondition: " ++ show pre,
-                    "",
-                    desc,
-                    "",
-                    "Postcondition: " ++ show post
-                    ]
-
+                return $
+                    unlines
+                        [ "Precondition: " ++ show pre
+                        , ""
+                        , desc
+                        , ""
+                        , "Postcondition: " ++ show post
+                        ]
 
 -- Dump an Control Flow Graph to GraphViz with a given node formatter
 cfgToGraphVizWith :: (LNode CFNode -> String) -> CFGraph -> String
-cfgToGraphVizWith nodeLabel graph = concat [
-    "digraph {\n",
-    concatMap dumpNode (labNodes graph),
-    concatMap dumpLink (labEdges graph),
-    tagVizEntries graph,
-    "}\n"
-    ]
+cfgToGraphVizWith nodeLabel graph =
+    concat
+        [ "digraph {\n"
+        , concatMap dumpNode (labNodes graph)
+        , concatMap dumpLink (labEdges graph)
+        , tagVizEntries graph
+        , "}\n"
+        ]
   where
     dumpNode l@(node, label) = show node ++ " [label=" ++ quoteViz (nodeLabel l) ++ "]\n"
-    dumpLink (from, to, typ) = show from ++ " -> " ++ show to ++ " [style=" ++ quoteViz (edgeStyle typ)  ++ "]\n"
+    dumpLink (from, to, typ) = show from ++ " -> " ++ show to ++ " [style=" ++ quoteViz (edgeStyle typ) ++ "]\n"
     edgeStyle CFEFlow = "solid"
     edgeStyle CFEExit = "bold"
     edgeStyle CFEFalseFlow = "dotted"
 
 quoteViz str = "\"" ++ escapeViz str ++ "\""
 escapeViz [] = []
-escapeViz (c:rest) =
+escapeViz (c : rest) =
     case c of
         '\"' -> '\\' : '\"' : escapeViz rest
         '\n' -> '\\' : 'l' : escapeViz rest
         '\\' -> '\\' : '\\' : escapeViz rest
         _ -> c : escapeViz rest
 
-
 -- Dump an Abstract Syntax Tree (or branch thereof) to GraphViz format
 astToGraphViz :: Token -> String
-astToGraphViz token = concat [
-    "digraph {\n",
-    formatTree token,
-    "}\n"
-    ]
+astToGraphViz token =
+    concat
+        [ "digraph {\n"
+        , formatTree token
+        , "}\n"
+        ]
   where
     formatTree :: Token -> String
     formatTree t = snd $ execRWS (doStackAnalysis push pop t) () []
@@ -296,12 +298,11 @@ astToGraphViz token = concat [
         put (n : stack)
         case stack of
             [] -> return ()
-            (top:_) -> tell $ show top ++ " -> " ++ show n ++ "\n"
+            (top : _) -> tell $ show top ++ " -> " ++ show n ++ "\n"
         tell $ show n ++ " [label=" ++ quoteViz (show n ++ ": " ++ take 32 (show inner)) ++ "]\n"
 
     pop :: Token -> RWS () String [Int] ()
     pop _ = modify tail
-
 
 -- For each entry point, set the rank so that they'll align in the graph
 tagVizEntries :: CFGraph -> String
