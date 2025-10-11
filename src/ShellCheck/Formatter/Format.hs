@@ -20,28 +20,28 @@
 module ShellCheck.Formatter.Format where
 
 import ShellCheck.Data
-import ShellCheck.Interface
 import ShellCheck.Fixer
+import ShellCheck.Interface
 
 import Control.Monad
 import Data.Array
 import Data.List
+import System.Environment
 import System.IO
 import System.Info
-import System.Environment
 
 -- A formatter that carries along an arbitrary piece of data
-data Formatter = Formatter {
-    header ::  IO (),
-    onResult :: CheckResult -> SystemInterface IO -> IO (),
-    onFailure :: FilePath -> ErrorMessage -> IO (),
-    footer :: IO ()
-}
+data Formatter = Formatter
+    { header :: IO ()
+    , onResult :: CheckResult -> SystemInterface IO -> IO ()
+    , onFailure :: FilePath -> ErrorMessage -> IO ()
+    , footer :: IO ()
+    }
 
 sourceFile = posFile . pcStartPos
 lineNo = posLine . pcStartPos
 endLineNo = posLine . pcEndPos
-colNo  = posColumn . pcStartPos
+colNo = posColumn . pcStartPos
 endColNo = posColumn . pcEndPos
 codeNo = cCode . pcComment
 messageText = cMessage . pcComment
@@ -49,10 +49,10 @@ messageText = cMessage . pcComment
 severityText :: PositionedComment -> String
 severityText pc =
     case cSeverity (pcComment pc) of
-        ErrorC   -> "error"
+        ErrorC -> "error"
         WarningC -> "warning"
-        InfoC    -> "info"
-        StyleC   -> "style"
+        InfoC -> "info"
+        StyleC -> "style"
 
 -- Realign comments from a tabstop of 8 to 1
 makeNonVirtual comments contents =
@@ -60,13 +60,14 @@ makeNonVirtual comments contents =
   where
     list = lines contents
     arr = listArray (1, length list) list
-    untabbedFix f = newFix {
-      fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)
-    }
-    fix c = (removeTabStops c arr) {
-      pcFix = fmap untabbedFix (pcFix c)
-    }
-
+    untabbedFix f =
+        newFix
+            { fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)
+            }
+    fix c =
+        (removeTabStops c arr)
+            { pcFix = fmap untabbedFix (pcFix c)
+            }
 
 shouldOutputColor :: ColorOption -> IO Bool
 shouldOutputColor colorOption =
