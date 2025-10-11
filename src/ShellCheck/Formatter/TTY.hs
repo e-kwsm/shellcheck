@@ -132,14 +132,14 @@ outputForFile color sys comments = do
         let lineNum = fromIntegral $ lineNo (NE.head commentsForLine)
         let line = if lineNum < 1 || lineNum > lineCount
                         then ""
-                        else fileLines ! fromIntegral lineNum
+                        else fileLines ! lineNum
         putStrLn ""
         putStrLn $ color "message" $
            "In " ++ fileName ++" line " ++ show lineNum ++ ":"
         putStrLn (color "source" line)
         forM_ commentsForLine $ \c -> putStrLn $ color (severityText c) $ cuteIndent c
         putStrLn ""
-        showFixedString color (toList commentsForLine) (fromIntegral lineNum) fileLines
+        showFixedString color (toList commentsForLine) (lineNum) fileLines
 
 -- Pick out only the lines necessary to show a fix in action
 sliceFile :: Fix -> Array Int String -> (Fix, Array Int String)
@@ -159,7 +159,7 @@ sliceFile fix lines =
 
 showFixedString :: ColorFunc -> [PositionedComment] -> Int -> Array Int String -> IO ()
 showFixedString color comments lineNum fileLines =
-    let line = fileLines ! fromIntegral lineNum in
+    let line = fileLines ! lineNum in
     case mapMaybe pcFix comments of
         [] -> return ()
         fixes -> do
