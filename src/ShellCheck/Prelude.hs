@@ -23,10 +23,9 @@ module ShellCheck.Prelude where
 
 import Data.Semigroup
 
-
 -- Get element 0 or a default. Like `head` but safe.
-headOrDefault _ (a:_) = a
-headOrDefault def _   = def
+headOrDefault _ (a : _) = a
+headOrDefault def _ = def
 
 -- Get the last element or a default. Like `last` but safe.
 lastOrDefault def [] = def
@@ -35,14 +34,13 @@ lastOrDefault _ list = last list
 --- Get element n of a list, or Nothing. Like `!!` but safe.
 (!!!) list i =
     case drop i list of
-        []    -> Nothing
-        (r:_) -> Just r
-
+        [] -> Nothing
+        (r : _) -> Just r
 
 -- Like mconcat but for Semigroups
 sconcat1 :: (Semigroup t) => [t] -> t
 sconcat1 [x] = x
-sconcat1 (x:xs) = x <> sconcat1 xs
+sconcat1 (x : xs) = x <> sconcat1 xs
 
 sconcatOrDefault def [] = def
 sconcatOrDefault _ list = sconcat1 list
