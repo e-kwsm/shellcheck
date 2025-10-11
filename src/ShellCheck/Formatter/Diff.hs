@@ -117,7 +117,7 @@ makeDiff name contents fix = do
 computeDiff :: String -> Fix -> [Diff String]
 computeDiff contents fix =
     let old = lines contents
-        array = listArray (1, fromIntegral $ (length old)) old
+        array = listArray (1, (length old)) old
         new = applyFix fix array
     in getDiff old new
 
