@@ -66,9 +66,6 @@ import ShellCheck.AST
 import Control.DeepSeq
 import Control.Monad.Identity
 import Data.List
-import Data.Monoid
-import Data.Ord
-import Data.Semigroup
 import GHC.Generics (Generic)
 import qualified Data.Map as Map
 

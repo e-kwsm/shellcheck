@@ -69,11 +69,9 @@ import Control.Monad.ST
 import Data.Array.Unboxed
 import Data.Char
 import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Query.DFS
 import Data.List hiding (map)
 import Data.Maybe
 import Data.STRef
-import Debug.Trace -- STRIP
 import GHC.Generics (Generic)
 import qualified Data.Map as M
 import qualified Data.Set as S

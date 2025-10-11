@@ -24,7 +24,6 @@ import GHC.Generics (Generic)
 import Control.Monad.Identity
 import Control.DeepSeq
 import Text.Parsec
-import qualified ShellCheck.Regex as Re
 import Prelude hiding (id)
 
 newtype Id = Id Int deriving (Show, Eq, Ord, Generic, NFData)
