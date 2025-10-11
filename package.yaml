@@ -41,6 +41,7 @@ dependencies:
 - bytestring
 - containers
 - deepseq
+- directory
 - Diff
 - fgl
 - filepath
