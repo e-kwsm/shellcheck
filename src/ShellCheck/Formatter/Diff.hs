@@ -32,7 +32,6 @@ import Data.List
 import qualified Data.Monoid as Monoid
 import Data.Maybe
 import qualified Data.Map as M
-import GHC.Exts (sortWith)
 import System.IO
 import System.FilePath
 

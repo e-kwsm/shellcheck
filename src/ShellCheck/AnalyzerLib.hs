@@ -36,8 +36,6 @@ import Control.Monad
 import Control.Monad.Identity
 import Control.Monad.RWS
 import Control.Monad.State
-import Control.Monad.Writer
-import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Semigroup
