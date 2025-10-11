@@ -588,7 +588,7 @@ decodeString = decode
     decode [] = []
     decode (c:rest) | isAscii c = c : decode rest
     decode (c:rest) =
-        let num = (fromIntegral $ ord c) :: Int
+        let num = (ord c) :: Int
             next = case num of
                 _ | num >= 0xF8 -> Nothing
                   | num >= 0xF0 -> construct (num .&. 0x07) 3 rest
@@ -604,7 +604,7 @@ decodeString = decode
         guard $ x <= 0x10FFFF
         return (x, rest)
     construct x n (c:rest) =
-        let num = (fromIntegral $ ord c) :: Int in
+        let num = (ord c) :: Int in
             if num >= 0x80 && num <= 0xBF
             then construct ((x `shiftL` 6) .|. (num .&. 0x3f)) (n-1) rest
             else Nothing
