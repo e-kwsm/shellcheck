@@ -22,7 +22,6 @@ module ShellCheck.Formatter.GCC (format) where
 import ShellCheck.Interface
 import ShellCheck.Formatter.Format
 
-import Data.List
 import System.IO
 import qualified Data.List.NonEmpty as NE
 

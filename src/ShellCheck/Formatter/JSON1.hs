@@ -26,7 +26,6 @@ import ShellCheck.Formatter.Format
 import Control.DeepSeq
 import Data.Aeson
 import Data.IORef
-import Data.Monoid
 import System.IO
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List.NonEmpty as NE

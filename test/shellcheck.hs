@@ -1,6 +1,5 @@
 module Main where
 
-import Control.Monad
 import System.Exit
 import qualified ShellCheck.Analytics
 import qualified ShellCheck.AnalyzerLib
