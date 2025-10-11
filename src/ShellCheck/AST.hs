@@ -17,14 +17,75 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveTraversable, PatternSynonyms #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-
+    Copyright 2012-2019 Vidar Holen
+
+    This file is part of ShellCheck.
+    https://www.shellcheck.net
+
+    ShellCheck is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ShellCheck is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-}
+{-# LANGUAGE DeriveGeneric #-}
+{-
+    Copyright 2012-2019 Vidar Holen
+
+    This file is part of ShellCheck.
+    https://www.shellcheck.net
+
+    ShellCheck is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ShellCheck is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-}
+{-# LANGUAGE DeriveTraversable #-}
+{-
+    Copyright 2012-2019 Vidar Holen
+
+    This file is part of ShellCheck.
+    https://www.shellcheck.net
+
+    ShellCheck is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ShellCheck is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-}
+{-# LANGUAGE PatternSynonyms #-}
+
 module ShellCheck.AST where
 
-import GHC.Generics (Generic)
-import Control.Monad.Identity
 import Control.DeepSeq
-import Text.Parsec
+import Control.Monad.Identity
+import GHC.Generics (Generic)
 import qualified ShellCheck.Regex as Re
+import Text.Parsec
 import Prelude hiding (id)
 
 newtype Id = Id Int deriving (Show, Eq, Ord, Generic, NFData)
@@ -40,8 +101,8 @@ data CaseType = CaseBreak | CaseFallThrough | CaseContinue deriving (Show, Eq)
 newtype Root = Root Token
 data Token = OuterToken Id (InnerToken Token) deriving (Show)
 
-data InnerToken t =
-    Inner_TA_Binary String t t
+data InnerToken t
+    = Inner_TA_Binary String t t
     | Inner_TA_Assignment String t t
     | Inner_TA_Variable String [t]
     | Inner_TA_Expansion [t]
@@ -61,8 +122,8 @@ data InnerToken t =
     | Inner_T_Arithmetic t
     | Inner_T_Array [t]
     | Inner_T_IndexedElement [t] t
-    -- Store the index as string, and parse as arithmetic or string later
-    | Inner_T_UnparsedIndex SourcePos String
+    | -- Store the index as string, and parse as arithmetic or string later
+      Inner_T_UnparsedIndex SourcePos String
     | Inner_T_Assignment AssignmentMode String [t] t
     | Inner_T_Backgrounded t
     | Inner_T_Backticked [t]
@@ -105,7 +166,7 @@ data InnerToken t =
     | Inner_T_HereDoc Dashed Quoted String [t]
     | Inner_T_HereString t
     | Inner_T_If
-    | Inner_T_IfExpression [([t],[t])] [t]
+    | Inner_T_IfExpression [([t], [t])] [t]
     | Inner_T_In
     | Inner_T_IoFile t t
     | Inner_T_IoDuplicate t String
@@ -146,8 +207,8 @@ data InnerToken t =
     | Inner_T_BatsTest String t
     deriving (Show, Eq, Functor, Foldable, Traversable)
 
-data Annotation =
-    DisableComment Integer Integer -- [from, to)
+data Annotation
+    = DisableComment Integer Integer -- [from, to)
     | EnableComment String
     | SourceOverride String
     | ShellOverride String
@@ -265,7 +326,7 @@ pattern T_WhileExpression id c l = OuterToken id (Inner_T_WhileExpression c l)
 instance Eq Token where
     OuterToken _ a == OuterToken _ b = a == b
 
-analyze :: Monad m => (Token -> m ()) -> (Token -> m ()) -> (Token -> m Token) -> Token -> m Token
+analyze :: (Monad m) => (Token -> m ()) -> (Token -> m ()) -> (Token -> m Token) -> Token -> m Token
 analyze f g i =
     round
   where
@@ -278,12 +339,11 @@ analyze f g i =
 getId :: Token -> Id
 getId (OuterToken id _) = id
 
-blank :: Monad m => Token -> m ()
+blank :: (Monad m) => Token -> m ()
 blank = const $ return ()
-doAnalysis :: Monad m => (Token -> m ()) -> Token -> m Token
+doAnalysis :: (Monad m) => (Token -> m ()) -> Token -> m Token
 doAnalysis f = analyze f blank return
-doStackAnalysis :: Monad m => (Token -> m ()) -> (Token -> m ()) -> Token -> m Token
+doStackAnalysis :: (Monad m) => (Token -> m ()) -> (Token -> m ()) -> Token -> m Token
 doStackAnalysis startToken endToken = analyze startToken endToken return
 doTransform :: (Token -> Token) -> Token -> Token
 doTransform i = runIdentity . analyze blank blank (return . i)
-
