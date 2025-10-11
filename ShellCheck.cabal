@@ -96,6 +96,7 @@ executable shellcheck
   build-depends:
       Diff
     , QuickCheck
+    , ShellCheck
     , aeson
     , array
     , base
@@ -120,6 +121,7 @@ test-suite test-shellcheck
   build-depends:
       Diff
     , QuickCheck
+    , ShellCheck
     , aeson
     , array
     , base
