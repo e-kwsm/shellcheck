@@ -18,98 +18,109 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+
 module ShellCheck.Checker (checkScript, ShellCheck.Checker.runTests) where
 
-import ShellCheck.Analyzer
 import ShellCheck.ASTLib
+import ShellCheck.Analyzer
 import ShellCheck.Data (shellFromFilename)
 import ShellCheck.EditorConfig
 import ShellCheck.Interface
 import ShellCheck.Parser
 
-import Debug.Trace -- DO NOT SUBMIT
+-- DO NOT SUBMIT
+
+import Control.Monad
+import Control.Monad.Identity
 import Data.Either
 import Data.Functor
 import Data.List
+import qualified Data.Map as Map
 import Data.Maybe
 import Data.Ord
-import Control.Monad.Identity
-import qualified Data.Map as Map
+import Debug.Trace
 import qualified System.IO
 import Prelude hiding (readFile)
-import Control.Monad
 
 import Test.QuickCheck.All
 
 tokenToPosition startMap t = fromMaybe fail $ do
     span <- Map.lookup (tcId t) startMap
-    return $ newPositionedComment {
-        pcStartPos = fst span,
-        pcEndPos = snd span,
-        pcComment = tcComment t,
-        pcFix = tcFix t
-    }
+    return $
+        newPositionedComment
+            { pcStartPos = fst span
+            , pcEndPos = snd span
+            , pcComment = tcComment t
+            , pcFix = tcFix t
+            }
   where
     fail = error "Internal shellcheck error: id doesn't exist. Please report!"
 
-checkScript :: Monad m => SystemInterface m -> CheckSpec -> m CheckResult
+checkScript :: (Monad m) => SystemInterface m -> CheckSpec -> m CheckResult
 checkScript sys spec = do
     results <- checkScript (csScript spec)
-    return emptyCheckResult {
-        crFilename = csFilename spec,
-        crComments = results
-    }
+    return
+        emptyCheckResult
+            { crFilename = csFilename spec
+            , crComments = results
+            }
   where
     checkScript contents = do
-        result <- parseScript sys newParseSpec {
-            psFilename = csFilename spec,
-            psScript = contents,
-            psCheckSourced = csCheckSourced spec,
-            psIgnoreRC = csIgnoreRC spec,
-            psShellTypeOverride = csShellTypeOverride spec
-        }
+        result <-
+            parseScript
+                sys
+                newParseSpec
+                    { psFilename = csFilename spec
+                    , psScript = contents
+                    , psCheckSourced = csCheckSourced spec
+                    , psIgnoreRC = csIgnoreRC spec
+                    , psShellTypeOverride = csShellTypeOverride spec
+                    }
         let parseMessages = prComments result
         let tokenPositions = prTokenPositions result
         let analysisSpec root =
-                as {
-                    asScript = root,
-                    asShellType = csShellTypeOverride spec,
-                    asFallbackShell = shellFromFilename $ csFilename spec,
-                    asCheckSourced = csCheckSourced spec,
-                    asExecutionMode = Executed,
-                    asTokenPositions = tokenPositions,
-                    asExtendedAnalysis = csExtendedAnalysis spec,
-                    asOptionalChecks = getEnableDirectives root ++ csOptionalChecks spec
-                } where as = newAnalysisSpec root
+                as
+                    { asScript = root
+                    , asShellType = csShellTypeOverride spec
+                    , asFallbackShell = shellFromFilename $ csFilename spec
+                    , asCheckSourced = csCheckSourced spec
+                    , asExecutionMode = Executed
+                    , asTokenPositions = tokenPositions
+                    , asExtendedAnalysis = csExtendedAnalysis spec
+                    , asOptionalChecks = getEnableDirectives root ++ csOptionalChecks spec
+                    }
+              where
+                as = newAnalysisSpec root
         let analysisMessages =
-                maybe []
+                maybe
+                    []
                     (arComments . analyzeScript . analysisSpec)
-                        $ prRoot result
+                    $ prRoot result
         let translator = tokenToPosition tokenPositions
         return . nub . sortMessages . filter shouldInclude $
             (parseMessages ++ map translator analysisMessages)
 
     shouldInclude pc =
-            severity <= csMinSeverity spec &&
-            case csIncludedWarnings spec of
+        severity <= csMinSeverity spec
+            && case csIncludedWarnings spec of
                 Nothing -> code `notElem` csExcludedWarnings spec
                 Just includedWarnings -> code `elem` includedWarnings
-        where
-            code     = cCode (pcComment pc)
-            severity = cSeverity (pcComment pc)
+      where
+        code = cCode (pcComment pc)
+        severity = cSeverity (pcComment pc)
 
     sortMessages = sortOn order
     order pc =
         let pos = pcStartPos pc
-            comment = pcComment pc in
-        (posFile pos,
-         posLine pos,
-         posColumn pos,
-         cSeverity comment,
-         cCode comment,
-         cMessage comment)
+            comment = pcComment pc
+         in ( posFile pos
+            , posLine pos
+            , posColumn pos
+            , cSeverity comment
+            , cCode comment
+            , cMessage comment
+            )
     getPosition = pcStartPos
-
 
 getErrors sys spec =
     sort . map getCode . crComments $
@@ -123,72 +134,100 @@ checkWithSpec includes =
     getErrors (mockedSystemInterface includes)
 
 checkWithIncludes includes src =
-    checkWithSpec includes emptyCheckSpec {
-        csScript = src,
-        csExcludedWarnings = [2148]
-    }
+    checkWithSpec
+        includes
+        emptyCheckSpec
+            { csScript = src
+            , csExcludedWarnings = [2148]
+            }
 
 checkRecursive includes src =
-    checkWithSpec includes emptyCheckSpec {
-        csScript = src,
-        csExcludedWarnings = [2148],
-        csCheckSourced = True
-    }
+    checkWithSpec
+        includes
+        emptyCheckSpec
+            { csScript = src
+            , csExcludedWarnings = [2148]
+            , csCheckSourced = True
+            }
 
 checkOptionIncludes includes src =
-    checkWithSpec [] emptyCheckSpec {
-        csScript = src,
-        csIncludedWarnings = includes,
-        csCheckSourced = True
-    }
+    checkWithSpec
+        []
+        emptyCheckSpec
+            { csScript = src
+            , csIncludedWarnings = includes
+            , csCheckSourced = True
+            }
 
-checkWithRc rc = getErrors
-    (mockRcFile rc $ mockedSystemInterface [])
+checkWithRc rc =
+    getErrors
+        (mockRcFile rc $ mockedSystemInterface [])
 
-checkWithIncludesAndSourcePath includes mapper = getErrors
-    (mockedSystemInterface includes) {
-        siFindSource = mapper
-    }
+checkWithIncludesAndSourcePath includes mapper =
+    getErrors
+        (mockedSystemInterface includes)
+            { siFindSource = mapper
+            }
 
-checkWithRcIncludesAndSourcePath rc includes mapper = getErrors
-    (mockRcFile rc $ mockedSystemInterface includes) {
-        siFindSource = mapper
-    }
+checkWithRcIncludesAndSourcePath rc includes mapper =
+    getErrors
+        (mockRcFile rc $ mockedSystemInterface includes)
+            { siFindSource = mapper
+            }
 
 -- shellcheck.* directives extracted from an EditorConfig file are merged
 -- into the same "key=value" blob as .shellcheckrc. We simulate that here
 -- by feeding editorConfigDirectives' output through siGetConfig.
 checkWithEditorConfig ec name src =
-    let sys = (mockedSystemInterface [("foo", src)]) {
-            siGetConfig = const . return $
-                Just (".editorconfig", fromMaybe "" $ editorConfigDirectives ec name)
-        }
-    in getErrors sys emptyCheckSpec {
-        csScript = src,
-        csExcludedWarnings = [2148]
-    }
+    let sys =
+            (mockedSystemInterface [("foo", src)])
+                { siGetConfig =
+                    const . return $
+                        Just (".editorconfig", fromMaybe "" $ editorConfigDirectives ec name)
+                }
+     in getErrors
+            sys
+            emptyCheckSpec
+                { csScript = src
+                , csExcludedWarnings = [2148]
+                }
 
 prop_editorConfigAppliesKnownShell =
-    null $ checkWithEditorConfig "[foo]\nshellcheck.shell=bash\n" "foo"
-        "#!/bin/sh\necho \"hi\""
+    null $
+        checkWithEditorConfig
+            "[foo]\nshellcheck.shell=bash\n"
+            "foo"
+            "#!/bin/sh\necho \"hi\""
 prop_editorConfigAppliesDisable =
-    null $ checkWithEditorConfig "[foo]\nshellcheck.disable=SC2086\n" "foo"
-        "#!/bin/sh\necho $1"
+    null $
+        checkWithEditorConfig
+            "[foo]\nshellcheck.disable=SC2086\n"
+            "foo"
+            "#!/bin/sh\necho $1"
 prop_editorConfigUnknownShellIsReported =
     -- An unknown shell can't be applied silently; it surfaces as a
     -- config parse error (SC1134) rather than being dropped.
-    [1134] == checkWithEditorConfig "[foo]\nshellcheck.shell=zsh\n" "foo"
-        "#!/bin/sh\necho \"hi\""
+    [1134]
+        == checkWithEditorConfig
+            "[foo]\nshellcheck.shell=zsh\n"
+            "foo"
+            "#!/bin/sh\necho \"hi\""
 prop_editorConfigCommentValueIsReported =
     -- EditorConfig has no inline comments, so a '#'-prefixed value is
     -- reported as a config error (SC1134) instead of being eaten.
-    [1134] == checkWithEditorConfig "[foo]\nshellcheck.disable=#abc\n" "foo"
-        "#!/bin/sh\necho \"hi\""
+    [1134]
+        == checkWithEditorConfig
+            "[foo]\nshellcheck.disable=#abc\n"
+            "foo"
+            "#!/bin/sh\necho \"hi\""
 prop_editorConfigNonMatchingSectionIgnored =
     -- A directive in a section whose glob does not match the file is
     -- not applied (and produces no config error).
-    [2086] == checkWithEditorConfig "[bar]\nshellcheck.disable=SC2086\n" "foo"
-        "#!/bin/sh\necho $1"
+    [2086]
+        == checkWithEditorConfig
+            "[bar]\nshellcheck.disable=SC2086\n"
+            "foo"
+            "#!/bin/sh\necho $1"
 
 prop_findsParseIssue = check "echo \"$12\"" == [1037]
 
@@ -204,29 +243,41 @@ prop_kshCoprocessAssignmentScope =
 prop_kshCoprocessEof = null $ check "#!/bin/ksh\ntrue|&"
 
 prop_kshCoprocessFilename =
-    null $ checkWithSpec [] emptyCheckSpec {
-        csFilename = "example.ksh",
-        csScript = "true|&"
-    }
+    null $
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "example.ksh"
+                , csScript = "true|&"
+                }
 
 prop_kshCoprocessDirective =
     null $ check "#!/bin/bash\n#shellcheck shell=ksh\ntrue|&"
 
 prop_kshCoprocessRc =
-    null $ checkWithRc "shell=ksh\n" emptyCheckSpec {
-        csScript = "#!/bin/bash\ntrue|&"
-    }
+    null $
+        checkWithRc
+            "shell=ksh\n"
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\ntrue|&"
+                }
 
 prop_kshCoprocessDirectiveOverridesRc =
-    null $ checkWithRc "shell=bash\n" emptyCheckSpec {
-        csScript = "#!/bin/bash\n#shellcheck shell=ksh\ntrue|&"
-    }
+    null $
+        checkWithRc
+            "shell=bash\n"
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\n#shellcheck shell=ksh\ntrue|&"
+                }
 
 prop_kshCoprocessOverride =
-    null $ checkWithSpec [] emptyCheckSpec {
-        csShellTypeOverride = Just Ksh,
-        csScript = "#!/bin/bash\ntrue|&"
-    }
+    null $
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csShellTypeOverride = Just Ksh
+                , csScript = "#!/bin/bash\ntrue|&"
+                }
 
 prop_kshCoprocessInSourcedCode =
     null $ checkWithIncludes [("helper", "#!/bin/bash\ntrue |&")] "#!/bin/ksh\n. helper"
@@ -234,10 +285,13 @@ prop_kshCoprocessInSourcedCode =
 prop_bashStderrPipe = null $ check "#!/bin/bash\nprintf '%s\\n' data |&\ncat"
 
 prop_bashOverrideKeepsStderrPipe =
-    [1072] == checkWithSpec [] emptyCheckSpec {
-        csShellTypeOverride = Just Bash,
-        csScript = "#!/bin/ksh\n#shellcheck shell=ksh\ntrue|&"
-    }
+    [1072]
+        == checkWithSpec
+            []
+            emptyCheckSpec
+                { csShellTypeOverride = Just Bash
+                , csScript = "#!/bin/ksh\n#shellcheck shell=ksh\ntrue|&"
+                }
 
 prop_shStderrPipe = check "#!/bin/sh\nprintf '%s\\n' data |& cat" == [3029]
 
@@ -254,35 +308,37 @@ prop_commentDisablesAnalysisIssue2 =
     null $ check "#shellcheck disable=SC2086\n#lol\necho $1"
 
 prop_optionDisablesIssue1 =
-    null $ getErrors
-                (mockedSystemInterface [])
-                emptyCheckSpec {
-                    csScript = "echo $1",
-                    csExcludedWarnings = [2148, 2086]
+    null $
+        getErrors
+            (mockedSystemInterface [])
+            emptyCheckSpec
+                { csScript = "echo $1"
+                , csExcludedWarnings = [2148, 2086]
                 }
 
 prop_optionDisablesIssue2 =
-    null $ getErrors
-                (mockedSystemInterface [])
-                emptyCheckSpec {
-                    csScript = "echo \"$10\"",
-                    csExcludedWarnings = [2148, 1037]
+    null $
+        getErrors
+            (mockedSystemInterface [])
+            emptyCheckSpec
+                { csScript = "echo \"$10\""
+                , csExcludedWarnings = [2148, 1037]
                 }
 
 prop_wontParseBadShell =
     [1071] == check "#!/usr/bin/python\ntrue $1\n"
 
 prop_optionDisablesBadShebang =
-    null $ getErrors
-                (mockedSystemInterface [])
-                emptyCheckSpec {
-                    csScript = "#!/usr/bin/python\ntrue\n",
-                    csShellTypeOverride = Just Sh
+    null $
+        getErrors
+            (mockedSystemInterface [])
+            emptyCheckSpec
+                { csScript = "#!/usr/bin/python\ntrue\n"
+                , csShellTypeOverride = Just Sh
                 }
 
 prop_annotationDisablesBadShebang =
     null $ check "#!/usr/bin/python\n# shellcheck shell=sh\ntrue\n"
-
 
 prop_canParseDevNull =
     null $ check "source /dev/null"
@@ -304,7 +360,7 @@ prop_worksWhenDotting =
 
 -- FIXME: This should really be giving [1093], "recursively sourced"
 prop_noInfiniteSourcing =
-    null $ checkWithIncludes  [("lib", "source lib")] "source lib"
+    null $ checkWithIncludes [("lib", "source lib")] "source lib"
 
 prop_canSourceBadSyntax =
     [1094, 2086] == checkWithIncludes [("lib", "for f; do")] "source lib; echo $1"
@@ -340,157 +396,218 @@ prop_nonRecursiveParsing =
     null $ checkWithIncludes [("lib", "echo \"$10\"")] "source lib"
 
 prop_sourceDirectiveDoesntFollowFile =
-    null $ checkWithIncludes
-                [("foo", "source bar"), ("bar", "baz=3")]
-                "#shellcheck source=foo\n. \"$1\"; echo \"$baz\""
+    null $
+        checkWithIncludes
+            [("foo", "source bar"), ("bar", "baz=3")]
+            "#shellcheck source=foo\n. \"$1\"; echo \"$baz\""
 
 prop_filewideAnnotationBase = [2086] == check "#!/bin/sh\necho $1"
-prop_filewideAnnotation1 = null $
-    check "#!/bin/sh\n# shellcheck disable=2086\necho $1"
-prop_filewideAnnotation2 = null $
-    check "#!/bin/sh\n# shellcheck disable=2086\ntrue\necho $1"
-prop_filewideAnnotation3 = null $
-    check "#!/bin/sh\n#unrelated\n# shellcheck disable=2086\ntrue\necho $1"
-prop_filewideAnnotation4 = null $
-    check "#!/bin/sh\n# shellcheck disable=2086\n#unrelated\ntrue\necho $1"
-prop_filewideAnnotation5 = null $
-    check "#!/bin/sh\n\n\n\n#shellcheck disable=2086\ntrue\necho $1"
-prop_filewideAnnotation6 = null $
-    check "#shellcheck shell=sh\n#unrelated\n#shellcheck disable=2086\ntrue\necho $1"
-prop_filewideAnnotation7 = null $
-    check "#!/bin/sh\n# shellcheck disable=2086\n#unrelated\ntrue\necho $1"
+prop_filewideAnnotation1 =
+    null $
+        check "#!/bin/sh\n# shellcheck disable=2086\necho $1"
+prop_filewideAnnotation2 =
+    null $
+        check "#!/bin/sh\n# shellcheck disable=2086\ntrue\necho $1"
+prop_filewideAnnotation3 =
+    null $
+        check "#!/bin/sh\n#unrelated\n# shellcheck disable=2086\ntrue\necho $1"
+prop_filewideAnnotation4 =
+    null $
+        check "#!/bin/sh\n# shellcheck disable=2086\n#unrelated\ntrue\necho $1"
+prop_filewideAnnotation5 =
+    null $
+        check "#!/bin/sh\n\n\n\n#shellcheck disable=2086\ntrue\necho $1"
+prop_filewideAnnotation6 =
+    null $
+        check "#shellcheck shell=sh\n#unrelated\n#shellcheck disable=2086\ntrue\necho $1"
+prop_filewideAnnotation7 =
+    null $
+        check "#!/bin/sh\n# shellcheck disable=2086\n#unrelated\ntrue\necho $1"
 
 prop_filewideAnnotationBase2 = [2086, 2181] == check "true\n[ $? == 0 ] && echo $1"
-prop_filewideAnnotation8 = null $
-    check "# Disable $? warning\n#shellcheck disable=SC2181\n# Disable quoting warning\n#shellcheck disable=2086\ntrue\n[ $? == 0 ] && echo $1"
+prop_filewideAnnotation8 =
+    null $
+        check "# Disable $? warning\n#shellcheck disable=SC2181\n# Disable quoting warning\n#shellcheck disable=2086\ntrue\n[ $? == 0 ] && echo $1"
 
-prop_sourcePartOfOriginalScript = -- #1181: -x disabled posix warning for 'source'
+prop_sourcePartOfOriginalScript =
+    -- #1181: -x disabled posix warning for 'source'
     3046 `elem` checkWithIncludes [("./saywhat.sh", "echo foo")] "#!/bin/sh\nsource ./saywhat.sh"
 
 prop_spinBug1413 = null $ check "fun() {\n# shellcheck disable=SC2188\n> /dev/null\n}\n"
 
 prop_deducesTypeFromExtension = null result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.ksh",
-        csScript = "(( 3.14 ))"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.ksh"
+                , csScript = "(( 3.14 ))"
+                }
 
 prop_deducesTypeFromExtension2 = result == [2079]
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.bash",
-        csScript = "(( 3.14 ))"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.bash"
+                , csScript = "(( 3.14 ))"
+                }
 
 prop_deducesTypeFromEnvrcExtension = result == [2079]
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = ".envrc",
-        csScript = "(( 3.14 ))"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = ".envrc"
+                , csScript = "(( 3.14 ))"
+                }
 
 prop_canDisableShebangWarning = null $ result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "#shellcheck disable=SC2148\nfoo"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "#shellcheck disable=SC2148\nfoo"
+                }
 
 prop_warnsButIgnoresLeadingCommentWithFilename = [1113, 2148] == result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "# /usr/bin/python is an interpreter\n/usr/bin/python \"$@\""
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "# /usr/bin/python is an interpreter\n/usr/bin/python \"$@\""
+                }
 
 prop_canIgnoreLeadingFormatWarning1 = [2148] == result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "# /usr/bin/python is an interpreter\n# shellcheck disable=SC1113\n/usr/bin/python \"$@\""
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "# /usr/bin/python is an interpreter\n# shellcheck disable=SC1113\n/usr/bin/python \"$@\""
+                }
 
 -- This technically avoids the warning, but either way
 prop_canIgnoreLeadingFormatWarning2 = [2148] == result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "# shellcheck disable=SC1113\n# /usr/bin/python is an interpreter\n/usr/bin/python \"$@\""
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "# shellcheck disable=SC1113\n# /usr/bin/python is an interpreter\n/usr/bin/python \"$@\""
+                }
 
 prop_canIgnoreLeadingFormatWarning3 = null result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "# /etc/profile -- Shell Initialization\n# shellcheck disable=SC1113 shell=sh\nVAR=VALUE\nexport VAR\n"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "# /etc/profile -- Shell Initialization\n# shellcheck disable=SC1113 shell=sh\nVAR=VALUE\nexport VAR\n"
+                }
 
 prop_onlyFirstLineCanTriggerMissingBangWarning = [2148] == result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "# shell init file\n# /etc/profile is my name and init is my game\n echo 'Hello World' >&2\n"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "# shell init file\n# /etc/profile is my name and init is my game\n echo 'Hello World' >&2\n"
+                }
 
 prop_bangInLeadingCommentIsNotShebang = [2086] == result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.bash",
-        csScript = "# Notes:\n#  ! python is needed for the helper\necho $1\n"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.bash"
+                , csScript = "# Notes:\n#  ! python is needed for the helper\necho $1\n"
+                }
 
 prop_stillWarnsAboutSpacedShebangAfterComment = [1115, 1128] == result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "# Copyright\n#  !/bin/sh\necho b\n"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "# Copyright\n#  !/bin/sh\necho b\n"
+                }
 
 prop_canDisableAllWarnings = result == [2086]
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "#!/bin/sh\necho $1\n#shellcheck disable=all\necho `echo $1`"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "#!/bin/sh\necho $1\n#shellcheck disable=all\necho `echo $1`"
+                }
 
 prop_canDisableParseErrors = null $ result
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "#shellcheck disable=SC1073,SC1072,SC2148\n()"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "#shellcheck disable=SC1073,SC1072,SC2148\n()"
+                }
 
 prop_shExtensionDoesntMatter = result == [2148]
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "echo 'hello world'"
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "echo 'hello world'"
+                }
 
 prop_sourcedFileUsesOriginalShellExtension = result == [2079]
   where
-    result = checkWithSpec [("file.ksh", "(( 3.14 ))")] emptyCheckSpec {
-        csFilename = "file.bash",
-        csScript = "source file.ksh",
-        csCheckSourced = True
-    }
+    result =
+        checkWithSpec
+            [("file.ksh", "(( 3.14 ))")]
+            emptyCheckSpec
+                { csFilename = "file.bash"
+                , csScript = "source file.ksh"
+                , csCheckSourced = True
+                }
 
 prop_sourcedCommandInExpansionDoesntCrash = result == [2034]
   where
-    result = checkWithSpec [("lib.sh", "echo hello")] emptyCheckSpec {
-        csFilename = "file.bash",
-        csScript = "x=$(source lib.sh)",
-        csCheckSourced = True
-    }
+    result =
+        checkWithSpec
+            [("lib.sh", "echo hello")]
+            emptyCheckSpec
+                { csFilename = "file.bash"
+                , csScript = "x=$(source lib.sh)"
+                , csCheckSourced = True
+                }
 
 prop_canEnableOptionalsWithSpec = result == [2244]
   where
-    result = checkWithSpec [] emptyCheckSpec {
-        csFilename = "file.sh",
-        csScript = "#!/bin/sh\n[ \"$1\" ]",
-        csOptionalChecks = ["avoid-nullary-conditions"]
-    }
+    result =
+        checkWithSpec
+            []
+            emptyCheckSpec
+                { csFilename = "file.sh"
+                , csScript = "#!/bin/sh\n[ \"$1\" ]"
+                , csOptionalChecks = ["avoid-nullary-conditions"]
+                }
 
 prop_optionIncludes1 =
     -- expect 2086, but not included, so nothing reported
@@ -508,157 +625,226 @@ prop_optionIncludes4 =
     -- expect 2086 & 2154, only 2154 included, so only that's reported
     [2154] == checkOptionIncludes (Just [2154]) "#!/bin/sh\n var='a b'\n echo $var\n echo $bar"
 
-
 prop_readsRcFile = null result
   where
-    result = checkWithRc "disable=2086" emptyCheckSpec {
-        csScript = "#!/bin/sh\necho $1",
-        csIgnoreRC = False
-    }
+    result =
+        checkWithRc
+            "disable=2086"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\necho $1"
+                , csIgnoreRC = False
+                }
 
 prop_canUseNoRC = result == [2086]
   where
-    result = checkWithRc "disable=2086" emptyCheckSpec {
-        csScript = "#!/bin/sh\necho $1",
-        csIgnoreRC = True
-    }
+    result =
+        checkWithRc
+            "disable=2086"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\necho $1"
+                , csIgnoreRC = True
+                }
 
 prop_NoRCWontLookAtFile = result == [2086]
   where
-    result = checkWithRc (error "Fail") emptyCheckSpec {
-        csScript = "#!/bin/sh\necho $1",
-        csIgnoreRC = True
-    }
+    result =
+        checkWithRc
+            (error "Fail")
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\necho $1"
+                , csIgnoreRC = True
+                }
 
 prop_brokenRcGetsWarning = result == [1134, 2086]
   where
-    result = checkWithRc "rofl" emptyCheckSpec {
-        csScript = "#!/bin/sh\necho $1",
-        csIgnoreRC = False
-    }
+    result =
+        checkWithRc
+            "rofl"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\necho $1"
+                , csIgnoreRC = False
+                }
 
 prop_unknownRcDirectiveGetsWarning = result == [1107, 2086]
   where
-    result = checkWithRc "foo=bar" emptyCheckSpec {
-        csScript = "#!/bin/sh\necho $1",
-        csIgnoreRC = False
-    }
+    result =
+        checkWithRc
+            "foo=bar"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\necho $1"
+                , csIgnoreRC = False
+                }
 
 prop_canEnableOptionalsWithRc = result == [2244]
   where
-    result = checkWithRc "enable=avoid-nullary-conditions" emptyCheckSpec {
-        csScript = "#!/bin/sh\n[ \"$1\" ]"
-    }
+    result =
+        checkWithRc
+            "enable=avoid-nullary-conditions"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n[ \"$1\" ]"
+                }
 
 prop_sourcePathRedirectsName = result == [2086]
   where
     f "dir/myscript" _ _ "lib" = return "foo/lib"
-    result = checkWithIncludesAndSourcePath [("foo/lib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\nsource lib",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithIncludesAndSourcePath
+            [("foo/lib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\nsource lib"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_sourcePathAddsAnnotation = result == [2086]
   where
     f "dir/myscript" _ ["mypath"] "lib" = return "foo/lib"
-    result = checkWithIncludesAndSourcePath [("foo/lib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\n# shellcheck source-path=mypath\nsource lib",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithIncludesAndSourcePath
+            [("foo/lib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\n# shellcheck source-path=mypath\nsource lib"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_sourcePathWorksWithSpaces = result == [2086]
   where
     f "dir/myscript" _ ["my path"] "lib" = return "foo/lib"
-    result = checkWithIncludesAndSourcePath [("foo/lib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\n# shellcheck source-path='my path'\nsource lib",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithIncludesAndSourcePath
+            [("foo/lib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\n# shellcheck source-path='my path'\nsource lib"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_sourcePathRedirectsDirective = result == [2086]
   where
     f "dir/myscript" _ _ "lib" = return "foo/lib"
     f _ _ _ _ = return "/dev/null"
-    result = checkWithIncludesAndSourcePath [("foo/lib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\n# shellcheck source=lib\nsource kittens",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithIncludesAndSourcePath
+            [("foo/lib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\n# shellcheck source=lib\nsource kittens"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_rcCanAllowExternalSources = result == [2086]
   where
     f "dir/myscript" (Just True) _ "mylib" = return "resolved/mylib"
     f a b c d = error $ show ("Unexpected", a, b, c, d)
-    result = checkWithRcIncludesAndSourcePath "external-sources=true" [("resolved/mylib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\nsource mylib",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithRcIncludesAndSourcePath
+            "external-sources=true"
+            [("resolved/mylib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\nsource mylib"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_rcCanDenyExternalSources = result == [2086]
   where
     f "dir/myscript" (Just False) _ "mylib" = return "resolved/mylib"
     f a b c d = error $ show ("Unexpected", a, b, c, d)
-    result = checkWithRcIncludesAndSourcePath "external-sources=false" [("resolved/mylib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\nsource mylib",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithRcIncludesAndSourcePath
+            "external-sources=false"
+            [("resolved/mylib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\nsource mylib"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_rcCanLeaveExternalSourcesUnspecified = result == [2086]
   where
     f "dir/myscript" Nothing _ "mylib" = return "resolved/mylib"
     f a b c d = error $ show ("Unexpected", a, b, c, d)
-    result = checkWithRcIncludesAndSourcePath "" [("resolved/mylib", "echo $1")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\nsource mylib",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithRcIncludesAndSourcePath
+            ""
+            [("resolved/mylib", "echo $1")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\nsource mylib"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_fileCanDisableExternalSources = result == [2006, 2086]
   where
     f "dir/myscript" (Just True) _ "withExternal" = return "withExternal"
     f "dir/myscript" (Just False) _ "withoutExternal" = return "withoutExternal"
     f a b c d = error $ show ("Unexpected", a, b, c, d)
-    result = checkWithRcIncludesAndSourcePath "external-sources=true" [("withExternal", "echo $1"), ("withoutExternal", "_=`foo`")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\ntrue\nsource withExternal\n# shellcheck external-sources=false\nsource withoutExternal",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithRcIncludesAndSourcePath
+            "external-sources=true"
+            [("withExternal", "echo $1"), ("withoutExternal", "_=`foo`")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\ntrue\nsource withExternal\n# shellcheck external-sources=false\nsource withoutExternal"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_fileCannotEnableExternalSources = result == [1144]
   where
     f "dir/myscript" Nothing _ "foo" = return "foo"
     f a b c d = error $ show ("Unexpected", a, b, c, d)
-    result = checkWithRcIncludesAndSourcePath "" [("foo", "true")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\n# shellcheck external-sources=true\nsource foo",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithRcIncludesAndSourcePath
+            ""
+            [("foo", "true")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\n# shellcheck external-sources=true\nsource foo"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_fileCannotEnableExternalSources2 = result == [1144]
   where
     f "dir/myscript" (Just False) _ "foo" = return "foo"
     f a b c d = error $ show ("Unexpected", a, b, c, d)
-    result = checkWithRcIncludesAndSourcePath "external-sources=false" [("foo", "true")] f emptyCheckSpec {
-        csScript = "#!/bin/bash\n# shellcheck external-sources=true\nsource foo",
-        csFilename = "dir/myscript",
-        csCheckSourced = True
-    }
+    result =
+        checkWithRcIncludesAndSourcePath
+            "external-sources=false"
+            [("foo", "true")]
+            f
+            emptyCheckSpec
+                { csScript = "#!/bin/bash\n# shellcheck external-sources=true\nsource foo"
+                , csFilename = "dir/myscript"
+                , csCheckSourced = True
+                }
 
 prop_rcCanSuppressEarlyProblems1 = null result
   where
-    result = checkWithRc "disable=1071" emptyCheckSpec {
-        csScript = "#!/bin/zsh\necho $1"
-    }
+    result =
+        checkWithRc
+            "disable=1071"
+            emptyCheckSpec
+                { csScript = "#!/bin/zsh\necho $1"
+                }
 
 prop_rcCanSuppressEarlyProblems2 = null result
   where
-    result = checkWithRc "disable=1104" emptyCheckSpec {
-        csScript = "!/bin/bash\necho 'hello world'"
-    }
+    result =
+        checkWithRc
+            "disable=1104"
+            emptyCheckSpec
+                { csScript = "!/bin/bash\necho 'hello world'"
+                }
 
 prop_sourceWithHereDocWorks = null result
   where
@@ -674,74 +860,104 @@ prop_hereDocsWillHaveParsedIndices = null result
 
 prop_rcCanSuppressDfa = null result
   where
-    result = checkWithRc "extended-analysis=false" emptyCheckSpec {
-        csScript = "#!/bin/sh\nexit; foo;"
-    }
+    result =
+        checkWithRc
+            "extended-analysis=false"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\nexit; foo;"
+                }
 
 prop_fileCanSuppressDfa = null $ traceShowId result
   where
-    result = checkWithRc "" emptyCheckSpec {
-        csScript = "#!/bin/sh\n# shellcheck extended-analysis=false\nexit; foo;"
-    }
+    result =
+        checkWithRc
+            ""
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n# shellcheck extended-analysis=false\nexit; foo;"
+                }
 
 prop_fileWinsWhenSuppressingDfa1 = null result
   where
-    result = checkWithRc "extended-analysis=true" emptyCheckSpec {
-        csScript = "#!/bin/sh\n# shellcheck extended-analysis=false\nexit; foo;"
-    }
+    result =
+        checkWithRc
+            "extended-analysis=true"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n# shellcheck extended-analysis=false\nexit; foo;"
+                }
 
 prop_fileWinsWhenSuppressingDfa2 = result == [2317]
   where
-    result = checkWithRc "extended-analysis=false" emptyCheckSpec {
-        csScript = "#!/bin/sh\n# shellcheck extended-analysis=true\nexit; foo;"
-    }
+    result =
+        checkWithRc
+            "extended-analysis=false"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n# shellcheck extended-analysis=true\nexit; foo;"
+                }
 
 prop_flagWinsWhenSuppressingDfa1 = result == [2317]
   where
-    result = checkWithRc "extended-analysis=false" emptyCheckSpec {
-        csScript = "#!/bin/sh\n# shellcheck extended-analysis=none\nexit; foo;",
-        csExtendedAnalysis = Just ExtendedAnalysisFull
-    }
+    result =
+        checkWithRc
+            "extended-analysis=false"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n# shellcheck extended-analysis=none\nexit; foo;"
+                , csExtendedAnalysis = Just ExtendedAnalysisFull
+                }
 
 prop_flagWinsWhenSuppressingDfa2 = null result
   where
-    result = checkWithRc "extended-analysis=true" emptyCheckSpec {
-        csScript = "#!/bin/sh\n# shellcheck extended-analysis=full\nexit; foo;",
-        csExtendedAnalysis = Just ExtendedAnalysisNone
-    }
+    result =
+        checkWithRc
+            "extended-analysis=true"
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n# shellcheck extended-analysis=full\nexit; foo;"
+                , csExtendedAnalysis = Just ExtendedAnalysisNone
+                }
 
 -- 'local' still does data-flow analysis within a file...
 prop_localKeepsIntraFileDfa = 2317 `elem` result
   where
-    result = getErrors (mockedSystemInterface []) emptyCheckSpec {
-        csScript = "#!/bin/sh\nexit; foo;",
-        csExtendedAnalysis = Just ExtendedAnalysisLocal
-    }
+    result =
+        getErrors
+            (mockedSystemInterface [])
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\nexit; foo;"
+                , csExtendedAnalysis = Just ExtendedAnalysisLocal
+                }
 
 -- ...but treats sourced files as boundaries, so it does not use data flow
 -- from a sourced file (here: that f() always exits) the way 'full' does.
 prop_localTreatsSourcesAsBoundary = 2317 `notElem` result
   where
-    result = getErrors (mockedSystemInterface [("lib", "f() { exit 1; }")]) emptyCheckSpec {
-        csScript = "#!/bin/sh\nsource lib\nf\nfoo",
-        csCheckSourced = True,
-        csExtendedAnalysis = Just ExtendedAnalysisLocal
-    }
+    result =
+        getErrors
+            (mockedSystemInterface [("lib", "f() { exit 1; }")])
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\nsource lib\nf\nfoo"
+                , csCheckSourced = True
+                , csExtendedAnalysis = Just ExtendedAnalysisLocal
+                }
 
 prop_localDirectiveTreatsSourcesAsBoundary = 2317 `notElem` result
   where
-    result = getErrors (mockedSystemInterface [("lib", "f() { exit 1; }")]) emptyCheckSpec {
-        csScript = "#!/bin/sh\n# shellcheck extended-analysis=local\nsource lib\nf\nfoo",
-        csCheckSourced = True
-    }
+    result =
+        getErrors
+            (mockedSystemInterface [("lib", "f() { exit 1; }")])
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\n# shellcheck extended-analysis=local\nsource lib\nf\nfoo"
+                , csCheckSourced = True
+                }
 
 prop_fullFollowsDataFlowIntoSources = 2317 `elem` result
   where
-    result = getErrors (mockedSystemInterface [("lib", "f() { exit 1; }")]) emptyCheckSpec {
-        csScript = "#!/bin/sh\nsource lib\nf\nfoo",
-        csCheckSourced = True,
-        csExtendedAnalysis = Just ExtendedAnalysisFull
-    }
+    result =
+        getErrors
+            (mockedSystemInterface [("lib", "f() { exit 1; }")])
+            emptyCheckSpec
+                { csScript = "#!/bin/sh\nsource lib\nf\nfoo"
+                , csCheckSourced = True
+                , csExtendedAnalysis = Just ExtendedAnalysisFull
+                }
 
 return []
 runTests = $quickCheckAll
