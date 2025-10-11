@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 {-
     Copyright 2012-2019 Vidar Holen
 
@@ -20,94 +21,98 @@
 -}
 module ShellCheck.Formatter.JSON1 (format) where
 
-import ShellCheck.Interface
 import ShellCheck.Formatter.Format
+import ShellCheck.Interface
 
 import Control.DeepSeq
 import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.IORef
+import qualified Data.List.NonEmpty as NE
 import Data.Monoid
 import System.IO
-import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.List.NonEmpty as NE
 
 format :: IO Formatter
 format = do
     ref <- newIORef []
-    return Formatter {
-        header = return (),
-        onResult = collectResult ref,
-        onFailure = outputError,
-        footer = finish ref
-    }
+    return
+        Formatter
+            { header = return ()
+            , onResult = collectResult ref
+            , onFailure = outputError
+            , footer = finish ref
+            }
 
-data Json1Output = Json1Output {
-    comments :: [PositionedComment]
+data Json1Output = Json1Output
+    { comments :: [PositionedComment]
     }
 
 instance ToJSON Json1Output where
-    toJSON result = object [
-        "comments" .= comments result
-        ]
-    toEncoding result = pairs (
-        "comments" .= comments result
-        )
+    toJSON result =
+        object
+            [ "comments" .= comments result
+            ]
+    toEncoding result =
+        pairs
+            ( "comments" .= comments result
+            )
 
 instance ToJSON Replacement where
     toJSON replacement =
         let start = repStartPos replacement
             end = repEndPos replacement
-            str = repString replacement in
-        object [
-          "precedence" .= repPrecedence replacement,
-          "insertionPoint"  .=
-            case repInsertionPoint replacement of
-                InsertBefore -> "beforeStart" :: String
-                InsertAfter  -> "afterEnd",
-          "line" .= posLine start,
-          "column" .= posColumn start,
-          "endLine" .= posLine end,
-          "endColumn" .= posColumn end,
-          "replacement" .= str
-        ]
+            str = repString replacement
+         in object
+                [ "precedence" .= repPrecedence replacement
+                , "insertionPoint"
+                    .= case repInsertionPoint replacement of
+                        InsertBefore -> "beforeStart" :: String
+                        InsertAfter -> "afterEnd"
+                , "line" .= posLine start
+                , "column" .= posColumn start
+                , "endLine" .= posLine end
+                , "endColumn" .= posColumn end
+                , "replacement" .= str
+                ]
 
 instance ToJSON PositionedComment where
-  toJSON comment =
-    let start = pcStartPos comment
-        end = pcEndPos comment
-        c = pcComment comment in
-    object [
-      "file" .= posFile start,
-      "line" .= posLine start,
-      "endLine" .= posLine end,
-      "column" .= posColumn start,
-      "endColumn" .= posColumn end,
-      "level" .= severityText comment,
-      "code" .= cCode c,
-      "message" .= cMessage c,
-      "fix" .= pcFix comment
-    ]
+    toJSON comment =
+        let start = pcStartPos comment
+            end = pcEndPos comment
+            c = pcComment comment
+         in object
+                [ "file" .= posFile start
+                , "line" .= posLine start
+                , "endLine" .= posLine end
+                , "column" .= posColumn start
+                , "endColumn" .= posColumn end
+                , "level" .= severityText comment
+                , "code" .= cCode c
+                , "message" .= cMessage c
+                , "fix" .= pcFix comment
+                ]
 
-  toEncoding comment =
-    let start = pcStartPos comment
-        end = pcEndPos comment
-        c = pcComment comment in
-    pairs (
-         "file" .= posFile start
-      <> "line" .= posLine start
-      <> "endLine" .= posLine end
-      <> "column" .= posColumn start
-      <> "endColumn" .= posColumn end
-      <> "level" .= severityText comment
-      <> "code" .= cCode c
-      <> "message" .= cMessage c
-      <> "fix" .= pcFix comment
-    )
+    toEncoding comment =
+        let start = pcStartPos comment
+            end = pcEndPos comment
+            c = pcComment comment
+         in pairs
+                ( "file" .= posFile start
+                    <> "line" .= posLine start
+                    <> "endLine" .= posLine end
+                    <> "column" .= posColumn start
+                    <> "endColumn" .= posColumn end
+                    <> "level" .= severityText comment
+                    <> "code" .= cCode c
+                    <> "message" .= cMessage c
+                    <> "fix" .= pcFix comment
+                )
 
 instance ToJSON Fix where
-    toJSON fix = object [
-        "replacements" .= fixReplacements fix
-        ]
+    toJSON fix =
+        object
+            [ "replacements" .= fixReplacements fix
+            ]
 
 outputError file msg = hPutStrLn stderr $ file ++ ": " ++ msg
 
@@ -125,4 +130,4 @@ collectResult ref cr sys = mapM_ f groups
 
 finish ref = do
     list <- readIORef ref
-    BL.putStrLn $ encode $ Json1Output { comments = list }
+    BL.putStrLn $ encode $ Json1Output{comments = list}
