@@ -19,8 +19,8 @@
 -}
 module ShellCheck.Formatter.Quiet (format) where
 
-import ShellCheck.Interface
 import ShellCheck.Formatter.Format
+import ShellCheck.Interface
 
 import Control.Monad
 import Data.IORef
@@ -28,9 +28,10 @@ import System.Exit
 
 format :: FormatterOptions -> IO Formatter
 format options =
-    return Formatter {
-        header = return (),
-        footer = return (),
-        onFailure = \ _ _ -> exitFailure,
-        onResult  = \ result _ -> unless (null $ crComments result) exitFailure
-    }
+    return
+        Formatter
+            { header = return ()
+            , footer = return ()
+            , onFailure = \_ _ -> exitFailure
+            , onResult = \result _ -> unless (null $ crComments result) exitFailure
+            }

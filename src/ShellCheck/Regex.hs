@@ -22,9 +22,9 @@
 -- Basically Text.Regex based on regex-tdfa instead of the buggy regex-posix.
 module ShellCheck.Regex where
 
+import Control.Monad
 import Data.List
 import Data.Maybe
-import Control.Monad
 import Text.Regex.TDFA
 
 -- Precompile the regex
@@ -32,8 +32,7 @@ mkRegex :: String -> Regex
 mkRegex str =
     let make :: String -> Regex
         make = makeRegex
-    in
-        make str
+     in make str
 
 -- Does the regex match?
 matches :: String -> Regex -> Bool
@@ -42,7 +41,7 @@ matches = flip match
 -- Get all subgroups of the first match
 matchRegex :: Regex -> String -> Maybe [String]
 matchRegex re str = do
-    (_, _, _, groups) <- matchM re str :: Maybe (String,String,String,[String])
+    (_, _, _, groups) <- matchM re str :: Maybe (String, String, String, [String])
     return groups
 
 -- Get all full matches
