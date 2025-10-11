@@ -29,24 +29,19 @@ import ShellCheck.AnalyzerLib hiding (producesComments)
 import ShellCheck.CFG
 import qualified ShellCheck.CFGAnalysis as CF
 import ShellCheck.Data
-import ShellCheck.Parser
 import ShellCheck.Prelude
 import ShellCheck.Interface
 import ShellCheck.Regex
 
-import Control.Arrow (first)
 import Control.Monad
 import Control.Monad.Identity
 import Control.Monad.State
 import Control.Monad.Writer hiding ((<>))
-import Control.Monad.Reader
 import Data.Char
-import Data.Functor
 import Data.Function (on)
 import Data.List
 import Data.Maybe
 import Data.Ord
-import Data.Semigroup
 import Debug.Trace -- STRIP
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
