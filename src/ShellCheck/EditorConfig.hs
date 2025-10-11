@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-
 {-# LANGUAGE TemplateHaskell #-}
+
 -- Minimal support for reading shellcheck directives from EditorConfig
 -- style files (https://editorconfig.org/). Only the `shellcheck.*` keys
 -- of sections whose glob matches the file being checked are extracted,
@@ -68,18 +68,18 @@ parseEditorConfig contents name =
     sections = splitSections 1 ls
 
     splitSections _ [] = []
-    splitSections n (l:rest) =
+    splitSections n (l : rest) =
         case parseHeader l of
             Just pat ->
                 let (body, rest') = break (isJust . parseHeader) rest
-                in (pat, zip [n+1..] body) : splitSections (n + 1 + length body) rest'
-            Nothing -> splitSections (n+1) rest
+                 in (pat, zip [n + 1 ..] body) : splitSections (n + 1 + length body) rest'
+            Nothing -> splitSections (n + 1) rest
 
     parseHeader l =
         let t = trim (dropLineComment l)
-        in case t of
-            ('[':cs@(_:_)) | last cs == ']' -> Just (init cs)
-            _ -> Nothing
+         in case t of
+                ('[' : cs@(_ : _)) | last cs == ']' -> Just (init cs)
+                _ -> Nothing
 
     -- All 'shellcheck.*' directives (as (line, key, value) tuples) found
     -- in sections whose glob matches the file being checked.
@@ -87,17 +87,17 @@ parseEditorConfig contents name =
 
     sectionDirectives name (pat, body) =
         if matchesGlob pat name
-        then mapMaybe toDirectivePair body
-        else []
+            then mapMaybe toDirectivePair body
+            else []
 
     toDirectivePair (line, l) =
         case break (== '=') (trim (dropLineComment l)) of
-            (key, '=':value) ->
+            (key, '=' : value) ->
                 let key' = trim key
                     value' = trim value
-                in if "shellcheck." `isPrefixOf` key'
-                    then Just (line, drop (length "shellcheck.") key', value')
-                    else Nothing
+                 in if "shellcheck." `isPrefixOf` key'
+                        then Just (line, drop (length "shellcheck.") key', value')
+                        else Nothing
             _ -> Nothing
 
     -- Only emit directives that the .shellcheckrc parser can handle
@@ -131,8 +131,8 @@ parseEditorConfig contents name =
 -- Only directives in sections whose glob matches the file are reported.
 invalidDirectiveLines :: String -> FilePath -> [Int]
 invalidDirectiveLines contents name =
-    [ line | (line, key, value) <- allDirectives name sections
-           , isInvalidDirective key value ]
+    [ line | (line, key, value) <- allDirectives name sections, isInvalidDirective key value
+    ]
   where
     isInvalidDirective "shell" value = not (null value) && isNothing (shellForExecutable value)
     isInvalidDirective _ value = hasCommentMarker value
@@ -142,34 +142,34 @@ invalidDirectiveLines contents name =
     sections = splitSections 1 (lines contents)
 
     splitSections _ [] = []
-    splitSections n (l:rest) =
+    splitSections n (l : rest) =
         case parseHeader l of
             Just pat ->
                 let (body, rest') = break (isJust . parseHeader) rest
-                in (pat, zip [n+1..] body) : splitSections (n + 1 + length body) rest'
-            Nothing -> splitSections (n+1) rest
+                 in (pat, zip [n + 1 ..] body) : splitSections (n + 1 + length body) rest'
+            Nothing -> splitSections (n + 1) rest
 
     parseHeader l =
         let t = trim (dropLineComment l)
-        in case t of
-            ('[':cs@(_:_)) | last cs == ']' -> Just (init cs)
-            _ -> Nothing
+         in case t of
+                ('[' : cs@(_ : _)) | last cs == ']' -> Just (init cs)
+                _ -> Nothing
 
     allDirectives name = concatMap (sectionDirectives name)
 
     sectionDirectives name (pat, body) =
         if matchesGlob pat name
-        then mapMaybe toDirectivePair body
-        else []
+            then mapMaybe toDirectivePair body
+            else []
 
     toDirectivePair (line, l) =
         case break (== '=') (trim (dropLineComment l)) of
-            (key, '=':value) ->
+            (key, '=' : value) ->
                 let key' = trim key
                     value' = trim value
-                in if "shellcheck." `isPrefixOf` key'
-                    then Just (line, drop (length "shellcheck.") key', value')
-                    else Nothing
+                 in if "shellcheck." `isPrefixOf` key'
+                        then Just (line, drop (length "shellcheck.") key', value')
+                        else Nothing
             _ -> Nothing
 
 -- Build the directive blob contributed by a single EditorConfig file for
@@ -181,10 +181,11 @@ invalidDirectiveLines contents name =
 editorConfigDirectives :: String -> FilePath -> Maybe String
 editorConfigDirectives contents name =
     let badLines = invalidDirectiveLines contents name
-    in if not (null badLines)
-        then Just . unlines $ map rejectedLine (nub (sort badLines))
-        else let result = parseEditorConfig contents name
-             in if null result then Nothing else Just result
+     in if not (null badLines)
+            then Just . unlines $ map rejectedLine (nub (sort badLines))
+            else
+                let result = parseEditorConfig contents name
+                 in if null result then Nothing else Just result
   where
     rejectedLine n = replicate (n - 1) '\n' ++ "invalid editorconfig value"
 
@@ -197,35 +198,37 @@ isEditorConfigRoot contents =
   where
     isSectionHeader l =
         case trim (dropLineComment l) of
-            ('[':cs@(_:_)) -> last cs == ']'
+            ('[' : cs@(_ : _)) -> last cs == ']'
             _ -> False
     preSectionLines = takeWhile (not . isSectionHeader) . lines
 
     rootValue l =
         case break (== '=') (trim (dropLineComment l)) of
-            (key, '=':value) | map toLower (trim key) == "root" ->
-                Just (map toLower (trim value))
+            (key, '=' : value)
+                | map toLower (trim key) == "root" ->
+                    Just (map toLower (trim value))
             _ -> Nothing
 
 -- Returns the 1-based line numbers of invalid 'root' declarations,
 -- i.e. root values other than true/false (such as 'root =').
 invalidRootLines :: String -> [Int]
 invalidRootLines contents =
-    [ n | (n, l) <- zip [1..] (preSectionLines contents)
-        , case rootValue l of
-            Just value -> value `notElem` ["true", "false"]
-            Nothing -> False ]
+    [ n | (n, l) <- zip [1 ..] (preSectionLines contents), case rootValue l of
+                                                            Just value -> value `notElem` ["true", "false"]
+                                                            Nothing -> False
+    ]
   where
     isSectionHeader l =
         case trim (dropLineComment l) of
-            ('[':cs@(_:_)) -> last cs == ']'
+            ('[' : cs@(_ : _)) -> last cs == ']'
             _ -> False
     preSectionLines = takeWhile (not . isSectionHeader) . lines
 
     rootValue l =
         case break (== '=') (trim (dropLineComment l)) of
-            (key, '=':value) | map toLower (trim key) == "root" ->
-                Just (map toLower (trim value))
+            (key, '=' : value)
+                | map toLower (trim key) == "root" ->
+                    Just (map toLower (trim value))
             _ -> Nothing
 
 -- EditorConfig does not allow inline comments; '#' and ';' starting
@@ -233,9 +236,9 @@ invalidRootLines contents =
 -- Lines not starting with '#' or ';' must be returned verbatim.
 dropLineComment l =
     case dropWhile isSpace l of
-        ('#':_) -> ""
-        (';':_) -> ""
-        _       -> l
+        ('#' : _) -> ""
+        (';' : _) -> ""
+        _ -> l
 
 trim :: String -> String
 trim = dropWhileEnd isSpace . dropWhile isSpace
@@ -254,26 +257,26 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
     prefix = if '/' `elem` pattern then "" else "(.*/)?"
 
     go [] = ""
-    go ('*':'*':rest) = ".*" ++ go rest
-    go ('*':rest) = "[^/]*" ++ go rest
-    go ('?':rest) = "[^/]" ++ go rest
-    go ('[':rest) =
+    go ('*' : '*' : rest) = ".*" ++ go rest
+    go ('*' : rest) = "[^/]*" ++ go rest
+    go ('?' : rest) = "[^/]" ++ go rest
+    go ('[' : rest) =
         let (cls, rest') = break (== ']') rest
-        in case rest' of
-            (']':rest'') -> "[" ++ translateClass cls ++ "]" ++ go rest''
-            _ -> "\\[" ++ go rest
-    go ('{':rest) =
+         in case rest' of
+                (']' : rest'') -> "[" ++ translateClass cls ++ "]" ++ go rest''
+                _ -> "\\[" ++ go rest
+    go ('{' : rest) =
         case findMatchingBrace rest of
             Just (body, rest'') ->
                 buildAlternation (map go (braceAlternatives body)) ++ go rest''
             _ -> "\\{" ++ go rest
-    go (c:rest)
+    go (c : rest)
         | c `elem` regexSpecials = ['\\', c] ++ go rest
         | otherwise = c : go rest
 
     regexSpecials = ".\\+()^$|"
 
-    translateClass ('!':cs) = '^' : escapeClass cs
+    translateClass ('!' : cs) = '^' : escapeClass cs
     translateClass cs = escapeClass cs
     escapeClass = concatMap (\c -> if c == '\\' then "\\\\" else [c])
 
@@ -283,12 +286,13 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
     findMatchingBrace = goBrace 1 ""
       where
         goBrace _ _ "" = Nothing
-        goBrace d acc (c:cs)
+        goBrace d acc (c : cs)
             | c == '}' =
-                if d == 1 then Just (reverse acc, cs)
-                else goBrace (d - 1) (c:acc) cs
-            | c == '{' = goBrace (d + 1) (c:acc) cs
-            | otherwise = goBrace d (c:acc) cs
+                if d == 1
+                    then Just (reverse acc, cs)
+                    else goBrace (d - 1) (c : acc) cs
+            | c == '{' = goBrace (d + 1) (c : acc) cs
+            | otherwise = goBrace d (c : acc) cs
 
     -- Wrap a list of regex alternatives in an anchored group. Empty
     -- alternatives are handled so the result is always a valid regex:
@@ -306,13 +310,13 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
     -- nested braces (e.g. 'ba{r,z}') are not treated as separators.
     braceAlternatives body =
         case break (== '.') body of
-            (fromStr, '.':'.':toStr)
+            (fromStr, '.' : '.' : toStr)
                 | Just from <- readInt fromStr
                 , Just to <- readInt toStr ->
                     map show $
                         if from < to
-                        then [from..to]
-                        else []
+                            then [from .. to]
+                            else []
             _ -> splitTopLevelCommas body
 
     -- Split on commas, but ignore commas that appear inside nested
@@ -320,11 +324,11 @@ globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
     splitTopLevelCommas = go 0 ""
       where
         go _ acc "" = [reverse acc]
-        go d acc (c:cs)
-            | c == '{' = go (d + 1) (c:acc) cs
-            | c == '}' = go (max 0 (d - 1)) (c:acc) cs
+        go d acc (c : cs)
+            | c == '{' = go (d + 1) (c : acc) cs
+            | c == '}' = go (max 0 (d - 1)) (c : acc) cs
             | c == ',' && d == 0 = reverse acc : go 0 "" cs
-            | otherwise = go d (c:acc) cs
+            | otherwise = go d (c : acc) cs
 
     readInt s =
         case reads s :: [(Int, String)] of
@@ -340,13 +344,16 @@ prop_globNoMatch = not $ matchesGlob "*.ebuild" "foo.txt"
 prop_globQuestion = matchesGlob "foo?.sh" "food.sh"
 prop_globClass = matchesGlob "foo[0-9].sh" "foo1.sh"
 prop_globClassNeg = not $ matchesGlob "foo[!0-9].sh" "foo1.sh"
+
 -- Patterns without a path separator should match at any depth.
 prop_globAnyDepth = matchesGlob "*.sh" "sub/dir/foo.sh"
 prop_globAnyDepthPlain = matchesGlob "foo" "sub/foo"
+
 -- Patterns with a path separator are only matched against the full
 -- relative path.
 prop_globWithSlashNoMatch = not $ matchesGlob "sub/*.sh" "other/foo.sh"
 prop_globWithSlashMatch = matchesGlob "sub/*.sh" "sub/foo.sh"
+
 -- Numeric range expansion
 prop_globRange = matchesGlob "file{1..3}.sh" "file2.sh"
 prop_globRangeStart = matchesGlob "file{1..3}.sh" "file1.sh"
@@ -355,11 +362,13 @@ prop_globRangeNoMatch = not $ matchesGlob "file{1..3}.sh" "file4.sh"
 prop_globRangeNegative = matchesGlob "file{-2..0}.sh" "file-1.sh"
 prop_globRangeDescending = not $ matchesGlob "file{3..1}.sh" "file2.sh"
 prop_globLiteralDots = not $ matchesGlob "file{1..3}.sh" "file1..3.sh"
+
 -- Empty brace alternatives (e.g. 'foo{,bar}') make the group optional:
 -- 'foo' and 'foobar' both match.
 prop_globBraceEmptyAlt = matchesGlob "foo{,bar}" "foo"
 prop_globBraceEmptyAlt2 = matchesGlob "foo{,bar}" "foobar"
 prop_globBraceEmptyAltNoMatch = not $ matchesGlob "foo{,bar}" "foobaz"
+
 -- Nested braces: '{foo,ba{r,z}}' matches foo, bar and baz.
 prop_globBraceNested1 = matchesGlob "{foo,ba{r,z}}" "foo"
 prop_globBraceNested2 = matchesGlob "{foo,ba{r,z}}" "bar"
@@ -376,15 +385,18 @@ prop_parseEditorConfig3 =
 prop_parseEditorConfig4 =
     parseEditorConfig "root = true\n[*.sh]\nindent_style = space\nshellcheck.shell=bash\n" "foo.sh"
         == "\n\n\nshell=bash\n"
+
 -- A later, more specific section overrides an earlier, more general
 -- one for the same key.
 prop_parseEditorConfig5 =
     parseEditorConfig "[*]\nshellcheck.shell=sh\n\n[foo]\nshellcheck.shell=bash\n" "foo"
         == "\n\n\n\nshell=bash\n"
+
 -- Non-conflicting keys from earlier and later sections are all kept.
 prop_parseEditorConfig6 =
     parseEditorConfig "[*]\nshellcheck.shell=sh\n\n[foo]\nshellcheck.disable=SC2034\n" "foo"
         == "\nshell=sh\n\n\ndisable=SC2034\n"
+
 -- An unsupported shell is not emitted as a usable directive; instead its
 -- line is reported via invalidDirectiveLines so the caller can reject it.
 prop_parseEditorConfigUnknownShell =
@@ -393,26 +405,31 @@ prop_parseEditorConfigEmptyShell =
     parseEditorConfig "[*]\nshellcheck.shell=\n" "foo" == "\nshell=\n"
 prop_parseEditorConfigEmptyDisable =
     parseEditorConfig "[*]\nshellcheck.disable=\n" "foo" == ""
+
 -- A '#' embedded anywhere in the value (not just at the start) makes it
 -- invalid too, since EditorConfig has no inline comments and the
 -- .shellcheckrc parser would otherwise silently truncate it at the '#'.
 prop_parseEditorConfigEmbeddedComment =
     parseEditorConfig "[*]\nshellcheck.disable=SC2148 #abc\n" "foo" == ""
+
 -- EditorConfig does not allow inline comments, so a trailing '# ...'
 -- makes the value invalid (the .shellcheckrc parser's
 -- shellForExecutable lookup fails on the embedded text), and the
 -- directive is dropped. It is reported via invalidDirectiveLines.
 prop_parseEditorConfigInlineComment =
     parseEditorConfig "[*]\nshellcheck.shell=bash # inline\n" "foo" == ""
+
 -- Full-line comments starting on first non-ws char are stripped.
 prop_parseEditorConfigLineComment =
     parseEditorConfig "[*]\n# shellcheck.shell=bash\n" "foo" == ""
 prop_parseEditorConfigSemicolonComment =
     parseEditorConfig "[*]\n; shellcheck.shell=bash\n" "foo" == ""
+
 -- Empty brace alternative makes the glob group optional; 'foo' matches
 -- '[foo{,bar}]'.
 prop_parseEditorConfigBraceEmpty =
     parseEditorConfig "[foo{,bar}]\nshellcheck.shell=sh\n" "foo" == "\nshell=sh\n"
+
 -- Nested braces are expanded correctly; 'baz' matches
 -- '[{foo,ba{r,z}}]'.
 prop_parseEditorConfigBraceNested =
@@ -425,21 +442,27 @@ prop_invalidRootLinesTrue = invalidRootLines "root = true\n" == []
 prop_invalidRootLinesFalse = invalidRootLines "root = false\n" == []
 prop_invalidRootLinesInSection =
     invalidRootLines "[*]\nroot = true\n" == []
+
 -- An unsupported non-empty shell is reported at its line.
 prop_invalidDirectiveLinesUnknownShell =
     invalidDirectiveLines "[*]\nshellcheck.shell=zsh\n" "foo" == [2]
+
 -- An empty shell is valid (the rc parser rejects it), so no error.
 prop_invalidDirectiveLinesEmptyShell =
     invalidDirectiveLines "[*]\nshellcheck.shell=\n" "foo" == []
+
 -- A known shell is fine.
 prop_invalidDirectiveLinesKnownShell =
     invalidDirectiveLines "[*]\nshellcheck.shell=bash\n" "foo" == []
+
 -- A '#'-prefixed value is reported (EditorConfig has no inline comments).
 prop_invalidDirectiveLinesHashValue =
     invalidDirectiveLines "[foo]\nshellcheck.disable = #abc\n" "foo" == [2]
+
 -- A ';'-prefixed value is reported too.
 prop_invalidDirectiveLinesSemicolonValue =
     invalidDirectiveLines "[foo]\nshellcheck.disable = ;abc\n" "foo" == [2]
+
 -- A '#' embedded anywhere in the value (not just at the start) is
 -- reported too: previously this was silently accepted, since the
 -- .shellcheckrc parser would treat everything from the '#' onwards as a
@@ -448,18 +471,22 @@ prop_invalidDirectiveLinesEmbeddedHashValue =
     invalidDirectiveLines "[foo]\nshellcheck.disable = SC2148 #abc\n" "foo" == [2]
 prop_invalidDirectiveLinesEmbeddedSemicolonValue =
     invalidDirectiveLines "[foo]\nshellcheck.disable = SC2148 ;abc\n" "foo" == [2]
+
 -- A plain empty value (no comment marker) is not reported: it is simply
 -- a no-op, unlike a value that was truncated down to empty by a leading
 -- comment marker.
 prop_invalidDirectiveLinesEmptyValueNotInvalid =
     invalidDirectiveLines "[foo]\nshellcheck.disable =\n" "foo" == []
+
 -- A plain invalid value (no comment marker) is not reported here; it is
 -- rejected by the .shellcheckrc parser as SC1134 instead.
 prop_invalidDirectiveLinesPlainValue =
     invalidDirectiveLines "[foo]\nshellcheck.disable = abc\n" "foo" == []
+
 -- Directives in non-matching sections are ignored.
 prop_invalidDirectiveLinesNoMatch =
     invalidDirectiveLines "[*.txt]\nshellcheck.shell=zsh\n" "foo" == []
+
 -- Only the matching section's invalid directive is reported.
 prop_invalidDirectiveLinesMatchingSection =
     invalidDirectiveLines "[*.txt]\nshellcheck.shell=zsh\n[foo]\nshellcheck.shell=bash\n" "foo" == []
