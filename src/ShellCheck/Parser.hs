@@ -30,18 +30,14 @@ import ShellCheck.Data
 import ShellCheck.Interface
 import ShellCheck.Prelude
 
-import Control.Applicative ((<*), (*>))
 import Control.Monad
 import Control.Monad.Identity
 import Control.Monad.Trans
 import Data.Char
 import Data.Functor
-import Data.List (isPrefixOf, isInfixOf, isSuffixOf, partition, sortBy, intercalate, nub, find)
+import Data.List (isPrefixOf, isInfixOf, isSuffixOf, partition, sortBy, nub, find)
 import Data.Maybe
-import Data.Monoid
-import GHC.Exts (sortWith)
 import Prelude hiding (readList)
-import System.IO
 import Text.Parsec hiding (runParser, (<?>))
 import Text.Parsec.Error
 import Text.Parsec.Pos
@@ -49,7 +45,6 @@ import qualified Control.Monad.Reader as Mr
 import qualified Control.Monad.State as Ms
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
-import Debug.Trace
 
 import Test.QuickCheck.All (quickCheckAll)
 

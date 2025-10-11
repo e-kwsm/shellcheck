@@ -19,11 +19,9 @@
 -}
 module ShellCheck.Formatter.Format where
 
-import ShellCheck.Data
 import ShellCheck.Interface
 import ShellCheck.Fixer
 
-import Control.Monad
 import Data.Array
 import Data.List
 import System.IO

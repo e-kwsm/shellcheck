@@ -76,7 +76,6 @@ Afterwards, you can run the ShellCheck tool, as if from the shell, with:
 
 module ShellCheck.Debug () where
 
-import ShellCheck.Analyzer
 import ShellCheck.AST
 import ShellCheck.CFG
 import ShellCheck.Checker
@@ -85,7 +84,6 @@ import ShellCheck.Interface
 import ShellCheck.Parser
 import ShellCheck.Prelude
 
-import Control.Monad
 import Control.Monad.Identity
 import Control.Monad.RWS
 import Control.Monad.Writer

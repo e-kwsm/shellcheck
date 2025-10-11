@@ -23,7 +23,6 @@ import ShellCheck.Interface
 import ShellCheck.Formatter.Format
 
 import Control.Monad
-import Data.IORef
 import System.Exit
 
 format :: FormatterOptions -> IO Formatter

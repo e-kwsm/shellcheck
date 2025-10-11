@@ -42,14 +42,11 @@ import GHC.Generics (Generic)
 import ShellCheck.AST
 import ShellCheck.ASTLib
 import ShellCheck.Data
-import ShellCheck.Interface
 import ShellCheck.Prelude
 import ShellCheck.Regex
 import Control.DeepSeq
 import Control.Monad
-import Control.Monad.Identity
 import Data.Array.Unboxed
-import Data.Array.ST
 import Data.List hiding (map)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
@@ -61,7 +58,6 @@ import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Query.Dominators
 import Data.Graph.Inductive.PatriciaTree as G
-import Debug.Trace -- STRIP
 
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)

@@ -26,16 +26,12 @@ import ShellCheck.Interface
 import ShellCheck.Parser
 
 import Debug.Trace -- DO NOT SUBMIT
-import Data.Either
-import Data.Functor
 import Data.List
 import Data.Maybe
 import Data.Ord
 import Control.Monad.Identity
 import qualified Data.Map as Map
-import qualified System.IO
 import Prelude hiding (readFile)
-import Control.Monad
 
 import Test.QuickCheck.All
 
