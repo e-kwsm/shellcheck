@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-
     Copyright 2022 Vidar Holen
 
@@ -18,7 +20,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 
 -- Constructs a Control Flow Graph from an AST
 module ShellCheck.CFG (
@@ -33,11 +34,28 @@ module ShellCheck.CFG (
     CFGParameters (..),
     IdTagged (..),
     Scope (..),
-    buildGraph
-    , ShellCheck.CFG.runTests -- STRIP
-    )
-  where
+    buildGraph,
+    ShellCheck.CFG.runTests, -- STRIP
+)
+where
 
+import Control.DeepSeq
+import Control.Monad
+import Control.Monad.Identity
+import Control.Monad.RWS.Lazy
+import Data.Array.ST
+import Data.Array.Unboxed
+import Data.Graph.Inductive.Basic
+import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.PatriciaTree as G
+import Data.Graph.Inductive.Query.DFS
+import Data.Graph.Inductive.Query.Dominators
+import Data.List hiding (map)
+import qualified Data.List.NonEmpty as NE
+import qualified Data.Map as M
+import Data.Maybe
+import qualified Data.Set as S
+import Debug.Trace -- STRIP
 import GHC.Generics (Generic)
 import ShellCheck.AST
 import ShellCheck.ASTLib
@@ -45,74 +63,56 @@ import ShellCheck.Data
 import ShellCheck.Interface
 import ShellCheck.Prelude
 import ShellCheck.Regex
-import Control.DeepSeq
-import Control.Monad
-import Control.Monad.Identity
-import Data.Array.Unboxed
-import Data.Array.ST
-import Data.List hiding (map)
-import qualified Data.List.NonEmpty as NE
-import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
-import Control.Monad.RWS.Lazy
-import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Query.DFS
-import Data.Graph.Inductive.Basic
-import Data.Graph.Inductive.Query.Dominators
-import Data.Graph.Inductive.PatriciaTree as G
-import Debug.Trace -- STRIP
 
 import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
-
+import Test.QuickCheck.Test (maxSuccess, quickCheckWithResult, stdArgs)
 
 -- Our basic Graph type
 type CFGraph = G.Gr CFNode CFEdge
 
 -- Node labels in a Control Flow Graph
-data CFNode =
-    -- A no-op node for structural purposes
-    CFStructuralNode
-    -- A no-op for graph inspection purposes
-    | CFEntryPoint String
-    -- Drop current prefix assignments
-    | CFDropPrefixAssignments
-    -- A node with a certain effect on program state
-    | CFApplyEffects [IdTagged CFEffect]
-    -- The execution of a command or function by literal string if possible
-    | CFExecuteCommand (Maybe String)
-    -- Execute a subshell. These are represented by disjoint graphs just like
-    -- functions, but they don't require any form of name resolution
-    | CFExecuteSubshell String Node Node
-    -- Assignment of $?
-    | CFSetExitCode Id
-    -- The virtual 'exit' at the natural end of a subshell
-    | CFImpliedExit
-    -- An exit statement resolvable at CFG build time
-    | CFResolvedExit
-    -- An exit statement only resolvable at DFA time
-    | CFUnresolvedExit
-    -- An unreachable node, serving as the unconnected end point of a range
-    | CFUnreachable
-    -- Assignment of $!
-    | CFSetBackgroundPid Id
-  deriving (Eq, Ord, Show, Generic, NFData)
+data CFNode
+    = -- A no-op node for structural purposes
+      CFStructuralNode
+    | -- A no-op for graph inspection purposes
+      CFEntryPoint String
+    | -- Drop current prefix assignments
+      CFDropPrefixAssignments
+    | -- A node with a certain effect on program state
+      CFApplyEffects [IdTagged CFEffect]
+    | -- The execution of a command or function by literal string if possible
+      CFExecuteCommand (Maybe String)
+    | -- Execute a subshell. These are represented by disjoint graphs just like
+      -- functions, but they don't require any form of name resolution
+      CFExecuteSubshell String Node Node
+    | -- Assignment of $?
+      CFSetExitCode Id
+    | -- The virtual 'exit' at the natural end of a subshell
+      CFImpliedExit
+    | -- An exit statement resolvable at CFG build time
+      CFResolvedExit
+    | -- An exit statement only resolvable at DFA time
+      CFUnresolvedExit
+    | -- An unreachable node, serving as the unconnected end point of a range
+      CFUnreachable
+    | -- Assignment of $!
+      CFSetBackgroundPid Id
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Edge labels in a Control Flow Graph
-data CFEdge =
-    CFEErrExit
-    -- Regular control flow edge
-    | CFEFlow
-    -- An edge that a human might think exists (e.g. from a backgrounded process to its parent)
-    | CFEFalseFlow
-    -- An edge followed on exit
-    | CFEExit
-  deriving (Eq, Ord, Show, Generic, NFData)
+data CFEdge
+    = CFEErrExit
+    | -- Regular control flow edge
+      CFEFlow
+    | -- An edge that a human might think exists (e.g. from a backgrounded process to its parent)
+      CFEFalseFlow
+    | -- An edge followed on exit
+      CFEExit
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Actions we track
-data CFEffect =
-    CFSetProps (Maybe Scope) String (S.Set CFVariableProp)
+data CFEffect
+    = CFSetProps (Maybe Scope) String (S.Set CFVariableProp)
     | CFUnsetProps (Maybe Scope) String (S.Set CFVariableProp)
     | CFReadVariable String
     | CFWriteVariable String CFValue
@@ -124,158 +124,161 @@ data CFEffect =
     | CFUndefineVariable String
     | CFUndefineFunction String
     | CFUndefineNameref String
-    -- Usage implies that this is an array (e.g. it's expanded with index)
-    | CFHintArray String
-    -- Operation implies that the variable will be defined (e.g. [ -z "$var" ])
-    | CFHintDefined String
-  deriving (Eq, Ord, Show, Generic, NFData)
+    | -- Usage implies that this is an array (e.g. it's expanded with index)
+      CFHintArray String
+    | -- Operation implies that the variable will be defined (e.g. [ -z "$var" ])
+      CFHintDefined String
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 data IdTagged a = IdTagged Id a
-  deriving (Eq, Ord, Show, Generic, NFData)
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Where a variable's value comes from
-data CFValue =
-    -- The special 'uninitialized' value
-    CFValueUninitialized
-    -- An arbitrary array value
-    | CFValueArray
-    -- An arbitrary string value
-    | CFValueString
-    -- An arbitrary integer
-    | CFValueInteger
-    -- Token 'Id' concatenates and assigns the given parts
-    | CFValueComputed Id [CFStringPart]
-  deriving (Eq, Ord, Show, Generic, NFData)
+data CFValue
+    = -- The special 'uninitialized' value
+      CFValueUninitialized
+    | -- An arbitrary array value
+      CFValueArray
+    | -- An arbitrary string value
+      CFValueString
+    | -- An arbitrary integer
+      CFValueInteger
+    | -- Token 'Id' concatenates and assigns the given parts
+      CFValueComputed Id [CFStringPart]
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Simplified computed strings
-data CFStringPart =
-    -- A known literal string value, like 'foo'
-    CFStringLiteral String
-    -- The contents of a variable, like $foo (may not be a string)
-    | CFStringVariable String
-    -- An value that is unknown but an integer
-    | CFStringInteger
-    -- An unknown string value, for things we can't handle
-    | CFStringUnknown
-  deriving (Eq, Ord, Show, Generic, NFData)
+data CFStringPart
+    = -- A known literal string value, like 'foo'
+      CFStringLiteral String
+    | -- The contents of a variable, like $foo (may not be a string)
+      CFStringVariable String
+    | -- An value that is unknown but an integer
+      CFStringInteger
+    | -- An unknown string value, for things we can't handle
+      CFStringUnknown
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 -- The properties of a variable
 data CFVariableProp = CFVPExport | CFVPArray | CFVPAssociative | CFVPInteger
-  deriving (Eq, Ord, Show, Generic, NFData)
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Options when generating CFG
-data CFGParameters = CFGParameters {
-    -- Whether the last element in a pipeline runs in the current shell
-    cfLastpipe :: Bool,
-    -- Whether all elements in a pipeline count towards the exit status
-    cfPipefail :: Bool
-}
+data CFGParameters = CFGParameters
+    { -- Whether the last element in a pipeline runs in the current shell
+      cfLastpipe :: Bool
+    , -- Whether all elements in a pipeline count towards the exit status
+      cfPipefail :: Bool
+    }
 
-data CFGResult = CFGResult {
-    -- The graph itself
-    cfGraph :: CFGraph,
-    -- Map from Id to nominal start&end node (i.e. assuming normal execution without exits)
-    cfIdToRange :: M.Map Id (Node, Node),
-    -- A set of all nodes belonging to an Id, recursively
-    cfIdToNodes :: M.Map Id (S.Set Node),
-    -- An array (from,to) saying whether 'from' postdominates 'to'
-    cfPostDominators :: Array Node [Node]
-}
-  deriving (Show)
+data CFGResult = CFGResult
+    { -- The graph itself
+      cfGraph :: CFGraph
+    , -- Map from Id to nominal start&end node (i.e. assuming normal execution without exits)
+      cfIdToRange :: M.Map Id (Node, Node)
+    , -- A set of all nodes belonging to an Id, recursively
+      cfIdToNodes :: M.Map Id (S.Set Node)
+    , -- An array (from,to) saying whether 'from' postdominates 'to'
+      cfPostDominators :: Array Node [Node]
+    }
+    deriving (Show)
 
 buildGraph :: CFGParameters -> Token -> CFGResult
 buildGraph params root =
     let
         (nextNode, base) = execRWS (buildRoot root) (newCFContext params) 0
         (nodes, edges, mapping, association) =
---            renumberTopologically $
-                removeUnnecessaryStructuralNodes
-                    base
+            --            renumberTopologically $
+            removeUnnecessaryStructuralNodes
+                base
 
         idToRange = M.fromList mapping
         isRealEdge (from, to, edge) = case edge of CFEFlow -> True; CFEExit -> True; _ -> False
         onlyRealEdges = filter isRealEdge edges
         (_, mainExit) = fromJust $ M.lookup (getId root) idToRange
 
-        result = CFGResult {
-            cfGraph = mkGraph nodes edges,
-            cfIdToRange = idToRange,
-            cfIdToNodes = M.fromListWith S.union $ map (\(id, n) -> (id, S.singleton n)) association,
-            cfPostDominators = findPostDominators mainExit $ mkGraph nodes onlyRealEdges
-        }
-    in
+        result =
+            CFGResult
+                { cfGraph = mkGraph nodes edges
+                , cfIdToRange = idToRange
+                , cfIdToNodes = M.fromListWith S.union $ map (\(id, n) -> (id, S.singleton n)) association
+                , cfPostDominators = findPostDominators mainExit $ mkGraph nodes onlyRealEdges
+                }
+     in
         result
 
 remapGraph :: M.Map Node Node -> CFW -> CFW
 remapGraph remap (nodes, edges, mapping, assoc) =
-    (
-        map (remapNode remap) nodes,
-        map (remapEdge remap) edges,
-        map (\(id, (a,b)) -> (id, (remapHelper remap a, remapHelper remap b))) mapping,
-        map (\(id, n) -> (id, remapHelper remap n)) assoc
+    ( map (remapNode remap) nodes
+    , map (remapEdge remap) edges
+    , map (\(id, (a, b)) -> (id, (remapHelper remap a, remapHelper remap b))) mapping
+    , map (\(id, n) -> (id, remapHelper remap n)) assoc
     )
 
 prop_testRenumbering =
     let
         s = CFStructuralNode
-        before = (
-            [(1,s), (3,s), (4, s), (8,s)],
-            [(1,3,CFEFlow), (3,4, CFEFlow), (4,8,CFEFlow)],
-            [(Id 0, (3,4))],
-            [(Id 1, 3), (Id 2, 4)]
+        before =
+            ( [(1, s), (3, s), (4, s), (8, s)]
+            , [(1, 3, CFEFlow), (3, 4, CFEFlow), (4, 8, CFEFlow)]
+            , [(Id 0, (3, 4))]
+            , [(Id 1, 3), (Id 2, 4)]
             )
-        after = (
-            [(0,s), (1,s), (2,s), (3,s)],
-            [(0,1,CFEFlow), (1,2, CFEFlow), (2,3,CFEFlow)],
-            [(Id 0, (1,2))],
-            [(Id 1, 1), (Id 2, 2)]
+        after =
+            ( [(0, s), (1, s), (2, s), (3, s)]
+            , [(0, 1, CFEFlow), (1, 2, CFEFlow), (2, 3, CFEFlow)]
+            , [(Id 0, (1, 2))]
+            , [(Id 1, 1), (Id 2, 2)]
             )
-    in after == renumberGraph before
+     in
+        after == renumberGraph before
 
 -- Renumber the graph for prettiness, so there are no gaps in node numbers
 renumberGraph :: CFW -> CFW
 renumberGraph g@(nodes, edges, mapping, assoc) =
-    let renumbering = M.fromList (flip zip [0..] $ sort $ map fst nodes)
-    in remapGraph renumbering g
+    let renumbering = M.fromList (flip zip [0 ..] $ sort $ map fst nodes)
+     in remapGraph renumbering g
 
 prop_testRenumberTopologically =
     let
         s = CFStructuralNode
-        before = (
-            [(4,s), (2,s), (3, s)],
-            [(4,2,CFEFlow), (2,3, CFEFlow)],
-            [(Id 0, (4,2))],
-            []
+        before =
+            ( [(4, s), (2, s), (3, s)]
+            , [(4, 2, CFEFlow), (2, 3, CFEFlow)]
+            , [(Id 0, (4, 2))]
+            , []
             )
-        after = (
-            [(0,s), (1,s), (2,s)],
-            [(0,1,CFEFlow), (1,2, CFEFlow)],
-            [(Id 0, (0,1))],
-            []
+        after =
+            ( [(0, s), (1, s), (2, s)]
+            , [(0, 1, CFEFlow), (1, 2, CFEFlow)]
+            , [(Id 0, (0, 1))]
+            , []
             )
-    in after == renumberTopologically before
+     in
+        after == renumberTopologically before
 
 -- Renumber the graph in topological order
 renumberTopologically g@(nodes, edges, mapping, assoc) =
-    let renumbering = M.fromList (flip zip [0..] $ topsort (mkGraph nodes edges :: CFGraph))
-    in remapGraph renumbering g
+    let renumbering = M.fromList (flip zip [0 ..] $ topsort (mkGraph nodes edges :: CFGraph))
+     in remapGraph renumbering g
 
 prop_testRemoveStructural =
     let
         s = CFStructuralNode
-        before = (
-            [(1,s), (2,s), (3, s), (4,s)],
-            [(1,2,CFEFlow), (2,3, CFEFlow), (3,4,CFEFlow)],
-            [(Id 0, (2,3))],
-            [(Id 0, 3)]
+        before =
+            ( [(1, s), (2, s), (3, s), (4, s)]
+            , [(1, 2, CFEFlow), (2, 3, CFEFlow), (3, 4, CFEFlow)]
+            , [(Id 0, (2, 3))]
+            , [(Id 0, 3)]
             )
-        after = (
-            [(1,s), (2,s), (4,s)],
-            [(1,2,CFEFlow), (2,4,CFEFlow)],
-            [(Id 0, (2,2))],
-            [(Id 0, 2)]
+        after =
+            ( [(1, s), (2, s), (4, s)]
+            , [(1, 2, CFEFlow), (2, 4, CFEFlow)]
+            , [(Id 0, (2, 2))]
+            , [(Id 0, 2)]
             )
-    in after == removeUnnecessaryStructuralNodes before
+     in
+        after == removeUnnecessaryStructuralNodes before
 
 -- Collapse structural nodes that just form long chains like x->x->x.
 -- This way we can generate them with abandon, without making DFA slower.
@@ -284,17 +287,17 @@ prop_testRemoveStructural =
 -- foo -> x -> bar , because then the pre/post-condition for tokens
 -- previously pointing to x would be wrong.
 removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
-    remapGraph recursiveRemapping
-        (
-            filter (\(n, _) -> n `M.notMember` recursiveRemapping) nodes,
-            filter (`S.notMember` edgesToCollapse) edges,
-            mapping,
-            association
+    remapGraph
+        recursiveRemapping
+        ( filter (\(n, _) -> n `M.notMember` recursiveRemapping) nodes
+        , filter (`S.notMember` edgesToCollapse) edges
+        , mapping
+        , association
         )
   where
     regularEdges = filter isRegularEdge edges
-    inDegree = counter $ map (\(from,to,_) -> from) regularEdges
-    outDegree = counter $ map (\(from,to,_) -> to) regularEdges
+    inDegree = counter $ map (\(from, to, _) -> from) regularEdges
+    outDegree = counter $ map (\(from, to, _) -> to) regularEdges
     structuralNodes = S.fromList [node | (node, CFStructuralNode) <- nodes]
     candidateNodes = S.filter isLinear structuralNodes
     edgesToCollapse = S.fromList $ filter filterEdges regularEdges
@@ -303,10 +306,10 @@ removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
     remapping = M.fromList $ map orderEdge $ S.toList edgesToCollapse
     recursiveRemapping = M.mapWithKey (\c _ -> recursiveLookup remapping c) remapping
 
-    filterEdges (a,b,_) =
+    filterEdges (a, b, _) =
         a `S.member` candidateNodes && b `S.member` candidateNodes
 
-    orderEdge (a,b,_) = if a < b then (b,a) else (a,b)
+    orderEdge (a, b, _) = if a < b then (b, a) else (a, b)
     counter = M.fromListWith (+) . map (\key -> (key, 1))
     isRegularEdge (_, _, CFEFlow) = True
     isRegularEdge _ = False
@@ -319,8 +322,7 @@ removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
 
     isLinear node =
         M.findWithDefault 0 node inDegree == 1
-        && M.findWithDefault 0 node outDegree == 1
-
+            && M.findWithDefault 0 node outDegree == 1
 
 remapNode :: M.Map Node Node -> LNode CFNode -> LNode CFNode
 remapNode m (node, label) =
@@ -341,26 +343,27 @@ remapEdge map (from, to, label) = (remapHelper map from, remapHelper map to, lab
 remapHelper map n = M.findWithDefault n n map
 
 data Range = Range Node Node
-  deriving (Eq, Show)
+    deriving (Eq, Show)
 
-data CFContext = CFContext {
-    cfIsCondition :: Bool,
-    cfIsFunction :: Bool,
-    cfLoopStack :: [(Node, Node)],
-    cfTokenStack :: [Id],
-    cfExitTarget :: Maybe Node,
-    cfReturnTarget :: Maybe Node,
-    cfParameters :: CFGParameters
-}
-newCFContext params = CFContext {
-    cfIsCondition = False,
-    cfIsFunction = False,
-    cfLoopStack = [],
-    cfTokenStack = [],
-    cfExitTarget = Nothing,
-    cfReturnTarget = Nothing,
-    cfParameters = params
-}
+data CFContext = CFContext
+    { cfIsCondition :: Bool
+    , cfIsFunction :: Bool
+    , cfLoopStack :: [(Node, Node)]
+    , cfTokenStack :: [Id]
+    , cfExitTarget :: Maybe Node
+    , cfReturnTarget :: Maybe Node
+    , cfParameters :: CFGParameters
+    }
+newCFContext params =
+    CFContext
+        { cfIsCondition = False
+        , cfIsFunction = False
+        , cfLoopStack = []
+        , cfTokenStack = []
+        , cfExitTarget = Nothing
+        , cfReturnTarget = Nothing
+        , cfParameters = params
+        }
 
 -- The monad we generate a graph in
 type CFM a = RWS CFContext CFW Int a
@@ -370,7 +373,7 @@ newNode :: CFNode -> CFM Node
 newNode label = do
     n <- get
     stack <- asks cfTokenStack
-    put (n+1)
+    put (n + 1)
     tell ([(n, label)], [], [], map (\c -> (c, n)) stack)
     return n
 
@@ -383,19 +386,18 @@ subshell :: Id -> String -> CFM Range -> CFM Range
 subshell id reason p = do
     start <- newNode $ CFEntryPoint $ "Subshell " ++ show id ++ ": " ++ reason
     end <- newNode CFStructuralNode
-    middle <- local (\c -> c { cfExitTarget = Just end, cfReturnTarget = Just end}) p
+    middle <- local (\c -> c{cfExitTarget = Just end, cfReturnTarget = Just end}) p
     linkRanges [nodeToRange start, middle, nodeToRange end]
     newNodeRange $ CFExecuteSubshell reason start end
 
-
 withFunctionScope p = do
     end <- newNode CFStructuralNode
-    body <- local (\c -> c { cfReturnTarget = Just end, cfIsFunction = True }) p
+    body <- local (\c -> c{cfReturnTarget = Just end, cfIsFunction = True}) p
     linkRanges [body, nodeToRange end]
 
 -- Anything that happens recursively in f will be attributed to this id
 under :: Id -> CFM a -> CFM a
-under id f = local (\c -> c { cfTokenStack = id:(cfTokenStack c) }) f
+under id f = local (\c -> c{cfTokenStack = id : (cfTokenStack c)}) f
 
 nodeToRange :: Node -> Range
 nodeToRange n = Range n n
@@ -421,13 +423,13 @@ spanRange (Range start mid1) (Range mid2 end) = Range start end
 
 linkRanges :: [Range] -> CFM Range
 linkRanges [] = error "Empty range"
-linkRanges (first:rest) = foldM linkRange first rest
+linkRanges (first : rest) = foldM linkRange first rest
 
 sequentially :: [Token] -> CFM Range
 sequentially list = do
     first <- newStructuralNode
     rest <- mapM build list
-    linkRanges (first:rest)
+    linkRanges (first : rest)
 
 withContext :: (CFContext -> CFContext) -> CFM a -> CFM a
 withContext = local
@@ -436,7 +438,7 @@ withReturn :: Range -> CFM a -> CFM a
 withReturn _ p = p
 
 asCondition :: CFM Range -> CFM Range
-asCondition = withContext (\c -> c { cfIsCondition = True })
+asCondition = withContext (\c -> c{cfIsCondition = True})
 
 newStructuralNode = newNodeRange CFStructuralNode
 
@@ -445,7 +447,7 @@ buildRoot t = under (getId t) $ do
     entry <- newNodeRange $ CFEntryPoint "MAIN"
     impliedExit <- newNode CFImpliedExit
     end <- newNode CFStructuralNode
-    start <- local (\c -> c { cfExitTarget = Just end, cfReturnTarget = Just impliedExit}) $ build t
+    start <- local (\c -> c{cfExitTarget = Just end, cfReturnTarget = Just impliedExit}) $ build t
     range <- linkRanges [entry, start, nodeToRange impliedExit, nodeToRange end]
     registerNode (getId t) range
     return range
@@ -463,35 +465,35 @@ build t = do
         T_Annotation _ _ list -> build list
         T_Script _ _ list -> do
             sequentially list
-
         TA_Assignment id op var@(TA_Variable _ name indices) rhs -> do
             -- value first: (( var[x=1] = (x=2) )) runs x=1 last
             value <- build rhs
             subscript <- sequentially indices
             read <-
                 if op == "="
-                then none
-                -- This is += or something
-                else newNodeRange $ applySingle $ IdTagged id $ CFReadVariable name
+                    then none
+                    else -- This is += or something
+                        newNodeRange $ applySingle $ IdTagged id $ CFReadVariable name
 
-            write <- newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name $
-                        if null indices
-                        then CFValueInteger
-                        else CFValueArray
+            write <-
+                newNodeRange $
+                    applySingle $
+                        IdTagged id $
+                            CFWriteVariable name $
+                                if null indices
+                                    then CFValueInteger
+                                    else CFValueArray
 
             linkRanges [value, subscript, read, write]
-
         TA_Assignment id op lhs rhs -> do
             -- This is likely an invalid assignment like (( 1 = 2 )), but it
             -- could be e.g. x=y; (( $x = 3 )); echo $y, so expand both sides
             -- without updating anything
             sequentially [lhs, rhs]
-
-        TA_Binary _ _ a b -> sequentially [a,b]
+        TA_Binary _ _ a b -> sequentially [a, b]
         TA_Expansion _ list -> sequentially list
         TA_Sequence _ list -> sequentially list
         TA_Parenthesis _ t -> build t
-
         TA_Trinary _ cond a b -> do
             condition <- build cond
             ifthen <- build a
@@ -499,29 +501,29 @@ build t = do
             end <- newStructuralNode
             linkRanges [condition, ifthen, end]
             linkRanges [condition, elsethen, end]
-
         TA_Variable id name indices -> do
             subscript <- sequentially indices
             hint <-
                 if null indices
-                then none
-                else nodeToRange <$> newNode (applySingle $ IdTagged id $ CFHintArray name)
+                    then none
+                    else nodeToRange <$> newNode (applySingle $ IdTagged id $ CFHintArray name)
             read <- nodeToRange <$> newNode (applySingle $ IdTagged id $ CFReadVariable name)
             linkRanges [subscript, hint, read]
-
         TA_Unary id op (TA_Variable _ name indices) | "--" `isInfixOf` op || "++" `isInfixOf` op -> do
             subscript <- sequentially indices
             read <- newNodeRange $ applySingle $ IdTagged id $ CFReadVariable name
-            write <- newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name $
-                        if null indices
-                        then CFValueInteger
-                        else CFValueArray
+            write <-
+                newNodeRange $
+                    applySingle $
+                        IdTagged id $
+                            CFWriteVariable name $
+                                if null indices
+                                    then CFValueInteger
+                                    else CFValueArray
             linkRanges [subscript, read, write]
         TA_Unary _ _ arg -> build arg
-
         TC_And _ SingleBracket _ lhs rhs -> do
             sequentially [lhs, rhs]
-
         TC_And _ DoubleBracket _ lhs rhs -> do
             left <- build lhs
             right <- build rhs
@@ -536,16 +538,11 @@ build t = do
             left <- build lhs
             right <- build rhs
             linkRange left right
-
-        TC_Empty {} -> newStructuralNode
-
+        TC_Empty{} -> newStructuralNode
         TC_Group _ _ t -> build t
-
         -- TODO: Mark as checked
         TC_Nullary _ _ arg -> build arg
-
         TC_Or _ SingleBracket _ lhs rhs -> sequentially [lhs, rhs]
-
         TC_Or _ DoubleBracket _ lhs rhs -> do
             left <- build lhs
             right <- build rhs
@@ -558,12 +555,10 @@ build t = do
         -- TODO: Handle -v, -z, -n
         TC_Unary _ _ op arg -> do
             build arg
-
         T_Arithmetic id root -> do
             exe <- build root
             status <- newNodeRange (CFSetExitCode id)
             linkRange exe status
-
         T_AndIf _ lhs rhs -> do
             left <- build lhs
             right <- build rhs
@@ -571,11 +566,8 @@ build t = do
             linkRange left right
             linkRange right end
             linkRange left end
-
         T_Array _ list -> sequentially list
-
-        T_Assignment {} -> buildAssignment Nothing t
-
+        T_Assignment{} -> buildAssignment Nothing t
         T_Backgrounded id body -> do
             start <- newStructuralNode
             fork <- subshell id "backgrounding '&'" $ build body
@@ -586,15 +578,12 @@ build t = do
             -- Add a join from the fork to warn about variable changes
             linkRangeAs CFEFalseFlow fork pid
             linkRanges [start, pid, status]
-
         T_Backticked id body ->
             subshell id "`..` expansion" $ sequentially body
-
         T_Banged id cmd -> do
             main <- build cmd
             status <- newNodeRange (CFSetExitCode id)
             linkRange main status
-
         T_BatsTest id _ body -> do
             -- These are technically set by the 'run' command, but we'll just define them
             -- up front to avoid figuring out which commands named "run" belong to Bats.
@@ -602,15 +591,11 @@ build t = do
             output <- newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable "output" CFValueString
             main <- build body
             linkRanges [status, output, main]
-
         T_BraceExpansion _ list -> sequentially list
-
         T_BraceGroup id body ->
             sequentially body
-
         T_CaseExpression id t [] -> build t
-
-        T_CaseExpression id t list@(hd:tl) -> do
+        T_CaseExpression id t list@(hd : tl) -> do
             start <- newStructuralNode
             token <- build t
             branches <- mapM buildBranch (hd NE.:| tl)
@@ -627,17 +612,17 @@ build t = do
 
             unless (any hasCatchAll list) $
                 -- There's no *) branch, so assume we can fall through
-                void $ linkRange token end
+                void $
+                    linkRange token end
 
             return $ spanRange start end
-
           where
             -- for a | b | c, evaluate each in turn and allow short circuiting
             buildCond list = do
                 start <- newStructuralNode
                 conds <- mapM build list
                 end <- newStructuralNode
-                linkRanges (start:conds)
+                linkRanges (start : conds)
                 mapM_ (`linkRange` end) conds
                 return $ spanRange start end
 
@@ -658,16 +643,14 @@ build t = do
 
             -- Find a *) if any
 
-            hasCatchAll (_,cond,_) = any isCatchAll cond
+            hasCatchAll (_, cond, _) = any isCatchAll cond
             isCatchAll c = fromMaybe False $ do
                 pg <- wordToExactPseudoGlob c
                 return $ pg `pseudoGlobIsSuperSetof` [PGMany]
-
         T_Condition id _ op -> do
             cond <- build op
             status <- newNodeRange $ CFSetExitCode id
             linkRange cond status
-
         T_CoProc id maybeNameToken t -> do
             -- If unspecified, "COPROC". If not a constant string, Nothing.
             let maybeName = case maybeNameToken of
@@ -690,12 +673,10 @@ build t = do
 
             return $ spanRange start end
         T_CoProcBody _ t -> build t
-
         T_DollarArithmetic _ arith -> build arith
         T_DollarDoubleQuoted _ list -> sequentially list
         T_DollarSingleQuoted _ _ -> none
         T_DollarBracket _ t -> build t
-
         T_DollarBraced id _ t -> do
             let str = concat $ oversimplify t
             let modifier = getBracedModifier str
@@ -704,42 +685,35 @@ build t = do
             let offsets = getOffsetReferences str
             vals <- build t
             others <- mapM (\x -> nodeToRange <$> newNode (applySingle $ IdTagged id $ CFReadVariable x)) (indices ++ offsets)
-            deps <- linkRanges (vals:others)
+            deps <- linkRanges (vals : others)
             read <- nodeToRange <$> newNode (applySingle $ IdTagged id $ CFReadVariable reference)
             totalRead <- linkRange deps read
 
             if any (`isPrefixOf` modifier) ["=", ":="]
-              then do
-                optionalAssign <- newNodeRange (applySingle $ IdTagged id $ CFWriteVariable reference CFValueString)
-                result <- newStructuralNode
-                linkRange optionalAssign result
-                linkRange totalRead result
-              else return totalRead
-
+                then do
+                    optionalAssign <- newNodeRange (applySingle $ IdTagged id $ CFWriteVariable reference CFValueString)
+                    result <- newStructuralNode
+                    linkRange optionalAssign result
+                    linkRange totalRead result
+                else return totalRead
         T_DollarBraceCommandExpansion id _ body ->
             sequentially body
-
         T_DoubleQuoted _ list -> sequentially list
-
         T_DollarExpansion id body ->
             subshell id "$(..) expansion" $ sequentially body
-
         T_Extglob _ _ list -> sequentially list
-
-        T_FdRedirect id ('{':identifier) op -> do
+        T_FdRedirect id ('{' : identifier) op -> do
             let name = takeWhile (/= '}') identifier
             expression <- build op
-            rw <- newNodeRange $
-                if isClosingFileOp op
-                then applySingle $ IdTagged id $ CFReadVariable name
-                else applySingle $ IdTagged id $ CFWriteVariable name CFValueInteger
+            rw <-
+                newNodeRange $
+                    if isClosingFileOp op
+                        then applySingle $ IdTagged id $ CFReadVariable name
+                        else applySingle $ IdTagged id $ CFWriteVariable name CFValueInteger
 
             linkRange expression rw
-
-
         T_FdRedirect _ name t -> do
             build t
-
         T_ForArithmetic _ initT condT incT bodyT -> do
             init <- build initT
             cond <- build condT
@@ -753,12 +727,10 @@ build t = do
             -- Backward edge
             linkRange inc cond
             return $ spanRange init end
-
         T_ForIn id name words body -> forInHelper id name words body
-
         -- For functions we generate an unlinked subgraph, and mention that in its definition node
         T_Function id _ _ name body -> do
-            range <- local (\c -> c { cfExitTarget = Nothing }) $ do
+            range <- local (\c -> c{cfExitTarget = Nothing}) $ do
                 entry <- newNodeRange $ CFEntryPoint $ "function " ++ name
                 f <- withFunctionScope $ build body
                 linkRange entry f
@@ -766,12 +738,9 @@ build t = do
             definition <- newNodeRange (applySingle $ IdTagged id $ CFDefineFunction name id entry exit)
             exe <- newNodeRange (CFSetExitCode id)
             linkRange definition exe
-
-        T_Glob {} -> none
-
+        T_Glob{} -> none
         T_HereString _ t -> build t
         T_HereDoc _ _ _ _ list -> sequentially list
-
         T_IfExpression id ifs elses -> do
             start <- newStructuralNode
             branches <- doBranches start ifs elses []
@@ -779,38 +748,31 @@ build t = do
             mapM_ (`linkRange` end) branches
             return $ spanRange start end
           where
-            doBranches start ((conds, thens):rest) elses result = do
+            doBranches start ((conds, thens) : rest) elses result = do
                 cond <- asCondition $ sequentially conds
                 action <- sequentially thens
                 linkRange start cond
                 linkRange cond action
-                doBranches cond rest elses (action:result)
+                doBranches cond rest elses (action : result)
             doBranches start [] elses result = do
                 rest <-
                     if null elses
-                    then newNodeRange (CFSetExitCode id)
-                    else sequentially elses
+                        then newNodeRange (CFSetExitCode id)
+                        else sequentially elses
                 linkRange start rest
-                return (rest:result)
-
+                return (rest : result)
         T_Include _ t -> build t
-
         T_IndexedElement _ indicesT valueT -> do
             indices <- sequentially indicesT
             value <- build valueT
             linkRange indices value
-
         T_IoDuplicate _ op _ -> build op
-
         T_IoFile _ op t -> do
             exp <- build t
             doesntDoMuch <- build op
             linkRange exp doesntDoMuch
-
-        T_Literal {} -> none
-
+        T_Literal{} -> none
         T_NormalWord _ list -> sequentially list
-
         T_OrIf _ lhs rhs -> do
             left <- build lhs
             right <- build rhs
@@ -818,7 +780,6 @@ build t = do
             linkRange left right
             linkRange right end
             linkRange left end
-
         T_Pipeline _ _ [cmd] -> build cmd
         T_Pipeline id _ cmds -> do
             start <- newStructuralNode
@@ -834,12 +795,11 @@ build t = do
             buildPipe True [x] = do
                 last <- build x
                 return ([], [last])
-            buildPipe lp (first:rest) = do
+            buildPipe lp (first : rest) = do
                 this <- subshell id "pipeline" $ build first
                 (leading, last) <- buildPipe lp rest
-                return (this:leading, last)
+                return (this : leading, last)
             buildPipe _ [] = return ([], [])
-
         T_ProcSub id op cmds -> do
             start <- newStructuralNode
             body <- subshell id (op ++ "() process substitution") $ sequentially cmds
@@ -848,27 +808,21 @@ build t = do
             linkRange start body
             linkRangeAs CFEFalseFlow body end
             linkRange start end
-
         T_Redirecting _ redirs cmd -> do
             -- For simple commands, this is the other way around in bash
             -- We do it in this order for comound commands like { x=name; } > "$x"
             redir <- sequentially redirs
             body <- build cmd
             linkRange redir body
-
         T_SelectIn id name words body -> forInHelper id name words body
-
         T_SimpleCommand id vars [] -> do
             -- Vars can also be empty, as in the command "> foo"
             assignments <- sequentially vars
             status <- newNodeRange (CFSetExitCode id)
             linkRange assignments status
-
-        T_SimpleCommand id vars (cmd:args) ->
+        T_SimpleCommand id vars (cmd : args) ->
             handleCommand t vars (cmd NE.:| args) $ getUnquotedLiteral cmd
-
         T_SingleQuoted _ _ -> none
-
         T_SourceCommand _ originalCommand inlinedSource -> do
             cmd <- build originalCommand
             end <- newStructuralNode
@@ -876,15 +830,12 @@ build t = do
             linkRange cmd inline
             linkRange inline end
             return $ spanRange cmd inline
-
         T_Subshell id body -> do
             main <- subshell id "explicit (..) subshell" $ sequentially body
             status <- newNodeRange (CFSetExitCode id)
             linkRange main status
-
         T_UntilExpression id cond body -> whileHelper id cond body
         T_WhileExpression id cond body -> whileHelper id cond body
-
         T_CLOBBER _ -> none
         T_GREATAND _ -> none
         T_LESSAND _ -> none
@@ -893,20 +844,19 @@ build t = do
         T_Greater _ -> none
         T_Less _ -> none
         T_ParamSubSpecialChar _ _ -> none
-
         x -> do
             error ("Unimplemented: " ++ show x) -- STRIP
             none
 
---  Still in `where` clause
+    --  Still in `where` clause
     forInHelper id name words body = do
         entry <- newStructuralNode
         expansion <- sequentially words
         assignmentChoice <- newStructuralNode
         assignments <-
             if null words || any willSplit words
-            then (:[]) <$> (newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name CFValueString)
-            else mapM (\t -> newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name $ CFValueComputed (getId t) $ tokenToParts t) words
+                then (: []) <$> (newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name CFValueString)
+                else mapM (\t -> newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name $ CFValueComputed (getId t) $ tokenToParts t) words
         body <- sequentially body
         exit <- newStructuralNode
         -- Forward edges
@@ -927,7 +877,6 @@ build t = do
         linkRange bodyRange condRange
         linkRange condRange end
 
-
 handleCommand cmd vars args literalCmd = do
     -- TODO: Handle assignments in declaring commands
 
@@ -935,37 +884,30 @@ handleCommand cmd vars args literalCmd = do
         Just "exit" -> regularExpansion vars (NE.toList args) $ handleExit
         Just "return" -> regularExpansion vars (NE.toList args) $ handleReturn
         Just "unset" -> regularExpansionWithStatus vars args $ handleUnset args
-
         Just "declare" -> handleDeclare args
         Just "local" -> handleDeclare args
         Just "typeset" -> handleDeclare args
-
         Just "printf" -> regularExpansionWithStatus vars args $ handlePrintf args
         Just "wait" -> regularExpansionWithStatus vars args $ handleWait args
-
         Just "mapfile" -> regularExpansionWithStatus vars args $ handleMapfile args
         Just "readarray" -> regularExpansionWithStatus vars args $ handleMapfile args
-
         Just "read" -> regularExpansionWithStatus vars args $ handleRead args
-
         Just "DEFINE_boolean" -> regularExpansionWithStatus vars args $ handleDEFINE args
-        Just "DEFINE_float" ->   regularExpansionWithStatus vars args $ handleDEFINE args
+        Just "DEFINE_float" -> regularExpansionWithStatus vars args $ handleDEFINE args
         Just "DEFINE_integer" -> regularExpansionWithStatus vars args $ handleDEFINE args
-        Just "DEFINE_string" ->  regularExpansionWithStatus vars args $ handleDEFINE args
-
+        Just "DEFINE_string" -> regularExpansionWithStatus vars args $ handleDEFINE args
         -- This will mostly behave like 'command' but ok
         Just "builtin" ->
             case args of
                 _ NE.:| [] -> regular
-                (_ NE.:| newcmd:newargs) ->
+                (_ NE.:| newcmd : newargs) ->
                     handleCommand newcmd vars (newcmd NE.:| newargs) $ getLiteralString newcmd
         Just "command" ->
             case args of
                 _ NE.:| [] -> regular
-                (_ NE.:| newcmd:newargs) ->
+                (_ NE.:| newcmd : newargs) ->
                     handleOthers (getId newcmd) vars (newcmd NE.:| newargs) $ getLiteralString newcmd
         _ -> regular
-
   where
     regular = handleOthers (getId cmd) vars args literalCmd
     handleExit = do
@@ -993,20 +935,19 @@ handleCommand cmd vars args literalCmd = do
 
     handleUnset (cmd NE.:| args) = do
         case () of
-                _ | "n" `elem` flagNames -> unsetWith CFUndefineNameref
-                _ | "v" `elem` flagNames -> unsetWith CFUndefineVariable
-                _ | "f" `elem` flagNames -> unsetWith CFUndefineFunction
-                _ -> unsetWith CFUndefine
+            _ | "n" `elem` flagNames -> unsetWith CFUndefineNameref
+            _ | "v" `elem` flagNames -> unsetWith CFUndefineVariable
+            _ | "f" `elem` flagNames -> unsetWith CFUndefineFunction
+            _ -> unsetWith CFUndefine
       where
         pairs :: [(String, Token)] -- [(Flag string, token)] e.g. [("-f", t), ("", myfunc)]
-        pairs = map (\(str, (flag, val)) -> (str, flag)) $ fromMaybe (map (\c -> ("", (c,c))) args) $ getGnuOpts "vfn" args
+        pairs = map (\(str, (flag, val)) -> (str, flag)) $ fromMaybe (map (\c -> ("", (c, c))) args) $ getGnuOpts "vfn" args
         (names, flags) = partition (null . fst) pairs
         flagNames = map fst flags
         literalNames :: [(Token, String)] -- Literal names to unset, e.g. [(myfuncToken, "myfunc")]
         literalNames = mapMaybe (\(_, t) -> (,) t <$> getLiteralString t) names
         -- Apply a constructor like CFUndefineVariable to each literalName, and tag with its id
         unsetWith c = newNodeRange $ CFApplyEffects $ map (\(token, name) -> IdTagged (getId token) $ c name) literalNames
-
 
     variableAssignRegex = mkRegex "^([_a-zA-Z][_a-zA-Z0-9]*)="
 
@@ -1041,28 +982,31 @@ handleCommand cmd vars args literalCmd = do
                 _ | isFunc -> Just LocalScope
                 _ -> Nothing
 
-        addedProps = S.fromList $ concat $ [
-            [ CFVPArray | array ],
-            [ CFVPInteger | integer ],
-            [ CFVPExport | export ],
-            [ CFVPAssociative | associative ]
-          ]
+        addedProps =
+            S.fromList $
+                concat $
+                    [ [CFVPArray | array]
+                    , [CFVPInteger | integer]
+                    , [CFVPExport | export]
+                    , [CFVPAssociative | associative]
+                    ]
 
-        removedProps = S.fromList $ concat $ [
-            -- Array property can't be unset
-            [ CFVPInteger | 'i' `elem` unsetOptions ],
-            [ CFVPExport | 'e' `elem` unsetOptions ]
-          ]
+        removedProps =
+            S.fromList $
+                concat $
+                    [ -- Array property can't be unset
+                      [CFVPInteger | 'i' `elem` unsetOptions]
+                    , [CFVPExport | 'e' `elem` unsetOptions]
+                    ]
 
         toEffects isFunc (T_Assignment id mode var idx t) =
             let
                 pre = idx ++ [t]
-                val = [ IdTagged id $ (writer isFunc) var $ CFValueComputed (getId t) $ [ CFStringVariable var | mode == Append ] ++ tokenToParts t ]
-                added = [ IdTagged id $ CFSetProps (scope isFunc) var addedProps | not $ S.null addedProps ]
-                removed = [ IdTagged id $ CFUnsetProps (scope isFunc) var addedProps | not $ S.null removedProps ]
-            in
+                val = [IdTagged id $ (writer isFunc) var $ CFValueComputed (getId t) $ [CFStringVariable var | mode == Append] ++ tokenToParts t]
+                added = [IdTagged id $ CFSetProps (scope isFunc) var addedProps | not $ S.null addedProps]
+                removed = [IdTagged id $ CFUnsetProps (scope isFunc) var addedProps | not $ S.null removedProps]
+             in
                 (pre, val, added, removed)
-
         toEffects isFunc t =
             let
                 id = getId t
@@ -1073,16 +1017,17 @@ handleCommand cmd vars args literalCmd = do
                 name = fromMaybe literal match
 
                 asLiteral =
-                    IdTagged id $ (writer isFunc) name $
-                        CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') $ literal ]
+                    IdTagged id $
+                        (writer isFunc) name $
+                            CFValueComputed (getId t) [CFStringLiteral $ drop 1 $ dropWhile (/= '=') $ literal]
                 asUnknown =
-                    IdTagged id $ (writer isFunc) name $
-                        CFValueString
+                    IdTagged id $
+                        (writer isFunc) name $
+                            CFValueString
 
-                added = [ IdTagged id $ CFSetProps (scope isFunc) name addedProps ]
-                removed = [ IdTagged id $ CFUnsetProps (scope isFunc) name removedProps ]
-
-            in
+                added = [IdTagged id $ CFSetProps (scope isFunc) name addedProps]
+                removed = [IdTagged id $ CFUnsetProps (scope isFunc) name removedProps]
+             in
                 case () of
                     _ | not (isVariableName name) -> (pre, [], [], [])
                     _ | isJust match && isKnown -> (pre, [asLiteral], added, removed)
@@ -1096,7 +1041,7 @@ handleCommand cmd vars args literalCmd = do
             let
                 strings = mapMaybe getLiteralString args
                 plusses = filter ("+" `isPrefixOf`) strings
-            in
+             in
                 concatMap (drop 1) plusses
 
     handlePrintf (cmd NE.:| args) =
@@ -1122,7 +1067,7 @@ handleCommand cmd vars args literalCmd = do
       where
         findVar =
             let (id, name) = fromMaybe (getId cmd, "MAPFILE") $ getFromArg `mplus` getFromFallback
-            in IdTagged id $ CFWriteVariable name CFValueArray
+             in IdTagged id $ CFWriteVariable name CFValueArray
 
         getFromArg = do
             flags <- getGnuOpts flagsForMapfile args
@@ -1148,7 +1093,7 @@ handleCommand cmd vars args literalCmd = do
             (_, token) <- lookup "a" flags
             return $ fromMaybe [] $ do
                 name <- getLiteralString token
-                return [ IdTagged (getId token) $ CFWriteVariable name CFValueArray ]
+                return [IdTagged (getId token) $ CFWriteVariable name CFValueArray]
 
         withFields flags = mapMaybe getAssignment flags
 
@@ -1164,7 +1109,7 @@ handleCommand cmd vars args literalCmd = do
                 namesOrDefault = if null names then [(getId cmd, "REPLY")] else names
                 hasDashA = any (== "a") $ map fst $ getGenericOpts args
                 value = if hasDashA then CFValueArray else CFValueString
-            in
+             in
                 map (\(id, name) -> IdTagged id $ CFWriteVariable name value) namesOrDefault
 
     handleDEFINE (cmd NE.:| args) =
@@ -1183,72 +1128,68 @@ handleCommand cmd vars args literalCmd = do
             linkRange exe status
 
     regularExpansion vars args p = do
-            args <- sequentially args
-            assignments <- mapM (buildAssignment (Just PrefixScope)) vars
-            exe <- p
-            dropAssignments <-
-                if null vars
-                then
-                    return []
+        args <- sequentially args
+        assignments <- mapM (buildAssignment (Just PrefixScope)) vars
+        exe <- p
+        dropAssignments <-
+            if null vars
+                then return []
                 else do
                     drop <- newNodeRange CFDropPrefixAssignments
                     return [drop]
 
-            linkRanges $ [args] ++ assignments ++ [exe] ++ dropAssignments
+        linkRanges $ [args] ++ assignments ++ [exe] ++ dropAssignments
 
     regularExpansionWithStatus vars args@(cmd NE.:| _) p = do
         initial <- regularExpansion vars (NE.toList args) p
         status <- newNodeRange $ CFSetExitCode (getId cmd)
         linkRange initial status
 
-
 none = newStructuralNode
 
 data Scope = GlobalScope | LocalScope | PrefixScope
-  deriving (Eq, Ord, Show, Generic, NFData)
+    deriving (Eq, Ord, Show, Generic, NFData)
 
 buildAssignment scope t = do
     op <- case t of
-            T_Assignment id mode var indices value -> do
-                expand <- build value
-                index <- sequentially indices
-                read <- case mode of
-                    Append -> newNodeRange (applySingle $ IdTagged id $ CFReadVariable var)
-                    Assign -> none
-                let valueType = if null indices then f id value else CFValueArray
-                let scoper =
-                                case scope of
-                                    Just PrefixScope -> CFWritePrefix
-                                    Just LocalScope -> CFWriteLocal
-                                    Just GlobalScope -> CFWriteGlobal
-                                    Nothing -> CFWriteVariable
-                write <- newNodeRange $ applySingle $ IdTagged id $ scoper var valueType
-                linkRanges [expand, index, read, write]
-              where
-                f :: Id -> Token -> CFValue
-                f id t@T_NormalWord {} = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
-                f id t@(T_Literal _ str) = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
-                f _ T_Array {} = CFValueArray
+        T_Assignment id mode var indices value -> do
+            expand <- build value
+            index <- sequentially indices
+            read <- case mode of
+                Append -> newNodeRange (applySingle $ IdTagged id $ CFReadVariable var)
+                Assign -> none
+            let valueType = if null indices then f id value else CFValueArray
+            let scoper =
+                    case scope of
+                        Just PrefixScope -> CFWritePrefix
+                        Just LocalScope -> CFWriteLocal
+                        Just GlobalScope -> CFWriteGlobal
+                        Nothing -> CFWriteVariable
+            write <- newNodeRange $ applySingle $ IdTagged id $ scoper var valueType
+            linkRanges [expand, index, read, write]
+          where
+            f :: Id -> Token -> CFValue
+            f id t@T_NormalWord{} = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
+            f id t@(T_Literal _ str) = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
+            f _ T_Array{} = CFValueArray
 
     registerNode (getId t) op
     return op
-
 
 tokenToParts t =
     case t of
         T_NormalWord _ list -> concatMap tokenToParts list
         T_DoubleQuoted _ list -> concatMap tokenToParts list
-        T_SingleQuoted _ str -> [ CFStringLiteral str ]
-        T_Literal _ str -> [ CFStringLiteral str ]
-        T_DollarArithmetic {} -> [ CFStringInteger ]
-        T_DollarBracket {} -> [ CFStringInteger ]
-        T_DollarBraced _ _ list | isUnmodifiedParameterExpansion t -> [ CFStringVariable (getBracedReference $ concat $ oversimplify list) ]
+        T_SingleQuoted _ str -> [CFStringLiteral str]
+        T_Literal _ str -> [CFStringLiteral str]
+        T_DollarArithmetic{} -> [CFStringInteger]
+        T_DollarBracket{} -> [CFStringInteger]
+        T_DollarBraced _ _ list | isUnmodifiedParameterExpansion t -> [CFStringVariable (getBracedReference $ concat $ oversimplify list)]
         -- Check if getLiteralString can handle it, if not it's unknown
         _ -> [maybe CFStringUnknown CFStringLiteral $ getLiteralString t]
 
-
 -- Like & but well defined when the node already exists
-safeUpdate ctx@(_,node,_,_) graph = ctx & (delNode node graph)
+safeUpdate ctx@(_, node, _, _) graph = ctx & (delNode node graph)
 
 -- Change all subshell invocations to instead link directly to their contents.
 -- This is used for producing dominator trees.
@@ -1258,7 +1199,7 @@ inlineSubshells graph = relinkedGraph
     subshells = ufold find [] graph
     find (incoming, node, label, outgoing) acc =
         case label of
-            CFExecuteSubshell _ start end -> (node, label, start, end, incoming, outgoing):acc
+            CFExecuteSubshell _ start end -> (node, label, start, end, incoming, outgoing) : acc
             _ -> acc
 
     relinkedGraph = foldl' relink graph subshells
@@ -1269,7 +1210,7 @@ inlineSubshells graph = relinkedGraph
             -- Link the subshell exit to the
             endToNexts = (endIncoming, endNode, endLabel, outgoing)
             (endIncoming, endNode, endLabel, _) = context graph end
-        in
+         in
             subshellToStart `safeUpdate` (endToNexts `safeUpdate` graph)
 
 findEntryNodes :: CFGraph -> [Node]
@@ -1277,7 +1218,7 @@ findEntryNodes graph = ufold find [] graph
   where
     find (incoming, node, label, _) list =
         case label of
-            CFEntryPoint {} | null incoming -> node:list
+            CFEntryPoint{} | null incoming -> node : list
             _ -> list
 
 findDominators main graph = asSetMap
@@ -1292,13 +1233,13 @@ findTerminalNodes graph = ufold find [] graph
   where
     find (_, node, label, _) list =
         case label of
-            CFUnresolvedExit -> node:list
+            CFUnresolvedExit -> node : list
             CFApplyEffects effects -> f effects list
             _ -> list
 
     f [] list = list
-    f (IdTagged _ (CFDefineFunction _ id start end):rest) list = f rest (end:list)
-    f (_:rest) list = f rest list
+    f (IdTagged _ (CFDefineFunction _ id start end) : rest) list = f rest (end : list)
+    f (_ : rest) list = f rest list
 
 findPostDominators :: Node -> CFGraph -> Array Node [Node]
 findPostDominators mainexit graph = asArray
@@ -1316,4 +1257,4 @@ findPostDominators mainexit graph = asArray
     asArray = initializedArray // postDoms
 
 return []
-runTests =  $( [| $(forAllProperties) (quickCheckWithResult (stdArgs { maxSuccess = 1 }) ) |])
+runTests = $([|$(forAllProperties) (quickCheckWithResult (stdArgs{maxSuccess = 1}))|])

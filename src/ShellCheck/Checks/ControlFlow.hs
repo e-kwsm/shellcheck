@@ -26,54 +26,55 @@ module ShellCheck.Checks.ControlFlow (checker, optionalChecks, ShellCheck.Checks
 
 import ShellCheck.AST
 import ShellCheck.ASTLib
+import ShellCheck.AnalyzerLib
 import ShellCheck.CFG hiding (cfgAnalysis)
 import ShellCheck.CFGAnalysis
-import ShellCheck.AnalyzerLib
 import ShellCheck.Data
 import ShellCheck.Interface
 
 import Control.Monad
 import Control.Monad.Reader
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as M
-import qualified Data.Set as S
 import Data.List
+import qualified Data.Map as M
 import Data.Maybe
+import qualified Data.Set as S
 
 import Test.QuickCheck.All (forAllProperties)
-import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
-
+import Test.QuickCheck.Test (maxSuccess, quickCheckWithResult, stdArgs)
 
 optionalChecks :: [CheckDescription]
 optionalChecks = []
 
 -- A check that runs on the entire graph
 type ControlFlowCheck = Analysis
+
 -- A check invoked once per node, with its (pre,post) data
 type ControlFlowNodeCheck = LNode CFNode -> (ProgramState, ProgramState) -> Analysis
+
 -- A check invoked once per effect, with its node's (pre,post) data
 type ControlFlowEffectCheck = IdTagged CFEffect -> Node -> (ProgramState, ProgramState) -> Analysis
 
-
 checker :: AnalysisSpec -> Parameters -> Checker
-checker spec params = Checker {
-    perScript = const $ sequence_ controlFlowChecks,
-    perToken = const $ return ()
-}
+checker spec params =
+    Checker
+        { perScript = const $ sequence_ controlFlowChecks
+        , perToken = const $ return ()
+        }
 
 controlFlowChecks :: [ControlFlowCheck]
-controlFlowChecks = [
-        runNodeChecks controlFlowNodeChecks
+controlFlowChecks =
+    [ runNodeChecks controlFlowNodeChecks
     ]
 
 controlFlowNodeChecks :: [ControlFlowNodeCheck]
-controlFlowNodeChecks = [
-    runEffectChecks controlFlowEffectChecks
+controlFlowNodeChecks =
+    [ runEffectChecks controlFlowEffectChecks
     ]
 
 controlFlowEffectChecks :: [ControlFlowEffectCheck]
-controlFlowEffectChecks = [
-    ]
+controlFlowEffectChecks =
+    []
 
 runNodeChecks :: [ControlFlowNodeCheck] -> ControlFlowCheck
 runNodeChecks perNode = do
@@ -96,6 +97,5 @@ runEffectChecks list = checkNode
             CFApplyEffects effects -> mapM_ (\effect -> mapM_ (\c -> c effect node prepost) list) effects
             _ -> return ()
 
-
 return []
-runTests =  $( [| $(forAllProperties) (quickCheckWithResult (stdArgs { maxSuccess = 1 }) ) |])
+runTests = $([|$(forAllProperties) (quickCheckWithResult (stdArgs{maxSuccess = 1}))|])
