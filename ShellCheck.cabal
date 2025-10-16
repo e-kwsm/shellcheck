@@ -89,10 +89,9 @@ library
 
 executable shellcheck
   main-is: shellcheck.hs
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  if impl(ghc < 8.0)
-    build-depends:
-      semigroups
+  other-modules:
+      Paths_ShellCheck
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       Diff
     , QuickCheck
