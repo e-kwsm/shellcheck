@@ -523,9 +523,9 @@ bashismBinaryTestFlags = buildTestFlagMap [
     (["<", ">", "\\<", "\\>", "<=", ">=", "\\<=", "\\>="],
         (3012, [Dash, BusyboxSh], \op -> "lexicographical " ++ op ++ " is")),
     (["=="],
-        (3014, [BusyboxSh], \op -> op ++ " in place of = is")),
+        (3014, [BusyboxSh], (++ " in place of = is"))),
     (["=~"],
-        (3015, [], \op -> op ++ " regex matching is")),
+        (3015, [], (++ " regex matching is"))),
 
     ([], (0,[],const ""))
   ]
