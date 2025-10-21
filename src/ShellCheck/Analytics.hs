@@ -3909,7 +3909,7 @@ checkUseBeforeDefinition params t = fromMaybe [] $ do
                 -- Is the function definitely being defined later?
                 guard $ any (\c -> CF.doesPostDominate cfga c id) invocations
                 -- Was one already defined, so it's actually a re-definition?
-                guard . not $ any (\c -> CF.doesPostDominate cfga id c) invocations
+                guard . not $ any (CF.doesPostDominate cfga id) invocations
                 return $ err id 2218 "This function is only defined later. Move the definition up."
             _ -> return ()
 
@@ -5112,7 +5112,7 @@ checkOverwrittenExitCode params t =
     -- If we don't do anything based on the condition, assume we wanted the condition itself
     -- This helps differentiate `x; [ $? -gt 0 ] && exit $?` vs `[ cond ]; exit $?`
     usedUnconditionally cfga t testIds =
-        all (\c -> CF.doesPostDominate cfga (getId t) c) testIds
+        all (CF.doesPostDominate cfga (getId t)) testIds
 
     isPrinting t =
         case getCommandBasename t of
