@@ -319,7 +319,7 @@ getParentTree :: Token -> Map.Map Id Token
 getParentTree t =
     snd $ execState (doStackAnalysis pre post t) ([], Map.empty)
   where
-    pre t = modify (first ((:) t))
+    pre t = modify (first (t :))
     post t = do
         (x, map) <- get
         case x of
@@ -347,7 +347,7 @@ isQuoteFree = isQuoteFreeNode False
 
 isQuoteFreeNode strict shell tree t =
     isQuoteFreeElement t ||
-        (fromMaybe False $ msum $ map isQuoteFreeContext $ NE.tail $ getPath tree t)
+        fromMaybe False (msum $ map isQuoteFreeContext $ NE.tail $ getPath tree t)
   where
     -- Is this node self-quoting in itself?
     isQuoteFreeElement t =
@@ -385,7 +385,7 @@ isQuoteFreeNode strict shell tree t =
     -- Is this assignment a parameter to a command like export/typeset/etc?
     isAssignmentParamToCommand id =
         case Map.lookup id tree of
-            Just (T_SimpleCommand _ _ (_:args)) -> id `elem` (map getId args)
+            Just (T_SimpleCommand _ _ (_:args)) -> id `elem` map getId args
             _ -> False
 
 -- Check if a token is a parameter to a certain command by name:
@@ -394,9 +394,7 @@ isParamTo :: Map.Map Id Token -> String -> Token -> Bool
 isParamTo tree cmd =
     go
   where
-    go x = case Map.lookup (getId x) tree of
-                Nothing     -> False
-                Just parent -> check parent
+    go x = maybe False check (Map.lookup (getId x) tree)
     check t =
         case t of
             T_SingleQuoted _ _ -> go t
@@ -609,7 +607,7 @@ getReferencedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Litera
     forDeclare =
             if
                 any (`elem` flags) ["x", "p"] &&
-                    (not $ any (`elem` flags) ["f", "F"])
+                    not (any (`elem` flags) ["f", "F"])
             then concatMap getReference rest
             else []
 
@@ -639,8 +637,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
                 parsed <- getGnuOpts flagsForRead rest
                 case lookup "a" parsed of
                     Just (_, var) -> (:[]) <$> getLiteralArray var
-                    Nothing -> return $ catMaybes $
-                        map (getLiteral . snd . snd) $ filter (null . fst) parsed
+                    Nothing -> return $ mapMaybe (getLiteral . snd . snd) (filter (null . fst) parsed)
 
         "getopts" ->
             case rest of
@@ -711,9 +708,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
     getModifierParam _ _ = []
 
     letParamToLiteral token =
-          if null var
-            then []
-            else [(base, token, var, DataString $ SourceFrom [stripEqualsFrom token])]
+          [(base, token, var, DataString $ SourceFrom [stripEqualsFrom token]) | not (null var)]
         where var = takeWhile isVariableChar $ dropWhile (`elem` "+-") $ concat $ oversimplify token
 
     getSetParams (t:_:rest) | getLiteralString t == Just "-o" = getSetParams rest
@@ -762,7 +757,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
     -- get the FLAGS_ variable created by a shflags DEFINE_ call
     getFlagVariable (n:v:_) = do
         name <- getLiteralString n
-        return (base, n, "FLAGS_" ++ name, DataString $ SourceExternal)
+        return (base, n, "FLAGS_" ++ name, DataString SourceExternal)
     getFlagVariable _ = Nothing
 
 getModifiedVariableCommand _ = []
@@ -789,9 +784,7 @@ getReferencedVariables parents t =
                     getIndexReferences str
                     ++ getOffsetReferences (getBracedModifier str))
         TA_Variable id name _ ->
-            if isArithmeticAssignment t
-            then []
-            else [(t, t, name)]
+            ([(t, t, name) | not (isArithmeticAssignment t)])
         T_Assignment id mode str _ word ->
             [(t, t, str) | mode == Append] ++ specialReferences str t word
 
@@ -923,7 +916,7 @@ isTrueAssignmentSource c =
         _ -> True
 
 modifiesVariable params token name =
-    or $ map check flow
+    any check flow
   where
     flow = getVariableFlow params token
     check t =
