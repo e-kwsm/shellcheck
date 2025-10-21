@@ -38,6 +38,7 @@ import ShellCheck.Regex
 
 import Control.Monad
 import Control.Monad.RWS
+import Data.Bifunctor
 import Data.Char
 import Data.Functor.Identity
 import qualified Data.Graph.Inductive.Graph as G
@@ -123,7 +124,7 @@ optionalCommandChecks = [
         cdNegative = "command -v javac"
     }, checkWhich)
     ]
-optionalCheckMap = M.fromList $ map (\(desc, check) -> (cdName desc, check)) optionalCommandChecks
+optionalCheckMap = M.fromList $ map (Data.Bifunctor.first cdName) optionalCommandChecks
 
 prop_verifyOptionalExamples = all check optionalCommandChecks
   where
@@ -213,7 +214,7 @@ checker spec params = getChecker $ commandChecks ++ optionals
     optionals =
         if "all" `elem` keys
         then map snd optionalCommandChecks
-        else mapMaybe (\x -> M.lookup x optionalCheckMap) keys
+        else mapMaybe (`M.lookup` optionalCheckMap) keys
 
 prop_checkTr1 = verify checkTr "tr [a-f] [A-F]"
 prop_checkTr2 = verify checkTr "tr 'a-z' 'A-Z'"
@@ -439,7 +440,7 @@ checkExit = CommandCheck (Exactly "exit") (returnOrExit
         (\c -> err c 2241 "The exit status can only be one integer 0-255. Use stdout for other data.")
         (\c -> err c 2242 "Can only exit with status 0-255. Other data should be written to stdout/stderr."))
 
-returnOrExit multi invalid = (f . arguments)
+returnOrExit multi invalid = f . arguments
   where
     f (first:second:_) =
         multi (getId first)
@@ -448,7 +449,7 @@ returnOrExit multi invalid = (f . arguments)
             invalid (getId value)
     f _ = return ()
 
-    isInvalid s = null s || any (not . isDigit) s || length s > 5
+    isInvalid s = null s || not (all isDigit s) || length s > 5
         || let value = (read s :: Integer) in value > 255
 
     literal token = runIdentity $ getLiteralStringExt lit token
@@ -644,7 +645,7 @@ prop_checkSshCmdStr3 = verifyNot checkSshCommandString "ssh \"$host\""
 prop_checkSshCmdStr4 = verifyNot checkSshCommandString "ssh -i key \"$host\""
 checkSshCommandString = CommandCheck (Basename "ssh") (f . arguments)
   where
-    isOption x = "-" `isPrefixOf` (concat $ oversimplify x)
+    isOption x = "-" `isPrefixOf` concat (oversimplify x)
     f args =
         case partition isOption args of
             ([], hostport:r@(_:_)) -> checkArg $ last r
@@ -832,8 +833,7 @@ checkReadExpansions = CommandCheck (Exactly "read") check
 
     arrayWarning word =
         when (any isUnquotedBracket $ getWordParts word) $
-            warn (getId word) 2313 $
-                "Quote array indices to avoid them expanding as globs."
+            warn (getId word) 2313 "Quote array indices to avoid them expanding as globs."
 
     isUnquotedBracket t =
         case t of
@@ -1041,7 +1041,7 @@ checkWhileGetoptsCase = CommandCheck (Exactly "getopts") f
             notRequested = M.difference handledMap requestedMap
 
     warnUnhandled optId caseId str =
-        warn caseId 2213 $ "getopts specified -" ++ (e4m str) ++ ", but it's not handled by this 'case'."
+        warn caseId 2213 $ "getopts specified -" ++ e4m str ++ ", but it's not handled by this 'case'."
 
     warnRedundant (Just str, expr)
         | str `notElem` ["*", ":", "?"] =
@@ -1141,7 +1141,7 @@ prop_checkLetUsage2 = verifyNot checkLetUsage "(( a=1 ))"
 checkLetUsage = CommandCheck (Exactly "let") f
   where
     f t = whenShell [Bash,Ksh] $ do
-        style (getId t) 2219 $ "Instead of 'let expr', prefer (( expr )) ."
+        style (getId t) 2219 "Instead of 'let expr', prefer (( expr )) ."
 
 
 missingDestination handler token = do
@@ -1255,8 +1255,7 @@ checkSourceArgs = CommandCheck (Exactly ".") f
   where
     f t = whenShell [Sh, Dash] $
         case arguments t of
-            (file:arg1:_) -> warn (getId arg1) 2240 $
-                "The dot command does not support arguments in sh/dash. Set them as variables."
+            (file:arg1:_) -> warn (getId arg1) 2240 "The dot command does not support arguments in sh/dash. Set them as variables."
             _ -> return ()
 
 prop_checkChmodDashr1 = verify checkChmodDashr "chmod -r 0755 dir"
@@ -1300,11 +1299,9 @@ checkArgComparison cmd = CommandCheck (Exactly cmd) wordsWithEqual
         str <- getLeadingUnquotedString arg
         case str of
             '=':_ ->
-                return $ err (headId arg) 2290 $
-                    "Remove spaces around = to assign."
+                return $ err (headId arg) 2290 "Remove spaces around = to assign."
             '+':'=':_ ->
-                return $ err (headId arg) 2290 $
-                    "Remove spaces around += to append."
+                return $ err (headId arg) 2290 "Remove spaces around += to append."
             _ -> Nothing
 
        -- 'let' is parsed as a sequence of arithmetic expansions,
@@ -1313,8 +1310,7 @@ checkArgComparison cmd = CommandCheck (Exactly cmd) wordsWithEqual
         token <- getTrailingUnquotedLiteral arg
         str <- getLiteralString token
         guard $ "=" `isSuffixOf` str
-        return $ err (getId token) 2290 $
-            "Remove spaces around = to assign."
+        return $ err (getId token) 2290 "Remove spaces around = to assign."
 
     headId t =
         case t of
@@ -1400,7 +1396,7 @@ checkUnquotedEchoSpaces = CommandCheck (Basename "echo") check
 
     hasSpacesBetween redirs ((a,b), (c,d)) =
         posLine a == posLine d
-        && ((posColumn c) - (posColumn b)) >= 4
+        && (posColumn c - posColumn b) >= 4
         && not (any (\x -> b < x && x < c) redirs)
 
 
@@ -1456,7 +1452,7 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
     findReferences cfga list = do
         let graph = CF.graph cfga
         let nodesMap = CF.tokenToNodes cfga
-        let nodes = S.unions $ map (\id -> M.findWithDefault S.empty id nodesMap) $ map getId $ list
+        let nodes = S.unions $ map ((\id -> M.findWithDefault S.empty id nodesMap) . getId) list
         let labels = mapMaybe (G.lab graph) $ S.toList nodes
         let references = M.fromList $ concatMap refFromLabel labels
         return references
