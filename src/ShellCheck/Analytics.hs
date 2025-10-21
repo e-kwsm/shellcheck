@@ -40,6 +40,7 @@ import Control.Monad.Identity
 import Control.Monad.State
 import Control.Monad.Writer hiding ((<>))
 import Control.Monad.Reader
+import Data.Bifunctor
 import Data.Char
 import Data.Functor
 import Data.Function (on)
