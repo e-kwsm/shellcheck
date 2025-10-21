@@ -21,7 +21,7 @@ main = do
     failures <- filter (not . snd) <$> mapM sequenceA tests
     if null failures then exitSuccess else do
       putStrLn "Tests failed for the following module(s):"
-      mapM (putStrLn . ("- ShellCheck." ++) . fst) failures
+      mapM_ (putStrLn . ("- ShellCheck." ++) . fst) failures
       exitFailure
   where
     tests =
