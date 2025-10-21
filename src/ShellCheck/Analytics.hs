@@ -2477,7 +2477,7 @@ checkUnusedAssignments params t = execWriter (mapM_ warnFor unused)
                 name ++ " appears unused. Verify use (or export if used externally)."
 
     stripSuffix = takeWhile isVariableChar
-    defaultMap = Map.fromList $ map (, ()) internalVariables
+    defaultMap = Map.fromList $ zip internalVariables $ repeat ()
 
 prop_checkUnassignedReferences1 = verifyTree checkUnassignedReferences "echo $foo"
 prop_checkUnassignedReferences2 = verifyNotTree checkUnassignedReferences "foo=hello; echo $foo"
