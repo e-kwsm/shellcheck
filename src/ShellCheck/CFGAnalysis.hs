@@ -68,6 +68,7 @@ import Control.DeepSeq
 import Control.Monad
 import Control.Monad.ST
 import Data.Array.Unboxed
+import Data.Bifunctor
 import Data.Char
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Query.DFS
