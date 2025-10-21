@@ -60,7 +60,7 @@ cyan = 36
 bold = 1
 
 nocolor n = id
-colorize n s = (ansi n) ++ s ++ (ansi 0)
+colorize n s = ansi n ++ s ++ ansi 0
 ansi n = "\x1B[" ++ show n ++ "m"
 
 printErr :: ColorFunc -> String -> IO ()
@@ -78,7 +78,7 @@ data LFStatus = LinefeedMissing | LinefeedOk
 data DiffDoc a = DiffDoc String LFStatus [DiffRegion a]
 data DiffRegion a = DiffRegion (Int, Int) (Int, Int) [Diff a]
 
-reportResult :: (IORef Bool) -> (IORef Bool) -> ColorFunc -> CheckResult -> SystemInterface IO -> IO ()
+reportResult :: IORef Bool -> IORef Bool -> ColorFunc -> CheckResult -> SystemInterface IO -> IO ()
 reportResult foundIssues reportedIssues color result sys = do
     let comments = crComments result
     unless (null comments) $ writeIORef foundIssues True
@@ -102,7 +102,7 @@ hasTrailingLinefeed str =
 coversLastLine regions =
     case regions of
         [] -> False
-        _ -> (fst $ last regions)
+        _ -> fst $ last regions
 
 -- TODO: Factor this out into a unified diff library because we're doing a lot
 -- of the heavy lifting anyways.
@@ -117,7 +117,7 @@ makeDiff name contents fix = do
 computeDiff :: String -> Fix -> [Diff String]
 computeDiff contents fix =
     let old = lines contents
-        array = listArray (1, fromIntegral $ (length old)) old
+        array = listArray (1, fromIntegral (length old)) old
         new = applyFix fix array
     in getDiff old new
 
@@ -170,7 +170,7 @@ countDelta = count' 0 0
 
 formatRegion :: ColorFunc -> LFStatus -> DiffRegion String -> String
 formatRegion color lf (DiffRegion left right diffs) =
-    let header = color cyan ("@@ -" ++ (tup left) ++ " +" ++ (tup right) ++" @@")
+    let header = color cyan ("@@ -" ++ tup left ++ " +" ++ tup right ++" @@")
     in
         unlines $ header : reverse (getStrings lf (reverse diffs))
   where
@@ -181,7 +181,7 @@ formatRegion color lf (DiffRegion left right diffs) =
     getStrings LinefeedMissing list@((First _):_) = noLF : map format list
     getStrings LinefeedMissing (last:rest) = format last : getStrings LinefeedMissing rest
 
-    tup (a,b) = (show a) ++ "," ++ (show b)
+    tup (a,b) = show a ++ "," ++ show b
     format (Both x _) = ' ':x
     format (First x) = color red $ '-':x
     format (Second x) = color green $ '+':x
@@ -200,8 +200,8 @@ normalizePath path =
 formatDoc color (DiffDoc name lf regions) =
     let (most, last) = splitLast regions
     in
-          (color bold $ "--- " ++ (normalizePath $ "a" </> name)) ++ "\n" ++
-          (color bold $ "+++ " ++ (normalizePath $ "b" </> name)) ++ "\n" ++
+          color bold ("--- " ++ normalizePath ("a" </> name)) ++ "\n" ++
+          color bold ("+++ " ++ normalizePath ("b" </> name)) ++ "\n" ++
           concatMap (formatRegion color LinefeedOk) most ++
           concatMap (formatRegion color lf) last
 
@@ -215,7 +215,7 @@ buildFixMap fixes = perFile
 splitFixByFile :: Fix -> [Fix]
 splitFixByFile fix = map makeFix $ groupBy sameFile (fixReplacements fix)
   where
-    sameFile rep1 rep2 = (posFile $ repStartPos rep1) == (posFile $ repStartPos rep2)
+    sameFile rep1 rep2 = posFile (repStartPos rep1) == posFile (repStartPos rep2)
     makeFix reps = newFix { fixReplacements = reps }
 
 groupByMap :: (Ord k, Monoid v) => (v -> k) -> [v] -> M.Map k v
