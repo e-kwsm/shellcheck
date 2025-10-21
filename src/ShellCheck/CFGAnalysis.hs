@@ -1291,7 +1291,7 @@ dataflow ctx entry = do
 
     process states node = do
         stateMap <- readSTRef states
-        let inputs = filter (\c -> sIsReachable c /= Just False) $ mapMaybe (\c -> fmap snd $ M.lookup c stateMap) incoming
+        let inputs = filter (\c -> sIsReachable c /= Just False) $ mapMaybe (\c -> snd <$> M.lookup c stateMap) incoming
         input <-
             case incoming of
                 [] -> return newInternalState
