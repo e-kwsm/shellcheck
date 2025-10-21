@@ -25,6 +25,7 @@ import ShellCheck.Formatter.Format
 
 import Control.DeepSeq
 import Data.Aeson
+import Data.Either
 import Data.IORef
 import Data.Monoid
 import System.IO
@@ -119,9 +120,9 @@ collectResult ref cr sys = mapM_ f groups
     f group = do
         let filename = sourceFile (NE.head group)
         result <- siReadFile sys (Just True) filename
-        let contents = either (const "") id result
+        let contents = fromRight "" result
         let comments' = makeNonVirtual comments contents
-        deepseq comments' $ modifyIORef ref (\x -> comments' ++ x)
+        deepseq comments' $ modifyIORef ref (comments' ++)
 
 finish ref = do
     list <- readIORef ref
