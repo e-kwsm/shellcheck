@@ -104,7 +104,7 @@ collectResult ref cr sys = mapM_ f groups
     comments = crComments cr
     groups = groupWith sourceFile comments
     f :: [PositionedComment] -> IO ()
-    f group = deepseq comments $ modifyIORef ref (\x -> comments ++ x)
+    f group = deepseq comments $ modifyIORef ref (comments ++)
 
 finish ref = do
     list <- readIORef ref
