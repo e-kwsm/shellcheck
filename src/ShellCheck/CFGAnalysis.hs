@@ -68,6 +68,7 @@ import Control.DeepSeq
 import Control.Monad
 import Control.Monad.ST
 import Data.Array.Unboxed
+import Data.Bifunctor
 import Data.Char
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Query.DFS
@@ -1376,7 +1377,7 @@ analyzeControlFlow params t =
         let allStates = M.union invokedStates baseStates
 
         -- Convert to external states
-        let nodeToData = M.map (\(a,b) -> (internalToExternal a, internalToExternal b)) allStates
+        let nodeToData = M.map (Data.Bifunctor.bimap internalToExternal internalToExternal) allStates
 
         return $ nodeToData `deepseq` CFGAnalysis {
             graph = cfGraph cfg,
@@ -1389,7 +1390,7 @@ analyzeControlFlow params t =
 
     -- Include the dependencies in the state of each function, e.g. if it depends on `x=foo` then add that.
     addDeps :: (S.Set StateDependency, M.Map Node (InternalState, InternalState)) -> M.Map Node (InternalState, InternalState)
-    addDeps (deps, m) = let base = depsToState deps in M.map (\(a,b) -> (base `patchState` a, base `patchState` b)) m
+    addDeps (deps, m) = let base = depsToState deps in M.map (Data.Bifunctor.bimap (patchState base) (patchState base)) m
 
     -- Collect all the states that each node has resulted in.
     groupByNode :: forall k v. M.Map k (M.Map Node v) -> M.Map Node [v]
