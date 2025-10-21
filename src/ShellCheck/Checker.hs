@@ -308,7 +308,7 @@ prop_deducesTypeFromExtension2 = result == [2079]
         csScript = "(( 3.14 ))"
     }
 
-prop_canDisableShebangWarning = null $ result
+prop_canDisableShebangWarning = null result
   where
     result = checkWithSpec [] emptyCheckSpec {
         csFilename = "file.sh",
@@ -322,7 +322,7 @@ prop_canDisableAllWarnings = result == [2086]
         csScript = "#!/bin/sh\necho $1\n#shellcheck disable=all\necho `echo $1`"
     }
 
-prop_canDisableParseErrors = null $ result
+prop_canDisableParseErrors = null result
   where
     result = checkWithSpec [] emptyCheckSpec {
         csFilename = "file.sh",
