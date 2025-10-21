@@ -88,7 +88,7 @@ mkChecker spec params checks =
     optionals =
         if "all" `elem` optionalKeys
         then map snd optionalTreeChecks
-        else mapMaybe (\c -> Map.lookup c optionalCheckMap) optionalKeys
+        else mapMaybe (`Map.lookup` optionalCheckMap) optionalKeys
 
 
 checkList l t = concatMap (\f -> f t) l
@@ -3909,7 +3909,7 @@ checkUseBeforeDefinition params t = fromMaybe [] $ do
                 -- Is the function definitely being defined later?
                 guard $ any (\c -> CF.doesPostDominate cfga c id) invocations
                 -- Was one already defined, so it's actually a re-definition?
-                guard . not $ any (\c -> CF.doesPostDominate cfga id c) invocations
+                guard . not $ any (CF.doesPostDominate cfga id) invocations
                 return $ err id 2218 "This function is only defined later. Move the definition up."
             _ -> return ()
 
@@ -4712,7 +4712,7 @@ checkRequireDoubleBracket params =
     -- so just handle the simple cases.
     isSimple t = case t of
         T_Condition _ _ s -> isSimple s
-        TC_Binary _ _ op _ _ -> not $ any (\x -> x `elem` op) "<>"
+        TC_Binary _ _ op _ _ -> not $ any (`elem` op) "<>"
         TC_Unary {} -> True
         TC_Nullary {} -> True
         _ -> False
@@ -5096,7 +5096,7 @@ checkOverwrittenExitCode params t =
         guard . not $ S.null exitCodeIds
 
         let idToToken = idMap params
-        exitCodeTokens <- traverse (\k -> Map.lookup k idToToken) $ S.toList exitCodeIds
+        exitCodeTokens <- traverse (`Map.lookup` idToToken) $ S.toList exitCodeIds
         return $ do
             when (all isCondition exitCodeTokens && not (usedUnconditionally cfga t exitCodeIds)) $
                 warn id 2319 "This $? refers to a condition, not a command. Assign to a variable to avoid it being overwritten."
@@ -5112,7 +5112,7 @@ checkOverwrittenExitCode params t =
     -- If we don't do anything based on the condition, assume we wanted the condition itself
     -- This helps differentiate `x; [ $? -gt 0 ] && exit $?` vs `[ cond ]; exit $?`
     usedUnconditionally cfga t testIds =
-        all (\c -> CF.doesPostDominate cfga (getId t) c) testIds
+        all (CF.doesPostDominate cfga (getId t)) testIds
 
     isPrinting t =
         case getCommandBasename t of

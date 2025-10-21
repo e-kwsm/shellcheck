@@ -121,7 +121,7 @@ collectResult ref cr sys = mapM_ f groups
         result <- siReadFile sys (Just True) filename
         let contents = either (const "") id result
         let comments' = makeNonVirtual comments contents
-        deepseq comments' $ modifyIORef ref (\x -> comments' ++ x)
+        deepseq comments' $ modifyIORef ref (comments' ++)
 
 finish ref = do
     list <- readIORef ref
