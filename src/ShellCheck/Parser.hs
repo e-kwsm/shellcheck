@@ -148,7 +148,7 @@ carriageReturn = do
     return '\r'
 
 almostSpace = do
-        parseNote ErrorC 1018 $ "This is a unicode space. Delete and retype it."
+        parseNote ErrorC 1018 "This is a unicode space. Delete and retype it."
         oneOf "\xA0\x2002\x2003\x2004\x2005\x2006\x2007\x2008\x2009\x200B\x202F"
         return ' '
 
@@ -282,7 +282,7 @@ contextItemDisablesCode alsoCheckSourced code = disabling alsoCheckSourced
     disabling checkSourced item =
         case item of
             ContextAnnotation list -> any disabling' list
-            ContextSource _ -> not $ checkSourced
+            ContextSource _ -> not checkSourced
             _ -> False
     disabling' (DisableComment n m) = code >= n && code < m
     disabling' _ = False
@@ -530,7 +530,7 @@ readConditionContents single =
     readCondUnaryExp = do
       op <- readCondUnaryOp
       pos <- getPosition
-      liftM op readCondWord `orFail` do
+      fmap op readCondWord `orFail` do
           parseProblemAt pos ErrorC 1019 "Expected this to be an argument to the unary condition."
           return "Expected an argument for the unary operator"
 
@@ -699,8 +699,7 @@ readConditionContents single =
         char '!'
         id <- endSpan start
         spacingOrLf
-        expr <- readCondExpr
-        return $ TC_Unary id typ "!" expr
+        TC_Unary id typ "!" <$> readCondExpr
 
     readCondExpr =
       readCondGroup <|> readCondUnaryExp <|> readCondNullaryOrBinary
@@ -874,8 +873,7 @@ readArithmeticContents =
         op <- oneOf "!~"
         id <- endSpan start
         spacing
-        x <- readAnyNegated
-        return $ TA_Unary id [op] x
+        TA_Unary id [op] <$> readAnyNegated
 
     readAnySigned = readSigned <|> readAnycremented
     readSigned = do
@@ -883,8 +881,7 @@ readArithmeticContents =
         op <- choice (map readSignOp "+-")
         id <- endSpan start
         spacing
-        x <- readAnycremented
-        return $ TA_Unary id [op] x
+        TA_Unary id [op] <$> readAnycremented
      where
         readSignOp c = try $ do
             char c
@@ -898,8 +895,7 @@ readArithmeticContents =
         op <- try $ string "++" <|> string "--"
         id <- endSpan start
         spacing
-        x <- readArithTerm
-        return $ TA_Unary id (op ++ "|") x
+        TA_Unary id (op ++ "|") <$> readArithTerm
 
     readNormalOrPostfixIncremented = do
         x <- readArithTerm
@@ -1043,16 +1039,16 @@ readAnnotationWithoutPrefix sandboxed = do
                 readName = EnableComment <$> many1 (letter <|> char '-')
 
             "source" -> do
-                filename <- quoted (many1 anyChar) <|> (many1 $ noneOf " \n")
+                filename <- quoted (many1 anyChar) <|> many1 (noneOf " \n")
                 return [SourceOverride filename]
 
             "source-path" -> do
-                dirname <- quoted (many1 anyChar) <|> (many1 $ noneOf " \n")
+                dirname <- quoted (many1 anyChar) <|> many1 (noneOf " \n")
                 return [SourcePath dirname]
 
             "shell" -> do
                 pos <- getPosition
-                shell <- quoted (many1 anyChar) <|> (many1 $ noneOf " \n")
+                shell <- quoted (many1 anyChar) <|> many1 (noneOf " \n")
                 when (isNothing $ shellForExecutable shell) $
                     parseNoteAt pos ErrorC 1103
                         "This shell type is unknown. Use e.g. sh or bash."
@@ -1205,7 +1201,7 @@ readDollarBracedPart = readSingleQuoted <|> readDoubleQuoted <|>
 
 readDollarBracedLiteral = do
     start <- startSpan
-    vars <- (readBraceEscaped <|> ((\x -> [x]) <$> anyChar)) `reluctantlyTill1` bracedQuotable
+    vars <- (readBraceEscaped <|> ((: []) <$> anyChar)) `reluctantlyTill1` bracedQuotable
     id <- endSpan start
     return $ T_Literal id $ concat vars
 
@@ -1567,7 +1563,7 @@ readGenericLiteral endChars = do
     return $ concat strings
 
 readGenericLiteral1 endExp = do
-    strings <- (readGenericEscaped <|> ((\x -> [x]) <$> anyChar)) `reluctantlyTill1` endExp
+    strings <- (readGenericEscaped <|> ((: []) <$> anyChar)) `reluctantlyTill1` endExp
     return $ concat strings
 
 readGenericEscaped = do
@@ -1750,7 +1746,7 @@ readDollarVariable = do
     let singleCharred p = do
         value <- wrapString ((:[]) <$> p)
         id <- endSpan start
-        return $ (T_DollarBraced id False value)
+        return (T_DollarBraced id False value)
 
     let positional = do
         value <- singleCharred digit
@@ -1856,12 +1852,12 @@ readHereDoc = called "here document" $ do
     unquote s@(cl:tl) =
       case reverse tl of
         (cr:tr) | cr == cl && cl `elem` "\"'" -> (Quoted, reverse tr)
-        _ -> (if '\\' `elem` s then (Quoted, filter ((/=) '\\') s) else (Unquoted, s))
+        _ -> (if '\\' `elem` s then (Quoted, filter ('\\' /=) s) else (Unquoted, s))
     -- Fun fact: bash considers << foo"" quoted, but not << <("foo").
     readToken = do
         str <- readStringForParser readNormalWord
         -- A here doc actually works with \r\n because the \r becomes part of the token
-        crstr <- (carriageReturn >> (return $ str ++ "\r")) <|> return str
+        crstr <- (carriageReturn >> return (str ++ "\r")) <|> return str
         return $ unquote crstr
 
 readPendingHereDocs = do
@@ -1924,7 +1920,7 @@ readPendingHereDocs = do
                 -- This may be intended as an end token. Debug why it isn't.
                 if
                     | trailerStart == ')' -> do
-                        ppt 1119 $ "Add a linefeed between end token and terminating ')'."
+                        ppt 1119 "Add a linefeed between end token and terminating ')'."
                         foundCause
                     | trailerStart == '#' -> do
                         ppt 1120 "No comments allowed after here-doc token. Comment the next line instead."
@@ -1946,7 +1942,7 @@ readPendingHereDocs = do
                         error $ pleaseReport "unexpected heredoc trailer"
 
                     -- The following cases assume no trailing text:
-                    | dashed == Undashed && (not $ null leadingSpace) -> do
+                    | dashed == Undashed && not (null leadingSpace) -> do
                         parseProblemAt leadingSpacePos ErrorC 1039 "Remove indentation before end token (or use <<- and indent with tabs)."
                         foundCause
                     | dashed == Dashed && not leadingSpacesAreTabs -> do
@@ -1977,14 +1973,14 @@ readPendingHereDocs = do
     debugHereDoc tokenId endToken doc
         | endToken `isInfixOf` doc =
             let lookAt line = when (endToken `isInfixOf` line) $
-                      parseProblemAtId tokenId ErrorC 1042 ("Close matches include '" ++ (e4m line) ++ "' (!= '" ++ (e4m endToken) ++ "').")
+                      parseProblemAtId tokenId ErrorC 1042 ("Close matches include '" ++ e4m line ++ "' (!= '" ++ e4m endToken ++ "').")
             in do
-                  parseProblemAtId tokenId ErrorC 1041 ("Found '" ++ (e4m endToken) ++ "' further down, but not on a separate line.")
+                  parseProblemAtId tokenId ErrorC 1041 ("Found '" ++ e4m endToken ++ "' further down, but not on a separate line.")
                   mapM_ lookAt (lines doc)
         | map toLower endToken `isInfixOf` map toLower doc =
-            parseProblemAtId tokenId ErrorC 1043 ("Found " ++ (e4m endToken) ++ " further down, but with wrong casing.")
+            parseProblemAtId tokenId ErrorC 1043 ("Found " ++ e4m endToken ++ " further down, but with wrong casing.")
         | otherwise =
-            parseProblemAtId tokenId ErrorC 1044 ("Couldn't find end token `" ++ (e4m endToken) ++ "' in the here document.")
+            parseProblemAtId tokenId ErrorC 1044 ("Couldn't find end token `" ++ e4m endToken ++ "' in the here document.")
 
 
 readFilename = readNormalWord
@@ -2046,8 +2042,7 @@ readHereString = called "here string" $ do
     try $ string "<<<"
     id <- endSpan start
     spacing
-    word <- readNormalWord
-    return $ T_HereString id word
+    T_HereString id <$> readNormalWord
 
 prop_readNewlineList1 = isOk readScript "&> /dev/null echo foo"
 readNewlineList =
@@ -2220,7 +2215,7 @@ readSource t@(T_Redirecting _ _ (T_SimpleCommand cmdId _ (cmd:args'))) = do
         -- Hack to avoid 'source ~/foo' trying to read from literal tilde
         guard . not $ "~/" `isPrefixOf` name
         return name
-    let fileId = fromMaybe (getId cmd) (getId <$> file)
+    let fileId = maybe (getId cmd) getId file
     case literalFile of
         Nothing -> do
             parseNoteAtId fileId WarningC 1090
@@ -2682,7 +2677,7 @@ readSelectClause = called "select loop" $ do
         name <- readVariableName
         spacing
         values <- readInClause <|> (readSequentialSep >> return [])
-        return $ \id group -> (return $ T_SelectIn id name values group)
+        return $ \id group -> return $ T_SelectIn id name values group
 
 readInClause = do
     g_In
@@ -3015,15 +3010,14 @@ readAssignmentWordExt lenient = called "variable assignment" $ do
     rightPosStart <- getPosition
     hasRightSpace <- fmap (not . null) spacing
     rightPosEnd <- getPosition
-    isEndOfCommand <- fmap isJust $ optionMaybe (try . lookAhead $ (void (oneOf "\r\n;&|)") <|> eof))
+    isEndOfCommand <- isJust <$> optionMaybe (try . lookAhead $ (void (oneOf "\r\n;&|)") <|> eof))
 
     if hasRightSpace || isEndOfCommand
       then do
         when (variable /= "IFS" && hasRightSpace && not isEndOfCommand) $ do
             parseProblemAtWithEnd rightPosStart rightPosEnd WarningC 1007
                 "Remove space after = if trying to assign a value (for empty string, use var='' ... )."
-        value <- readEmptyLiteral
-        return $ T_Assignment id op variable indices value
+        T_Assignment id op variable indices <$> readEmptyLiteral
       else do
         optional $ do
             lookAhead $ char '='
@@ -3218,7 +3212,7 @@ readShebang = do
         parseProblemAtId id ErrorC 1084
             "Use #!, not !#, for the shebang."
 
-    skipSpaces = fmap (not . null) $ many linewhitespace
+    skipSpaces = not . null <$> many linewhitespace
     readTooManySpaces = do
         startPos <- getPosition
         startSpaces <- skipSpaces
@@ -3304,7 +3298,7 @@ readConfigFile filename = do
         let line = "line " ++ (show . sourceLine $ errorPos err)
             suggestion = getStringFromParsec $ errorMessages err
         in
-            "Failed to process " ++ (e4m filename) ++ ", " ++ line ++ ": "
+            "Failed to process " ++ e4m filename ++ ", " ++ line ++ ": "
                 ++ suggestion
 
 prop_readConfigKVs1 = isOk readConfigKVs "disable=1234"
@@ -3347,14 +3341,14 @@ readScriptFile sourced = do
 
         -- Similarly put the filewide annotations on the stack to allow earlier suppression
         withAnnotations fileAnnotations $ do
-            when (hasBom) $
+            when hasBom $
                 parseProblemAt pos ErrorC 1082
                     "This file has a UTF-8 BOM. Remove it with: LC_CTYPE=C sed '1s/^...//' < yourscript ."
             let annotations = fileAnnotations ++ rcAnnotations
             annotationId <- endSpan annotationStart
             let shellAnnotationSpecified =
                     any (\x -> case x of ShellOverride {} -> True; _ -> False) annotations
-            shellFlagSpecified <- isJust <$> Mr.asks shellTypeOverride
+            shellFlagSpecified <- Mr.asks (isJust . shellTypeOverride)
             let ignoreShebang = shellAnnotationSpecified || shellFlagSpecified
 
             unless ignoreShebang $
@@ -3449,7 +3443,7 @@ debugParseScript string =
 
 testEnvironment =
     Environment {
-        systemInterface = (mockedSystemInterface []),
+        systemInterface = mockedSystemInterface [],
         checkSourced = False,
         currentFilename = "myscript",
         ignoreRC = False,
@@ -3459,7 +3453,7 @@ testEnvironment =
 
 isOk p s =      parsesCleanly p s == Just True   -- The string parses with no warnings
 isWarning p s = parsesCleanly p s == Just False  -- The string parses with warnings
-isNotOk p s =   parsesCleanly p s == Nothing     -- The string does not parse
+isNotOk p s =   isNothing (parsesCleanly p s)    -- The string does not parse
 
 -- If the parser matches the string, return Right [ParseNotes+ParseProblems]
 -- If it does not match the string,  return Left  [ParseProblems]
@@ -3533,8 +3527,7 @@ parseShell env name contents = do
             return newParseResult {
                 prComments =
                     map toPositionedComment $
-                        (filter (not . isIgnored context) $
-                            notesForContext context
+                        filter (not . isIgnored context) (notesForContext context
                             ++ [makeErrorFor err])
                         ++ parseProblems state,
                 prTokenPositions = Map.empty,
@@ -3587,7 +3580,7 @@ reparseIndices root = process root
 
     parsed name pos src =
         if isAssociative name
-        then subParse pos (called "associative array index" $ readIndexSpan) src
+        then subParse pos (called "associative array index" readIndexSpan) src
         else subParse pos (called "arithmetic array index expression" $ optional space >> readArithmeticContents) src
 
 reattachHereDocs root map =
@@ -3601,8 +3594,8 @@ reattachHereDocs root map =
 toPositionedComment :: ParseNote -> PositionedComment
 toPositionedComment (ParseNote start end severity code message) =
     newPositionedComment {
-        pcStartPos = (posToPos start)
-      , pcEndPos = (posToPos end)
+        pcStartPos = posToPos start
+      , pcEndPos = posToPos end
       , pcComment = newComment {
           cSeverity = severity
         , cCode = code
