@@ -26,6 +26,7 @@ import ShellCheck.Formatter.Format
 import Control.DeepSeq
 import Control.Monad
 import Data.Array
+import Data.Either
 import Data.Foldable
 import Data.Ord
 import Data.IORef
@@ -107,7 +108,7 @@ outputWiki errRef = do
     shorten msg =
         if length msg < limit
         then msg
-        else (take (limit-3) msg) ++ "..."
+        else take (limit-3) msg ++ "..."
 
 outputError options file error = do
     color <- getColorFunc $ foColorOption options
@@ -123,7 +124,7 @@ outputResult options ref result sys = do
 outputForFile color sys comments = do
     let fileName = sourceFile (NE.head comments)
     result <- siReadFile sys (Just True) fileName
-    let contents = either (const "") id result
+    let contents = fromRight "" result
     let fileLinesList = lines contents
     let lineCount = length fileLinesList
     let fileLines = listArray (1, lineCount) fileLinesList
@@ -147,14 +148,14 @@ sliceFile fix lines =
     (mapPositions adjust fix, sliceLines lines)
   where
     (minLine, maxLine) =
-        foldl (\(mm, mx) pos -> ((min mm $ fromIntegral $ posLine pos), (max mx $ fromIntegral $ posLine pos)))
+        foldl (\(mm, mx) pos -> (min mm $ fromIntegral $ posLine pos, max mx $ fromIntegral $ posLine pos))
                 (maxBound, minBound) $
             concatMap (\x -> [repStartPos x, repEndPos x]) $ fixReplacements fix
     sliceLines :: Array Int String -> Array Int String
     sliceLines = ixmap (1, maxLine - minLine + 1) (\x -> x + minLine - 1)
     adjust pos =
         pos {
-            posLine = posLine pos - (fromIntegral minLine) + 1
+            posLine = posLine pos - fromIntegral minLine + 1
         }
 
 showFixedString :: ColorFunc -> [PositionedComment] -> Int -> Array Int String -> IO ()
