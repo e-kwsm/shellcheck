@@ -2653,9 +2653,9 @@ checkUnassignedReferences' includeGlobals params t = warnings
     defaultAssigned = Map.fromList $ map (\a -> (a, ())) $ filter (not . null) internalVariables
 
     tally (Assignment (_, _, name, _))  =
-        modify (\(read, written) -> (read, Map.insert name () written))
+        modify (Data.Bifunctor.second (Map.insert name ()))
     tally (Reference (_, place, name)) =
-        modify (\(read, written) -> (Map.insertWith (const id) name place read, written))
+        modify (Data.Bifunctor.first (Map.insertWith (const id) name place))
     tally _ = return ()
 
     unassigned = Map.toList $ Map.difference (Map.difference readMap writeMap) defaultAssigned
