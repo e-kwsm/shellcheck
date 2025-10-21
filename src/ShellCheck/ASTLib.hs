@@ -174,11 +174,11 @@ isUnquotedFlag token =
 -- Any unrecognized flag will result in Nothing. The exception is if arbitraryLongOpts
 -- is set, in which case --anything will map to "anything".
 getGnuOpts :: String -> [Token] -> Maybe [(String, (Token, Token))]
-getGnuOpts str args = getOpts (True, False) str [] args
+getGnuOpts str = getOpts (True, False) str []
 
 -- As above, except the first non-arg string will treat the rest as arguments
 getBsdOpts :: String -> [Token] -> Maybe [(String, (Token, Token))]
-getBsdOpts str args = getOpts (False, False) str [] args
+getBsdOpts str = getOpts (False, False) str []
 
 -- Tests for this are in Commands.hs where it's more frequently used
 getOpts ::
@@ -456,7 +456,7 @@ isLiteralNumber t = fromMaybe False $ do
 -- Messages generally avoid repeating user data, but sometimes it's helpful.
 e4m = escapeForMessage
 escapeForMessage :: String -> String
-escapeForMessage str = concatMap f str
+escapeForMessage = concatMap f
   where
     f '\\' = "\\\\"
     f '\n' = "\\n"
@@ -792,7 +792,7 @@ executableFromShebang = shellFor
             (first:_) -> basename first
 
     fromEnvArgs args = fromMaybe "" $ find (notElem '=') $ skipFlags args
-    basename s = reverse . takeWhile (/= '/') . reverse $ s
+    basename = reverse . takeWhile (/= '/') . reverse
     skipFlags = dropWhile ("-" `isPrefixOf`)
 
 
