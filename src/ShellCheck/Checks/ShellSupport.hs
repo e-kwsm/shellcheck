@@ -392,7 +392,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         in do
             when (name == "local" && not isDash) $
                 -- This is so commonly accepted that we'll make it a special case
-                warnMsg id 3043 $ "'local' is"
+                warnMsg id 3043 "'local' is"
             when (name `elem` unsupportedCommands) $
                 warnMsg id 3044 $ "'" ++ name ++ "' is"
             sequence_ $ do
@@ -445,7 +445,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             ("read", Just $ if isDash || isBusyboxSh then ["r", "p"] else ["r"]),
             ("readonly", Just ["p"]),
             ("trap", Just []),
-            ("type", Just $ if isBusyboxSh then ["p"] else []),
+            ("type", Just (["p" | isBusyboxSh])),
             ("ulimit",
               Just $
                 if isDash
@@ -476,7 +476,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         ]
     simpleExpansions = let re = mkRegex in [
         (re $ "^[" ++ varChars ++ "*@]+:[^-=?+]", 3057, "string indexing is"),
-        (re $ "^([*@][%#]|#[@*])", 3058, "string operations on $@/$* are"),
+        (re "^([*@][%#]|#[@*])", 3058, "string operations on $@/$* are"),
         (re $ "^[" ++ varChars ++ "*@]+(\\[.*\\])?/", 3060, "string replacement is")
         ]
     bashVars = [
@@ -509,7 +509,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
 
     checkTestOp table op id = sequence_ $ do
         (code, shells, msg) <- Map.lookup op table
-        guard . not $ shellType params `elem` shells
+        guard (shellType params `notElem` shells)
         return $ warnMsg id code (msg op)
 
 
@@ -523,9 +523,9 @@ bashismBinaryTestFlags = buildTestFlagMap [
     (["<", ">", "\\<", "\\>", "<=", ">=", "\\<=", "\\>="],
         (3012, [Dash, BusyboxSh], \op -> "lexicographical " ++ op ++ " is")),
     (["=="],
-        (3014, [BusyboxSh], \op -> op ++ " in place of = is")),
+        (3014, [BusyboxSh], (++ " in place of = is"))),
     (["=~"],
-        (3015, [], \op -> op ++ " regex matching is")),
+        (3015, [], (++ " regex matching is"))),
 
     ([], (0,[],const ""))
   ]
