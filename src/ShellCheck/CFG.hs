@@ -200,7 +200,7 @@ buildGraph params root =
         result = CFGResult {
             cfGraph = mkGraph nodes edges,
             cfIdToRange = idToRange,
-            cfIdToNodes = M.fromListWith S.union $ map (\(id, n) -> (id, S.singleton n)) association,
+            cfIdToNodes = M.fromListWith S.union $ map (Data.Bifunctor.second S.singleton) association,
             cfPostDominators = findPostDominators mainExit $ mkGraph nodes onlyRealEdges
         }
     in
@@ -212,7 +212,7 @@ remapGraph remap (nodes, edges, mapping, assoc) =
         map (remapNode remap) nodes,
         map (remapEdge remap) edges,
         map (\(id, (a,b)) -> (id, (remapHelper remap a, remapHelper remap b))) mapping,
-        map (\(id, n) -> (id, remapHelper remap n)) assoc
+        map (Data.Bifunctor.second (remapHelper remap)) assoc
     )
 
 prop_testRenumbering =
@@ -395,7 +395,7 @@ withFunctionScope p = do
 
 -- Anything that happens recursively in f will be attributed to this id
 under :: Id -> CFM a -> CFM a
-under id f = local (\c -> c { cfTokenStack = id:(cfTokenStack c) }) f
+under id = local (\c -> c { cfTokenStack = id:cfTokenStack c })
 
 nodeToRange :: Node -> Range
 nodeToRange n = Range n n
@@ -905,7 +905,7 @@ build t = do
         assignmentChoice <- newStructuralNode
         assignments <-
             if null words || any willSplit words
-            then (:[]) <$> (newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name CFValueString)
+            then (:[]) <$> newNodeRange (applySingle $ IdTagged id $ CFWriteVariable name CFValueString)
             else mapM (\t -> newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name $ CFValueComputed (getId t) $ tokenToParts t) words
         body <- sequentially body
         exit <- newStructuralNode
@@ -932,8 +932,8 @@ handleCommand cmd vars args literalCmd = do
     -- TODO: Handle assignments in declaring commands
 
     case literalCmd of
-        Just "exit" -> regularExpansion vars (NE.toList args) $ handleExit
-        Just "return" -> regularExpansion vars (NE.toList args) $ handleReturn
+        Just "exit" -> regularExpansion vars (NE.toList args) handleExit
+        Just "return" -> regularExpansion vars (NE.toList args) handleReturn
         Just "unset" -> regularExpansionWithStatus vars args $ handleUnset args
 
         Just "declare" -> handleDeclare args
@@ -1015,7 +1015,7 @@ handleCommand cmd vars args literalCmd = do
         -- This is a bit of a kludge: we don't have great support for things like
         -- 'declare -i x=$x' so do one round with declare x=$x, followed by declare -i x
         let (evaluated, assignments, added, removed) = mconcat $ map (toEffects isFunc) args
-        before <- sequentially $ evaluated
+        before <- sequentially evaluated
         assignments <- newNodeRange $ CFApplyEffects assignments
         addedProps <- if null added then newStructuralNode else newNodeRange $ CFApplyEffects added
         removedProps <- if null removed then newStructuralNode else newNodeRange $ CFApplyEffects removed
@@ -1041,23 +1041,21 @@ handleCommand cmd vars args literalCmd = do
                 _ | isFunc -> Just LocalScope
                 _ -> Nothing
 
-        addedProps = S.fromList $ concat $ [
+        addedProps = S.fromList $ concat [
             [ CFVPArray | array ],
             [ CFVPInteger | integer ],
             [ CFVPExport | export ],
             [ CFVPAssociative | associative ]
           ]
 
-        removedProps = S.fromList $ concat $ [
+        removedProps = S.fromList ((
             -- Array property can't be unset
-            [ CFVPInteger | 'i' `elem` unsetOptions ],
-            [ CFVPExport | 'e' `elem` unsetOptions ]
-          ]
+            [ CFVPInteger | 'i' `elem` unsetOptions ]) ++ ([ CFVPExport | 'e' `elem` unsetOptions ]))
 
         toEffects isFunc (T_Assignment id mode var idx t) =
             let
                 pre = idx ++ [t]
-                val = [ IdTagged id $ (writer isFunc) var $ CFValueComputed (getId t) $ [ CFStringVariable var | mode == Append ] ++ tokenToParts t ]
+                val = [ IdTagged id $ writer isFunc var $ CFValueComputed (getId t) $ [ CFStringVariable var | mode == Append ] ++ tokenToParts t ]
                 added = [ IdTagged id $ CFSetProps (scope isFunc) var addedProps | not $ S.null addedProps ]
                 removed = [ IdTagged id $ CFUnsetProps (scope isFunc) var addedProps | not $ S.null removedProps ]
             in
@@ -1073,11 +1071,10 @@ handleCommand cmd vars args literalCmd = do
                 name = fromMaybe literal match
 
                 asLiteral =
-                    IdTagged id $ (writer isFunc) name $
-                        CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') $ literal ]
+                    IdTagged id $ writer isFunc name $
+                        CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') literal ]
                 asUnknown =
-                    IdTagged id $ (writer isFunc) name $
-                        CFValueString
+                    IdTagged id $ writer isFunc name CFValueString
 
                 added = [ IdTagged id $ CFSetProps (scope isFunc) name addedProps ]
                 removed = [ IdTagged id $ CFUnsetProps (scope isFunc) name removedProps ]
@@ -1150,8 +1147,6 @@ handleCommand cmd vars args literalCmd = do
                 name <- getLiteralString token
                 return [ IdTagged (getId token) $ CFWriteVariable name CFValueArray ]
 
-        withFields flags = mapMaybe getAssignment flags
-
         getAssignment :: (String, (Token, Token)) -> Maybe (IdTagged CFEffect)
         getAssignment f = do
             ("", (t, _)) <- return f
@@ -1162,10 +1157,12 @@ handleCommand cmd vars args literalCmd = do
             let
                 names = reverse $ map fromJust $ takeWhile isJust $ map (\c -> sequence (getId c, getLiteralString c)) $ reverse args
                 namesOrDefault = if null names then [(getId cmd, "REPLY")] else names
-                hasDashA = any (== "a") $ map fst $ getGenericOpts args
+                hasDashA = any ((== "a") . fst) (getGenericOpts args)
                 value = if hasDashA then CFValueArray else CFValueString
             in
                 map (\(id, name) -> IdTagged id $ CFWriteVariable name value) namesOrDefault
+
+        withFields = mapMaybe getAssignment
 
     handleDEFINE (cmd NE.:| args) =
         newNodeRange $ CFApplyEffects $ maybeToList findVar
@@ -1248,7 +1245,7 @@ tokenToParts t =
 
 
 -- Like & but well defined when the node already exists
-safeUpdate ctx@(_,node,_,_) graph = ctx & (delNode node graph)
+safeUpdate ctx@(_,node,_,_) graph = ctx & delNode node graph
 
 -- Change all subshell invocations to instead link directly to their contents.
 -- This is used for producing dominator trees.
@@ -1273,7 +1270,7 @@ inlineSubshells graph = relinkedGraph
             subshellToStart `safeUpdate` (endToNexts `safeUpdate` graph)
 
 findEntryNodes :: CFGraph -> [Node]
-findEntryNodes graph = ufold find [] graph
+findEntryNodes = ufold find []
   where
     find (incoming, node, label, _) list =
         case label of
@@ -1285,10 +1282,10 @@ findDominators main graph = asSetMap
     inlined = inlineSubshells graph
     entryNodes = main : findEntryNodes graph
     asLists = concatMap (dom inlined) entryNodes
-    asSetMap = M.fromList $ map (\(node, list) -> (node, S.fromList list)) asLists
+    asSetMap = M.fromList $ map (Data.Bifunctor.second S.fromList) asLists
 
 findTerminalNodes :: CFGraph -> [Node]
-findTerminalNodes graph = ufold find [] graph
+findTerminalNodes = ufold find []
   where
     find (_, node, label, _) list =
         case label of
