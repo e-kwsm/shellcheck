@@ -334,7 +334,7 @@ mockedSystemInterface files = (newSystemInterface :: SystemInterface Identity) {
         case find ((== file) . fst) files of
             Nothing -> Left "File not included in mock."
             Just (_, contents) -> Right contents
-    fs _ _ _ file = return file
+    fs _ _ _ = return
 
 mockRcFile rcfile mock = mock {
     siGetConfig = const . return $ Just (".shellcheckrc", rcfile)
