@@ -50,6 +50,7 @@ import Control.Monad
 import Control.Monad.Identity
 import Data.Array.Unboxed
 import Data.Array.ST
+import Data.Bifunctor
 import Data.List hiding (map)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
