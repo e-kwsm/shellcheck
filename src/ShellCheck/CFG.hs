@@ -50,6 +50,7 @@ import Control.Monad
 import Control.Monad.Identity
 import Data.Array.Unboxed
 import Data.Array.ST
+import Data.Bifunctor
 import Data.List hiding (map)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
@@ -200,7 +201,7 @@ buildGraph params root =
         result = CFGResult {
             cfGraph = mkGraph nodes edges,
             cfIdToRange = idToRange,
-            cfIdToNodes = M.fromListWith S.union $ map (\(id, n) -> (id, S.singleton n)) association,
+            cfIdToNodes = M.fromListWith S.union $ map (Data.Bifunctor.second S.singleton) association,
             cfPostDominators = findPostDominators mainExit $ mkGraph nodes onlyRealEdges
         }
     in
@@ -212,7 +213,7 @@ remapGraph remap (nodes, edges, mapping, assoc) =
         map (remapNode remap) nodes,
         map (remapEdge remap) edges,
         map (\(id, (a,b)) -> (id, (remapHelper remap a, remapHelper remap b))) mapping,
-        map (\(id, n) -> (id, remapHelper remap n)) assoc
+        map (Data.Bifunctor.second (remapHelper remap)) assoc
     )
 
 prop_testRenumbering =
@@ -1285,7 +1286,7 @@ findDominators main graph = asSetMap
     inlined = inlineSubshells graph
     entryNodes = main : findEntryNodes graph
     asLists = concatMap (dom inlined) entryNodes
-    asSetMap = M.fromList $ map (\(node, list) -> (node, S.fromList list)) asLists
+    asSetMap = M.fromList $ map (Data.Bifunctor.second S.fromList) asLists
 
 findTerminalNodes :: CFGraph -> [Node]
 findTerminalNodes graph = ufold find [] graph
