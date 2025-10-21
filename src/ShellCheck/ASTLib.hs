@@ -111,7 +111,7 @@ oversimplify token =
         (T_NormalWord _ l) -> [concat (concatMap oversimplify l)]
         (T_DoubleQuoted _ l) -> [concat (concatMap oversimplify l)]
         (T_SingleQuoted _ s) -> [s]
-        (T_DollarBraced _ _ _) -> ["${VAR}"]
+        (T_DollarBraced {}) -> ["${VAR}"]
         (T_DollarArithmetic _ _) -> ["${VAR}"]
         (T_DollarExpansion _ _) -> ["${VAR}"]
         (T_Backticked _ _) -> ["${VAR}"]
@@ -146,10 +146,10 @@ getFlagsUntil _ _ = error $ pleaseReport "getFlags on non-command"
 getAllFlags :: Token -> [(Token, String)]
 getAllFlags = getFlagsUntil (== "--")
 -- Get all flags in a BSD way, up until first non-flag argument or --
-getLeadingFlags = getFlagsUntil (\x -> x == "--" || (not $ "-" `isPrefixOf` x))
+getLeadingFlags = getFlagsUntil (\x -> x == "--" || not ("-" `isPrefixOf` x))
 
 -- Check if a command has a flag.
-hasFlag cmd str = str `elem` (map snd $ getAllFlags cmd)
+hasFlag cmd str = str `elem` map snd (getAllFlags cmd)
 
 -- Is this token a word that starts with a dash?
 isFlag token =
@@ -174,11 +174,11 @@ isUnquotedFlag token =
 -- Any unrecognized flag will result in Nothing. The exception is if arbitraryLongOpts
 -- is set, in which case --anything will map to "anything".
 getGnuOpts :: String -> [Token] -> Maybe [(String, (Token, Token))]
-getGnuOpts str args = getOpts (True, False) str [] args
+getGnuOpts str = getOpts (True, False) str []
 
 -- As above, except the first non-arg string will treat the rest as arguments
 getBsdOpts :: String -> [Token] -> Maybe [(String, (Token, Token))]
-getBsdOpts str args = getOpts (False, False) str [] args
+getBsdOpts str = getOpts (False, False) str []
 
 -- Tests for this are in Commands.hs where it's more frequently used
 getOpts ::
@@ -420,14 +420,14 @@ getLiteralStringExt more = g
             'x' ->
                 case cs of
                     (x:y:more) | isHexDigit x && isHexDigit y ->
-                        chr (16*(digitToInt x) + (digitToInt y)) : decodeEscapes more
+                        chr (16*digitToInt x + digitToInt y) : decodeEscapes more
                     (x:more) | isHexDigit x ->
                         chr (digitToInt x) : decodeEscapes more
                     more -> '\\' : 'x' : decodeEscapes more
             _ | isOctDigit c ->
                 let (digits, more) = spanMax isOctDigit 3 (c:cs)
-                    num = (parseOct digits) `mod` 256
-                in (chr num) : decodeEscapes more
+                    num = parseOct digits `mod` 256
+                in chr num : decodeEscapes more
             _ -> '\\' : c : rest
       where
         rest = decodeEscapes cs
@@ -456,7 +456,7 @@ isLiteralNumber t = fromMaybe False $ do
 -- Messages generally avoid repeating user data, but sometimes it's helpful.
 e4m = escapeForMessage
 escapeForMessage :: String -> String
-escapeForMessage str = concatMap f str
+escapeForMessage = concatMap f
   where
     f '\\' = "\\\\"
     f '\n' = "\\n"
@@ -467,19 +467,19 @@ escapeForMessage str = concatMap f str
         if shouldEscape c
         then
             if ord c < 256
-            then "\\x" ++ (pad0 2 $ toHex c)
-            else "\\U" ++ (pad0 4 $ toHex c)
+            then "\\x" ++ pad0 2 (toHex c)
+            else "\\U" ++ pad0 4 (toHex c)
         else [c]
 
     shouldEscape c =
-        (not $ isPrint c)
+        not (isPrint c)
         || (not (isAscii c) && not (isLetter c))
 
     pad0 :: Int -> String -> String
     pad0 n s =
         let l = length s in
             if l < n
-            then (replicate (n-l) '0') ++ s
+            then replicate (n-l) '0' ++ s
             else s
     toHex :: Char -> String
     toHex c = map toUpper $ showHex (ord c) ""
@@ -612,7 +612,7 @@ getCommandSequences t =
         T_UntilExpression _ cond cmds -> [cond, cmds]
         T_ForIn _ _ _ cmds -> [cmds]
         T_ForArithmetic _ _ _ _ cmds -> [cmds]
-        T_IfExpression _ thens elses -> (concatMap (\(a,b) -> [a,b]) thens) ++ [elses]
+        T_IfExpression _ thens elses -> concatMap (\(a,b) -> [a,b]) thens ++ [elses]
         T_Annotation _ _ t -> getCommandSequences t
 
         T_DollarExpansion _ cmds -> [cmds]
@@ -666,10 +666,10 @@ wordToPseudoGlob' exact word =
         case word of
             T_NormalWord _ (T_Literal _ ('~':str):rest) -> do
                 guard $ not exact
-                let this = (PGMany : (map PGChar $ dropWhile (/= '/') str))
-                tail <- concat <$> (mapM f $ concatMap getWordParts rest)
+                let this = PGMany : map PGChar (dropWhile (/= '/') str)
+                tail <- concat <$> mapM f (concatMap getWordParts rest)
                 return $ this ++ tail
-            _ -> concat <$> (mapM f $ getWordParts word)
+            _ -> concat <$> mapM f (getWordParts word)
 
     f x = case x of
         T_Literal _ s      -> return $ map PGChar s
@@ -792,8 +792,8 @@ executableFromShebang = shellFor
             (first:_) -> basename first
 
     fromEnvArgs args = fromMaybe "" $ find (notElem '=') $ skipFlags args
-    basename s = reverse . takeWhile (/= '/') . reverse $ s
     skipFlags = dropWhile ("-" `isPrefixOf`)
+    basename = reverse . takeWhile (/= '/') . reverse
 
 
 -- Determining if a name is a variable
