@@ -717,7 +717,7 @@ updatePrefixValue ctx name val = do
 
 -- Look up a variable value, and also return its scope
 readVariableWithScope :: forall s. Ctx s -> String -> ST s (VariableState, Scope)
-readVariableWithScope ctx name = lookupStack get dep def ctx name
+readVariableWithScope = lookupStack get dep def
   where
     def = (unknownVariableState, GlobalScope)
     get = getVariableWithScope
@@ -725,7 +725,7 @@ readVariableWithScope ctx name = lookupStack get dep def ctx name
 
 -- Look up the variable's properties. This can be done independently to avoid incurring a dependency on the value.
 readVariablePropertiesWithScope :: forall s. Ctx s -> String -> ST s (VariableProperties, Scope)
-readVariablePropertiesWithScope ctx name = lookupStack get dep def ctx name
+readVariablePropertiesWithScope = lookupStack get dep def
   where
     def = (defaultProperties, GlobalScope)
     get s k = do
@@ -756,7 +756,7 @@ readGlobal ctx name = lookupStack get dep def ctx name
   where
     def = unknownVariableState -- could come from the environment
     get s name = vmLookup name $ sGlobalValues s
-    dep k v = DepState GlobalScope k v
+    dep = DepState GlobalScope
 
 
 readGlobalProperties ctx name = lookupStack get dep def ctx name
@@ -766,13 +766,13 @@ readGlobalProperties ctx name = lookupStack get dep def ctx name
     -- This dependency will fail to match if it's shadowed by a local variable,
     -- such as in  x=1; f() { local -i x; declare -ag x; } because we'll look at
     -- x and find it to be local and not global. FIXME?
-    dep k v = DepProperties GlobalScope k v
+    dep = DepProperties GlobalScope
 
 readLocal ctx name = lookupStackUntilFunction get dep def ctx name
   where
     def = unsetVariableState -- can't come from the environment
     get s name = vmLookup name $ sLocalValues s
-    dep k v = DepState LocalScope k v
+    dep = DepState LocalScope
 
 -- We only want to look up the local properties of the current function,
 -- though preferably even if we're in a subshell.  FIXME?
@@ -790,7 +790,7 @@ readFunction ctx name = lookupStack get dep def ctx name
   where
     def = unknownFunctionValue
     get s name = vmLookup name $ sFunctionTargets s
-    dep k v = DepFunction k v
+    dep = DepFunction
 
 writeFunction ctx name val = do
     modifySTRef (cOutput ctx) $ insertFunction name $ S.singleton val
@@ -799,7 +799,7 @@ readExitCodes ctx = lookupStack get dep def ctx ()
   where
     get s () = sExitCodes s
     def = S.empty
-    dep () v = DepExitCodes v
+    dep () = DepExitCodes
 
 -- Look up each state on the stack until a value is found (or the default is used),
 -- then add this value as a StateDependency.
