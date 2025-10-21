@@ -397,7 +397,7 @@ withFunctionScope p = do
 
 -- Anything that happens recursively in f will be attributed to this id
 under :: Id -> CFM a -> CFM a
-under id f = local (\c -> c { cfTokenStack = id:cfTokenStack c }) f
+under id = local (\c -> c { cfTokenStack = id:cfTokenStack c })
 
 nodeToRange :: Node -> Range
 nodeToRange n = Range n n
@@ -1151,7 +1151,7 @@ handleCommand cmd vars args literalCmd = do
                 name <- getLiteralString token
                 return [ IdTagged (getId token) $ CFWriteVariable name CFValueArray ]
 
-        withFields flags = mapMaybe getAssignment flags
+        withFields = mapMaybe getAssignment
 
         getAssignment :: (String, (Token, Token)) -> Maybe (IdTagged CFEffect)
         getAssignment f = do
@@ -1274,7 +1274,7 @@ inlineSubshells graph = relinkedGraph
             subshellToStart `safeUpdate` (endToNexts `safeUpdate` graph)
 
 findEntryNodes :: CFGraph -> [Node]
-findEntryNodes graph = ufold find [] graph
+findEntryNodes = ufold find []
   where
     find (incoming, node, label, _) list =
         case label of
@@ -1289,7 +1289,7 @@ findDominators main graph = asSetMap
     asSetMap = M.fromList $ map (Data.Bifunctor.second S.fromList) asLists
 
 findTerminalNodes :: CFGraph -> [Node]
-findTerminalNodes graph = ufold find [] graph
+findTerminalNodes = ufold find []
   where
     find (_, node, label, _) list =
         case label of
