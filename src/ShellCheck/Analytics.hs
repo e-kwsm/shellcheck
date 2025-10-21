@@ -3574,7 +3574,7 @@ checkUnmatchableCases params t =
         warn (getId candidate) 2195
             "This pattern will never match the case statement's word. Double check them."
 
-    tupMap f l = map (\x -> (x, f x)) l
+    tupMap f = map (\x -> (x, f x))
     checkDoms ((glob, Just x), rest) =
         forM_ (find (\(_, p) -> x `pseudoGlobIsSuperSetof` p) rest) $
             \(first,_) -> do
@@ -5111,8 +5111,8 @@ checkOverwrittenExitCode params t =
 
     -- If we don't do anything based on the condition, assume we wanted the condition itself
     -- This helps differentiate `x; [ $? -gt 0 ] && exit $?` vs `[ cond ]; exit $?`
-    usedUnconditionally cfga t testIds =
-        all (\c -> CF.doesPostDominate cfga (getId t) c) testIds
+    usedUnconditionally cfga t =
+        all (\c -> CF.doesPostDominate cfga (getId t) c)
 
     isPrinting t =
         case getCommandBasename t of
