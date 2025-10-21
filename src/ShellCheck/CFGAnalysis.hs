@@ -995,7 +995,7 @@ transferSubshell ctx reason entry exit = do
     }
   where
     f entry exit ctx = do
-        (states, frame) <- withNewStackFrame ctx entry False (flip dataflow entry)
+        (states, frame) <- withNewStackFrame ctx entry False (`dataflow` entry)
         let (_, res) = fromMaybe (error $ pleaseReport "Subshell has no exit") $ M.lookup exit states
         deps <- readSTRef $ dependencies frame
         registerFlowResult ctx entry states deps
@@ -1034,7 +1034,7 @@ transferFunctionValue ctx funcVal =
                 else runCached ctx entry (f name entry exit)
   where
     f name entry exit ctx = do
-        (states, frame) <- withNewStackFrame ctx entry True (flip dataflow entry)
+        (states, frame) <- withNewStackFrame ctx entry True (`dataflow` entry)
         deps <- readSTRef $ dependencies frame
         let res =
                 case M.lookup exit states of
