@@ -184,7 +184,7 @@ applyFix fix fileLines =
     let
         untabbed = fix {
             fixReplacements =
-                map (\c -> removeTabStops c fileLines) $
+                map (`removeTabStops` fileLines) $
                     fixReplacements fix
             }
         (adjustedFixes, singleLine) = multiToSingleLine [untabbed] fileLines
@@ -304,7 +304,7 @@ prop_pstreeSumsCorrectly kvs targets =
     smartPrefixSums :: [(Int, Int)] -> [Int] -> [Int]
     smartPrefixSums kvs targets =
         let tree = foldl (\tree (pos, shift) -> addPSValue pos shift tree) PSLeaf kvs
-        in map (\x -> getPrefixSum x tree) targets
+        in map (`getPrefixSum` tree) targets
   in smartPrefixSums kvs targets == dumbPrefixSums kvs targets
 
 
