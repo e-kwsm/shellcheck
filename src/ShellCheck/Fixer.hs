@@ -172,8 +172,8 @@ multiToSingleLine fixes lines =
     adjust pos =
         pos {
             posLine = 1,
-            posColumn = (posColumn pos) +
-                (fromIntegral $ getPrefixSum (fromIntegral $ posLine pos) shiftTree)
+            posColumn = posColumn pos +
+                fromIntegral (getPrefixSum (fromIntegral $ posLine pos) shiftTree)
         }
 
 -- Apply a fix and return resulting lines.
@@ -184,7 +184,7 @@ applyFix fix fileLines =
     let
         untabbed = fix {
             fixReplacements =
-                map (\c -> removeTabStops c fileLines) $
+                map (`removeTabStops` fileLines) $
                     fixReplacements fix
             }
         (adjustedFixes, singleLine) = multiToSingleLine [untabbed] fileLines
@@ -234,7 +234,7 @@ applyReplacement2 rep string = do
             error $ pleaseReport "bad cross-line fix"
 
     let replacer = repString rep
-    let shift = (length replacer) - (oldEnd - oldStart)
+    let shift = length replacer - (oldEnd - oldStart)
     let insertionPoint =
           case repInsertionPoint rep of
               InsertBefore -> oldStart
@@ -304,7 +304,7 @@ prop_pstreeSumsCorrectly kvs targets =
     smartPrefixSums :: [(Int, Int)] -> [Int] -> [Int]
     smartPrefixSums kvs targets =
         let tree = foldl (\tree (pos, shift) -> addPSValue pos shift tree) PSLeaf kvs
-        in map (\x -> getPrefixSum x tree) targets
+        in map (`getPrefixSum` tree) targets
   in smartPrefixSums kvs targets == dumbPrefixSums kvs targets
 
 
