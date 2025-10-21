@@ -167,7 +167,7 @@ variableMayBeDeclaredInteger state var = variableMayHaveState state var CFVPInte
 -- See if any execution path suggests the variable may contain an integer value
 variableMayBeAssignedInteger state var = do
     value <- M.lookup var $ variablesInScope state
-    return $ (numericalStatus $ variableValue value) >= NumericalStatusMaybe
+    return $ numericalStatus (variableValue value) >= NumericalStatusMaybe
 
 getDataForNode analysis node = M.lookup node $ nodeToData analysis
 
@@ -205,7 +205,7 @@ createEnvironmentState = do
         addVars Data.specialIntegerVariables integerVariableState
         ]
   where
-    addVars names val = map (\name -> insertGlobal name val) names
+    addVars names val = map (`insertGlobal` val) names
     spacelessVariableState = unknownVariableState {
         variableValue = VariableValue {
             literalValue = Nothing,
@@ -247,12 +247,12 @@ addProperties props state = state {
 
 removeProperties :: S.Set CFVariableProp -> VariableState -> VariableState
 removeProperties props state = state {
-    variableProperties = S.map (\s -> S.difference s props) $ variableProperties state
+    variableProperties = S.map (`S.difference` props) $ variableProperties state
 }
 
 setExitCode id = setExitCodes (S.singleton id)
 setExitCodes set state = modified state {
-    sExitCodes = Just $ set
+    sExitCodes = Just set
 }
 
 -- Dependencies on values, e.g. "if there is a global variable named 'foo' without spaces"
@@ -542,14 +542,14 @@ mergeMaps :: (Ord k) => forall s.
     Ctx s ->
     (v -> v -> v) ->
     (Ctx s -> k -> ST s v) ->
-    (VersionedMap k v) ->
-    (VersionedMap k v) ->
+    VersionedMap k v ->
+    VersionedMap k v ->
     ST s (VersionedMap k v)
 mergeMaps ctx merger reader a b =
     if vmIsQuickEqual a b
     then return a
     else do
-        new <- M.fromDistinctAscList <$> reverse <$> f [] (M.toAscList $ mapStorage a) (M.toAscList $ mapStorage b)
+        new <- M.fromDistinctAscList . reverse <$> f [] (M.toAscList $ mapStorage a) (M.toAscList $ mapStorage b)
         vmFromMap ctx new
   where
     f l [] [] = return l
@@ -652,7 +652,7 @@ vmEmpty = VersionedMap {
 
 -- Map.null for VersionedMaps
 vmNull :: VersionedMap k v -> Bool
-vmNull m = mapVersion m == 0 || (M.null $ mapStorage m)
+vmNull m = mapVersion m == 0 || M.null (mapStorage m)
 
 -- Map.lookup for VersionedMaps
 vmLookup name map = M.lookup name $ mapStorage map
@@ -717,7 +717,7 @@ updatePrefixValue ctx name val = do
 
 -- Look up a variable value, and also return its scope
 readVariableWithScope :: forall s. Ctx s -> String -> ST s (VariableState, Scope)
-readVariableWithScope ctx name = lookupStack get dep def ctx name
+readVariableWithScope = lookupStack get dep def
   where
     def = (unknownVariableState, GlobalScope)
     get = getVariableWithScope
@@ -725,7 +725,7 @@ readVariableWithScope ctx name = lookupStack get dep def ctx name
 
 -- Look up the variable's properties. This can be done independently to avoid incurring a dependency on the value.
 readVariablePropertiesWithScope :: forall s. Ctx s -> String -> ST s (VariableProperties, Scope)
-readVariablePropertiesWithScope ctx name = lookupStack get dep def ctx name
+readVariablePropertiesWithScope = lookupStack get dep def
   where
     def = (defaultProperties, GlobalScope)
     get s k = do
@@ -744,10 +744,10 @@ getVariableWithScope s name =
         _ -> Nothing
 
 undefineFunction ctx name =
-    writeFunction ctx name $ FunctionUnknown
+    writeFunction ctx name FunctionUnknown
 
 undefineVariable ctx name =
-    writeVariable ctx name $ unsetVariableState
+    writeVariable ctx name unsetVariableState
 
 readVariable ctx name = fst <$> readVariableWithScope ctx name
 readVariableProperties ctx name = fst <$> readVariablePropertiesWithScope ctx name
@@ -756,23 +756,23 @@ readGlobal ctx name = lookupStack get dep def ctx name
   where
     def = unknownVariableState -- could come from the environment
     get s name = vmLookup name $ sGlobalValues s
-    dep k v = DepState GlobalScope k v
+    dep = DepState GlobalScope
 
 
 readGlobalProperties ctx name = lookupStack get dep def ctx name
   where
     def = defaultProperties
-    get s name = variableProperties <$> (vmLookup name $ sGlobalValues s)
+    get s name = variableProperties <$> vmLookup name (sGlobalValues s)
     -- This dependency will fail to match if it's shadowed by a local variable,
     -- such as in  x=1; f() { local -i x; declare -ag x; } because we'll look at
     -- x and find it to be local and not global. FIXME?
-    dep k v = DepProperties GlobalScope k v
+    dep = DepProperties GlobalScope
 
 readLocal ctx name = lookupStackUntilFunction get dep def ctx name
   where
     def = unsetVariableState -- can't come from the environment
     get s name = vmLookup name $ sLocalValues s
-    dep k v = DepState LocalScope k v
+    dep = DepState LocalScope
 
 -- We only want to look up the local properties of the current function,
 -- though preferably even if we're in a subshell.  FIXME?
@@ -783,14 +783,14 @@ readLocalProperties ctx name = fst <$> lookupStackUntilFunction get dep def ctx 
         val <- variableProperties <$> f
         return (val, tag)
 
-    get s name = (with LocalScope $ vmLookup name $ sLocalValues s) `mplus` (with PrefixScope $ vmLookup name $ sPrefixValues s)
+    get s name = with LocalScope (vmLookup name $ sLocalValues s) `mplus` with PrefixScope (vmLookup name $ sPrefixValues s)
     dep k (val, scope) = DepProperties scope k val
 
 readFunction ctx name = lookupStack get dep def ctx name
   where
     def = unknownFunctionValue
     get s name = vmLookup name $ sFunctionTargets s
-    dep k v = DepFunction k v
+    dep = DepFunction
 
 writeFunction ctx name val = do
     modifySTRef (cOutput ctx) $ insertFunction name $ S.singleton val
@@ -799,7 +799,7 @@ readExitCodes ctx = lookupStack get dep def ctx ()
   where
     get s () = sExitCodes s
     def = S.empty
-    dep () v = DepExitCodes v
+    dep () = DepExitCodes
 
 -- Look up each state on the stack until a value is found (or the default is used),
 -- then add this value as a StateDependency.
@@ -992,7 +992,7 @@ transferSubshell ctx reason entry exit = do
     }
   where
     f entry exit ctx = do
-        (states, frame) <- withNewStackFrame ctx entry False (flip dataflow $ entry)
+        (states, frame) <- withNewStackFrame ctx entry False (`dataflow` entry)
         let (_, res) = fromMaybe (error $ pleaseReport "Subshell has no exit") $ M.lookup exit states
         deps <- readSTRef $ dependencies frame
         registerFlowResult ctx entry states deps
@@ -1031,7 +1031,7 @@ transferFunctionValue ctx funcVal =
                 else runCached ctx entry (f name entry exit)
   where
     f name entry exit ctx = do
-        (states, frame) <- withNewStackFrame ctx entry True (flip dataflow $ entry)
+        (states, frame) <- withNewStackFrame ctx entry True (`dataflow` entry)
         deps <- readSTRef $ dependencies frame
         let res =
                 case M.lookup exit states of
@@ -1075,7 +1075,7 @@ runCached ctx node f = do
         Nothing -> do
             logInfo ("Cache failed", node)
             (deps, diff) <- f ctx
-            modifySTRef (cCache ctx) (M.insertWith (\_ old -> (deps, diff):(take cacheEntries old)) node [(deps,diff)])
+            modifySTRef (cCache ctx) (M.insertWith (\_ old -> (deps, diff):take cacheEntries old) node [(deps,diff)])
             logVerbose ("Recomputed cache for", node, deps)
             -- do { f <- fulfillsDependencies ctx node deps; unless (f) $ traceShowM ("New dependencies FAILED to match", node, deps); }
             patchOutputM ctx diff
@@ -1264,7 +1264,7 @@ type StateMap = M.Map Node (InternalState, InternalState)
 dataflow :: forall s. Ctx s -> Node -> ST s StateMap
 dataflow ctx entry = do
     pending <- newSTRef $ S.singleton entry
-    states <- newSTRef $ M.empty
+    states <- newSTRef M.empty
     -- Should probably be done via a stack frame instead
     withoutChanges ctx $
         f iterationCount pending states
@@ -1291,7 +1291,7 @@ dataflow ctx entry = do
 
     process states node = do
         stateMap <- readSTRef states
-        let inputs = filter (\c -> sIsReachable c /= Just False) $ mapMaybe (\c -> fmap snd $ M.lookup c stateMap) incoming
+        let inputs = filter (\c -> sIsReachable c /= Just False) $ mapMaybe (\c -> snd <$> M.lookup c stateMap) incoming
         input <-
             case incoming of
                 [] -> return newInternalState
@@ -1299,9 +1299,9 @@ dataflow ctx entry = do
                     case inputs of
                         [] -> return unreachableState
                         (x:rest) -> foldM (mergeState ctx) x rest
-        writeSTRef (cInput ctx) $ input
-        writeSTRef (cOutput ctx) $ input
-        writeSTRef (cNode ctx) $ node
+        writeSTRef (cInput ctx) input
+        writeSTRef (cOutput ctx) input
+        writeSTRef (cNode ctx) node
         transfer ctx label
         newOutput <- readSTRef $ cOutput ctx
         result <-
@@ -1318,15 +1318,15 @@ dataflow ctx entry = do
                 then return []
                 else return outgoing
       where
-        (incomingL, _, label, outgoingL) = context graph $ node
-        incoming = map snd $ filter isRegular $ incomingL
+        (incomingL, _, label, outgoingL) = context graph node
+        incoming = map snd $ filter isRegular incomingL
         outgoing = map snd outgoingL
-        isRegular = ((== CFEFlow) . fst)
+        isRegular = (== CFEFlow) . fst
 
 runRoot ctx env entry exit = do
-    writeSTRef (cInput ctx) $ env
-    writeSTRef (cOutput ctx) $ env
-    writeSTRef (cNode ctx) $ entry
+    writeSTRef (cInput ctx) env
+    writeSTRef (cOutput ctx) env
+    writeSTRef (cNode ctx) entry
     (states, frame) <- withNewStackFrame ctx entry False $ \c -> dataflow c entry
     deps <- readSTRef $ dependencies frame
     registerFlowResult ctx entry states deps
@@ -1376,7 +1376,7 @@ analyzeControlFlow params t =
         let allStates = M.union invokedStates baseStates
 
         -- Convert to external states
-        let nodeToData = M.map (\(a,b) -> (internalToExternal a, internalToExternal b)) allStates
+        let nodeToData = M.map (Data.Bifunctor.bimap internalToExternal internalToExternal) allStates
 
         return $ nodeToData `deepseq` CFGAnalysis {
             graph = cfGraph cfg,
@@ -1389,14 +1389,14 @@ analyzeControlFlow params t =
 
     -- Include the dependencies in the state of each function, e.g. if it depends on `x=foo` then add that.
     addDeps :: (S.Set StateDependency, M.Map Node (InternalState, InternalState)) -> M.Map Node (InternalState, InternalState)
-    addDeps (deps, m) = let base = depsToState deps in M.map (\(a,b) -> (base `patchState` a, base `patchState` b)) m
+    addDeps (deps, m) = let base = depsToState deps in M.map (Data.Bifunctor.bimap (patchState base) (patchState base)) m
 
     -- Collect all the states that each node has resulted in.
     groupByNode :: forall k v. M.Map k (M.Map Node v) -> M.Map Node [v]
     groupByNode pathMap = M.fromListWith (++) $ map (\(k,v) -> (k,[v])) $ concatMap M.toList $ M.elems pathMap
 
     -- Merge all the pre/post states for each node. This would have been a foldM if Map had one.
-    flattenByNode ctx m = M.fromDistinctAscList <$> (mapM (mergePair ctx) $ M.toList m)
+    flattenByNode ctx m = M.fromDistinctAscList <$> mapM (mergePair ctx) (M.toList m)
 
     mergeAllStates ctx pairs =
         let
