@@ -39,6 +39,7 @@ import ShellCheck.Regex
 import Control.Monad
 import Control.Monad.RWS
 import Data.Char
+import Data.Bifunctor
 import Data.Functor.Identity
 import qualified Data.Graph.Inductive.Graph as G
 import Data.List
@@ -123,7 +124,7 @@ optionalCommandChecks = [
         cdNegative = "command -v javac"
     }, checkWhich)
     ]
-optionalCheckMap = M.fromList $ map (\(desc, check) -> (cdName desc, check)) optionalCommandChecks
+optionalCheckMap = M.fromList $ map (Data.Bifunctor.first cdName) optionalCommandChecks
 
 prop_verifyOptionalExamples = all check optionalCommandChecks
   where
