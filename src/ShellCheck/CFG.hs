@@ -1057,7 +1057,7 @@ handleCommand cmd vars args literalCmd = do
             [ CFVPReadonly | readonly && not func ]
           ]
 
-        removedProps = S.fromList $ ((
+        removedProps = S.fromList ((
             -- Array property can't be unset
             [ CFVPInteger | 'i' `elem` unsetOptions ]) ++ (
             [ CFVPExport | 'e' `elem` unsetOptions ]))
