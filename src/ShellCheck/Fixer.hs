@@ -173,7 +173,7 @@ multiToSingleLine fixes lines =
         pos {
             posLine = 1,
             posColumn = (posColumn pos) +
-                (fromIntegral $ getPrefixSum (fromIntegral $ posLine pos) shiftTree)
+                fromIntegral (getPrefixSum (fromIntegral $ posLine pos) shiftTree)
         }
 
 -- Apply a fix and return resulting lines.

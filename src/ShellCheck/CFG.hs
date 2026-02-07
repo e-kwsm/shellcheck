@@ -905,7 +905,7 @@ build t = do
         assignmentChoice <- newStructuralNode
         assignments <-
             if null words || any willSplit words
-            then (:[]) <$> (newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name CFValueString)
+            then (:[]) <$> newNodeRange (applySingle $ IdTagged id $ CFWriteVariable name CFValueString)
             else mapM (\t -> newNodeRange $ applySingle $ IdTagged id $ CFWriteVariable name $ CFValueComputed (getId t) $ tokenToParts t) words
         body <- sequentially body
         exit <- newStructuralNode
