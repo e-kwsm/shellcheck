@@ -4378,7 +4378,7 @@ checkBadTestAndOr params t =
             T_OrIf _ _ rhs -> checkAnds id rhs
             T_Pipeline _ _ list | not (null list) -> checkAnds id (last list)
             cmd -> when (isTestCommand cmd) $
-                errWithFix id 2265 "Use && for logical AND. Single & will background and return true." fixWith [replaceEnd id params 0 "&"]
+                errWithFix id 2265 "Use && for logical AND. Single & will background and return true." (fixWith [replaceEnd id params 0 "&"])
 
 
 prop_checkComparisonWithLeadingX1 = verify checkComparisonWithLeadingX "[ x$foo = xlol ]"
