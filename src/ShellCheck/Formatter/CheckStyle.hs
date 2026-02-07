@@ -23,7 +23,8 @@ import ShellCheck.Interface
 import ShellCheck.Formatter.Format
 
 import Data.Char
-import Data.List
+import Data.Either
+import qualified Data.List
 import System.IO
 import qualified Data.List.NonEmpty as NE
 
@@ -49,7 +50,7 @@ outputResults cr sys =
     outputGroup group = do
         let filename = sourceFile (NE.head group)
         result <- siReadFile sys (Just True) filename
-        let contents = either (const "") id result
+        let contents = fromRight "" result
         outputFile filename contents (NE.toList group)
 
 outputFile filename contents warnings = do
