@@ -2395,7 +2395,7 @@ readTermOrNone = do
 prop_readTerm = isOk readTerm "time ( foo; bar; )"
 prop_readKshCoprocessAndOr =
     case debugParse readScript "#!/bin/ksh\ntrue && echo data |& read -r -p record" of
-        Right (T_Annotation _ _ (T_Script _ _ [T_KshCoprocess _ (T_AndIf _ _ _), _])) -> True
+        Right (T_Annotation _ _ (T_Script _ _ [T_KshCoprocess _ (T_AndIf {}), _])) -> True
         _ -> False
 
 prop_readKshCoprocessBeforeClosingDelimiter =
