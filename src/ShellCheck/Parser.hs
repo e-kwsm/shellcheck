@@ -3459,7 +3459,7 @@ testEnvironment =
 
 isOk p s =      parsesCleanly p s == Just True   -- The string parses with no warnings
 isWarning p s = parsesCleanly p s == Just False  -- The string parses with warnings
-isNotOk p s =   parsesCleanly p s == Nothing     -- The string does not parse
+isNotOk p s =   isNothing (parsesCleanly p s)    -- The string does not parse
 
 -- If the parser matches the string, return Right [ParseNotes+ParseProblems]
 -- If it does not match the string,  return Left  [ParseProblems]
