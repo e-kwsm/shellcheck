@@ -602,7 +602,7 @@ getReferencedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Litera
             else []
         "trap" ->
             case rest of
-                head:_ -> map ((base, head,)) $ getVariablesFromLiteralToken head
+                head:_ -> map (base, head,) $ getVariablesFromLiteralToken head
                 _ -> []
         "alias" -> [(base, token, name) | token <- rest, name <- getVariablesFromLiteralToken token]
         _ -> []
@@ -783,7 +783,7 @@ getReferencedVariables parents t =
     case t of
         T_DollarBraced id _ l -> let str = concat $ oversimplify l in
             (t, t, getBracedReference str) :
-                map ((l, l,)) (
+                map (l, l,) (
                     getIndexReferences str
                     ++ getOffsetReferences (getBracedModifier str))
         TA_Variable id name _ ->
@@ -815,7 +815,7 @@ getReferencedVariables parents t =
             "PROMPT_COMMAND"
           ]
         then
-            map ((base, base,)) $
+            map (base, base,) $
                 getVariablesFromLiteralToken word
         else []
 

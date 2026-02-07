@@ -512,7 +512,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         return $ warnMsg id code (msg op)
 
 
-buildTestFlagMap list = Map.fromList $ concatMap (\(x,y) -> map ((,y)) x) list
+buildTestFlagMap list = Map.fromList $ concatMap (\(x,y) -> map (,y) x) list
 bashismBinaryTestFlags = buildTestFlagMap [
     -- ([list of applicable flags],
     --     (error code, exempt shells, message builder :: String -> String)),
