@@ -193,7 +193,7 @@ editorConfigDirectives contents name =
 -- further EditorConfig files in parent directories.
 isEditorConfigRoot :: String -> Bool
 isEditorConfigRoot contents =
-    any (== Just "true") . map rootValue $ preSectionLines contents
+    elem (Just "true") . map rootValue $ preSectionLines contents
   where
     isSectionHeader l =
         case trim (dropLineComment l) of
