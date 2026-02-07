@@ -507,7 +507,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
 
     checkTestOp table op id = sequence_ $ do
         (code, shells, msg) <- Map.lookup op table
-        guard . not $ shellType params `elem` shells
+        guard (shellType params `notElem` shells)
         return $ warnMsg id code (msg op)
 
 

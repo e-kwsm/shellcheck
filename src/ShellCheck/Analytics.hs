@@ -3450,7 +3450,7 @@ checkReturnAgainstZero params token =
         return $ getId cmd == getId (getFirstCommandInFunction func)
 
     -- Is "$? op 0" trying to check if the command succeeded?
-    checksSuccessLhs op = not $ op `elem` ["-gt", "-ne", "!=", "!"]
+    checksSuccessLhs op = op `notElem` ["-gt", "-ne", "!=", "!"]
     -- Is "0 op $?" trying to check if the command succeeded?
     checksSuccessRhs op = op `notElem` ["-ne", "!="]
 
