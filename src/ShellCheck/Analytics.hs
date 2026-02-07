@@ -88,7 +88,7 @@ mkChecker spec params checks =
     optionals =
         if "all" `elem` optionalKeys
         then map snd optionalTreeChecks
-        else mapMaybe (\c -> Map.lookup c optionalCheckMap) optionalKeys
+        else mapMaybe (`Map.lookup` optionalCheckMap) optionalKeys
 
 
 checkList l t = concatMap (\f -> f t) l
@@ -4712,7 +4712,7 @@ checkRequireDoubleBracket params =
     -- so just handle the simple cases.
     isSimple t = case t of
         T_Condition _ _ s -> isSimple s
-        TC_Binary _ _ op _ _ -> not $ any (\x -> x `elem` op) "<>"
+        TC_Binary _ _ op _ _ -> not $ any (`elem` op) "<>"
         TC_Unary {} -> True
         TC_Nullary {} -> True
         _ -> False
@@ -5096,7 +5096,7 @@ checkOverwrittenExitCode params t =
         guard . not $ S.null exitCodeIds
 
         let idToToken = idMap params
-        exitCodeTokens <- traverse (\k -> Map.lookup k idToToken) $ S.toList exitCodeIds
+        exitCodeTokens <- traverse (`Map.lookup` idToToken) $ S.toList exitCodeIds
         return $ do
             when (all isCondition exitCodeTokens && not (usedUnconditionally cfga t exitCodeIds)) $
                 warn id 2319 "This $? refers to a condition, not a command. Assign to a variable to avoid it being overwritten."
