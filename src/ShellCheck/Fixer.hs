@@ -234,7 +234,7 @@ applyReplacement2 rep string = do
             error $ pleaseReport "bad cross-line fix"
 
     let replacer = repString rep
-    let shift = (length replacer) - (oldEnd - oldStart)
+    let shift = length replacer - (oldEnd - oldStart)
     let insertionPoint =
           case repInsertionPoint rep of
               InsertBefore -> oldStart
