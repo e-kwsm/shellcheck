@@ -88,7 +88,7 @@ mkChecker spec params checks =
     optionals =
         if "all" `elem` optionalKeys
         then map snd optionalTreeChecks
-        else mapMaybe (\c -> Map.lookup c optionalCheckMap) optionalKeys
+        else mapMaybe (`Map.lookup` optionalCheckMap) optionalKeys
 
 
 checkList l t = concatMap (\f -> f t) l
