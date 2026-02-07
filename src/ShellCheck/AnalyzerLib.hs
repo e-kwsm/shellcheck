@@ -762,7 +762,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
     -- get the FLAGS_ variable created by a shflags DEFINE_ call
     getFlagVariable (n:v:_) = do
         name <- getLiteralString n
-        return (base, n, "FLAGS_" ++ name, DataString $ SourceExternal)
+        return (base, n, "FLAGS_" ++ name, DataString SourceExternal)
     getFlagVariable _ = Nothing
 
 getModifiedVariableCommand _ = []

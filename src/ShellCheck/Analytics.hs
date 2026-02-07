@@ -1324,7 +1324,7 @@ checkNumberComparisons _ _ = return ()
 prop_checkSingleBracketOperators1 = verify checkSingleBracketOperators "[ test =~ foo ]"
 checkSingleBracketOperators params (TC_Binary id SingleBracket "=~" lhs rhs)
     | shellType params `elem` [Bash, Ksh] =
-        err id 2074 $ "Can't use =~ in [ ]. Use [[..]] instead."
+        err id 2074 "Can't use =~ in [ ]. Use [[..]] instead."
 checkSingleBracketOperators _ _ = return ()
 
 prop_checkDoubleBracketOperators1 = verify checkDoubleBracketOperators "[[ 3 \\< 4 ]]"
@@ -2369,7 +2369,7 @@ checkFunctionsUsedExternally params t =
             _ -> return ()
     checkCommand _ _ = return ()
 
-    skipOver t list = drop 1 $ dropWhile (\c -> getId c /= id) $ list
+    skipOver t list = drop 1 $ dropWhile (\c -> getId c /= id) list
       where id = getId t
 
     -- Try to pick out the argument[s] that may be commands
@@ -3162,8 +3162,7 @@ checkTestArgumentSplitting params t =
             if op == "-v"
             then
                 when (typ == SingleBracket) $
-                    err (getId token) 2208 $
-                      "Use [[ ]] or quote arguments to -v to avoid glob expansion."
+                    err (getId token) 2208 "Use [[ ]] or quote arguments to -v to avoid glob expansion."
             else
                 if (typ == SingleBracket && shellType params == Ksh)
                 then
@@ -3758,8 +3757,7 @@ checkPipeToNowhere params t =
             let inputWarning = sequence_ $ do
                     guard $ input /= NoPipe && not hasConsumers
                     (override:_) <- Map.lookup 0 fdMap
-                    return $ err (getOpId override) 2259 $
-                        "This redirection overrides piped input. To use both, merge or pass filenames."
+                    return $ err (getOpId override) 2259 "This redirection overrides piped input. To use both, merge or pass filenames."
 
             -- Only produce output warnings for regular pipes, since these are
             -- way more common, and  `foo > out 2> err |& foo` can still write
@@ -3767,8 +3765,7 @@ checkPipeToNowhere params t =
             let outputWarning = sequence_ $ do
                     guard $ output == StdoutPipe && not hasProducers
                     (override:_) <- Map.lookup 1 fdMap
-                    return $ err (getOpId override) 2260 $
-                        "This redirection overrides the output pipe. Use 'tee' to output to both."
+                    return $ err (getOpId override) 2260 "This redirection overrides the output pipe. Use 'tee' to output to both."
 
             return $ do
                 inputWarning
@@ -4246,7 +4243,7 @@ checkAliasUsedInSameParsingUnit params root =
     lineSpan t =
         let m = tokenPositions params in do
             (start, end) <- Map.lookup t m
-            return $ (posLine start, posLine end)
+            return (posLine start, posLine end)
 
     followsOnLine a b = fromMaybe False $ do
         (_, end) <- lineSpan (getId a)
@@ -4334,7 +4331,7 @@ checkBlatantRecursion params t =
         return $
             errWithFix (getId t) 2264
                 ("This function unconditionally re-invokes itself. Missing 'command'?")
-                (fixWith [replaceStart (getId t) params 0 $ "command "])
+                (fixWith [replaceStart (getId t) params 0 "command "])
 
 
 prop_checkBadTestAndOr1 = verify checkBadTestAndOr "[ x ] & [ y ]"
@@ -4369,8 +4366,7 @@ checkBadTestAndOr params t =
             T_OrIf _ _ rhs -> checkAnds id rhs
             T_Pipeline _ _ list | not (null list) -> checkAnds id (last list)
             cmd -> when (isTestCommand cmd) $
-                errWithFix id 2265 "Use && for logical AND. Single & will background and return true." $
-                    (fixWith [replaceEnd id params 0 "&"])
+                errWithFix id 2265 "Use && for logical AND. Single & will background and return true." (fixWith [replaceEnd id params 0 "&"])
 
 
 prop_checkComparisonWithLeadingX1 = verify checkComparisonWithLeadingX "[ x$foo = xlol ]"
@@ -4630,14 +4626,11 @@ checkSecondArgIsComparison _ t =
             case argString of
                 '=':'=':'=':'=':_ -> Nothing -- Don't warn about `echo ======` and such
                 '+':'=':_ ->
-                        return $ err (headId t) 2285 $
-                            "Remove spaces around += to assign (or quote '+=' if literal)."
+                        return $ err (headId t) 2285 "Remove spaces around += to assign (or quote '+=' if literal)."
                 '=':'=':_ ->
-                        return $ err (getId t) 2284 $
-                            "Use [ x = y ] to compare values (or quote '==' if literal)."
+                        return $ err (getId t) 2284 "Use [ x = y ] to compare values (or quote '==' if literal)."
                 '=':_ ->
-                        return $ err (headId arg) 2283 $
-                            "Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal)."
+                        return $ err (headId arg) 2283 "Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal)."
                 _ -> Nothing
         _ -> return ()
   where
