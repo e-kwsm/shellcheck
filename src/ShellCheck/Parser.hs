@@ -530,7 +530,7 @@ readConditionContents single =
     readCondUnaryExp = do
       op <- readCondUnaryOp
       pos <- getPosition
-      liftM op readCondWord `orFail` do
+      fmap op readCondWord `orFail` do
           parseProblemAt pos ErrorC 1019 "Expected this to be an argument to the unary condition."
           return "Expected an argument for the unary operator"
 
