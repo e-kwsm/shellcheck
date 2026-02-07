@@ -392,7 +392,7 @@ parseOption flag options =
         Flag "source-path" str -> do
             let paths = splitSearchPath str
             return options {
-                sourcePaths = (sourcePaths options) ++ paths
+                sourcePaths = sourcePaths options ++ paths
             }
 
         Flag "sourced" _ ->
@@ -433,7 +433,7 @@ parseOption flag options =
         Flag "enable" value ->
             let cs = checkSpec options in return options {
                 checkSpec = cs {
-                    csOptionalChecks = (csOptionalChecks cs) ++ split ',' value
+                    csOptionalChecks = csOptionalChecks cs ++ split ',' value
                 }
             }
 
@@ -626,7 +626,7 @@ ioInterface options files = do
             return $ maybeToList current ++ rest
 
         readGlobalEditorConfig = do
-            path <- (getXdgDirectory XdgConfig "editorconfig.ini")
+            path <- getXdgDirectory XdgConfig "editorconfig.ini"
                         `catch` ((const $ return "") :: IOException -> IO FilePath)
             if null path
               then return []
@@ -690,14 +690,14 @@ ioInterface options files = do
             find original original
       where
         find filename deflt = do
-            sources <- findM ((allowable rcSuggestsExternal inputs) `andM` doesFileExist) $
-                        (adjustPath filename):(map ((</> filename) . adjustPath) $ sourcePathFlag ++ sourcePathAnnotation)
+            sources <- findM (allowable rcSuggestsExternal inputs `andM` doesFileExist) $
+                        adjustPath filename:(map ((</> filename) . adjustPath) $ sourcePathFlag ++ sourcePathAnnotation)
             case sources of
                 Nothing -> return deflt
                 Just first -> return first
         scriptdir = dropFileName currentScript
         adjustPath str =
-            case (splitDirectories str) of
+            case splitDirectories str of
                 ("SCRIPTDIR":rest) -> joinPath (scriptdir:rest)
                 _ -> str
 
