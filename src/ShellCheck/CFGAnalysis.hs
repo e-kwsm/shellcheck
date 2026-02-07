@@ -204,7 +204,7 @@ createEnvironmentState = do
         addVars Data.specialIntegerVariables integerVariableState
         ]
   where
-    addVars names val = map (\name -> insertGlobal name val) names
+    addVars names val = map (`insertGlobal` val) names
     spacelessVariableState = unknownVariableState {
         variableValue = VariableValue {
             literalValue = Nothing,
@@ -246,7 +246,7 @@ addProperties props state = state {
 
 removeProperties :: S.Set CFVariableProp -> VariableState -> VariableState
 removeProperties props state = state {
-    variableProperties = S.map (\s -> S.difference s props) $ variableProperties state
+    variableProperties = S.map (`S.difference` props) $ variableProperties state
 }
 
 setExitCode id = setExitCodes (S.singleton id)
