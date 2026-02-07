@@ -420,14 +420,14 @@ getLiteralStringExt more = g
             'x' ->
                 case cs of
                     (x:y:more) | isHexDigit x && isHexDigit y ->
-                        chr (16*(digitToInt x) + (digitToInt y)) : decodeEscapes more
+                        chr (16*digitToInt x + digitToInt y) : decodeEscapes more
                     (x:more) | isHexDigit x ->
                         chr (digitToInt x) : decodeEscapes more
                     more -> '\\' : 'x' : decodeEscapes more
             _ | isOctDigit c ->
                 let (digits, more) = spanMax isOctDigit 3 (c:cs)
-                    num = (parseOct digits) `mod` 256
-                in (chr num) : decodeEscapes more
+                    num = parseOct digits `mod` 256
+                in chr num : decodeEscapes more
             _ -> '\\' : c : rest
       where
         rest = decodeEscapes cs
@@ -479,7 +479,7 @@ escapeForMessage str = concatMap f str
     pad0 n s =
         let l = length s in
             if l < n
-            then (replicate (n-l) '0') ++ s
+            then replicate (n-l) '0' ++ s
             else s
     toHex :: Char -> String
     toHex c = map toUpper $ showHex (ord c) ""
@@ -612,7 +612,7 @@ getCommandSequences t =
         T_UntilExpression _ cond cmds -> [cond, cmds]
         T_ForIn _ _ _ cmds -> [cmds]
         T_ForArithmetic _ _ _ _ cmds -> [cmds]
-        T_IfExpression _ thens elses -> (concatMap (\(a,b) -> [a,b]) thens) ++ [elses]
+        T_IfExpression _ thens elses -> concatMap (\(a,b) -> [a,b]) thens ++ [elses]
         T_Annotation _ _ t -> getCommandSequences t
 
         T_DollarExpansion _ cmds -> [cmds]
@@ -666,7 +666,7 @@ wordToPseudoGlob' exact word =
         case word of
             T_NormalWord _ (T_Literal _ ('~':str):rest) -> do
                 guard $ not exact
-                let this = (PGMany : (map PGChar $ dropWhile (/= '/') str))
+                let this = PGMany : (map PGChar $ dropWhile (/= '/') str)
                 tail <- concat <$> (mapM f $ concatMap getWordParts rest)
                 return $ this ++ tail
             _ -> concat <$> (mapM f $ getWordParts word)
