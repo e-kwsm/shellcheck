@@ -1748,7 +1748,7 @@ readDollarVariable = do
     let singleCharred p = do
         value <- wrapString ((:[]) <$> p)
         id <- endSpan start
-        return $ T_DollarBraced id False value
+        return (T_DollarBraced id False value)
 
     let positional = do
         value <- singleCharred digit
