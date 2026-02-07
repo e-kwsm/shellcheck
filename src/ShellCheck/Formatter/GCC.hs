@@ -22,7 +22,8 @@ module ShellCheck.Formatter.GCC (format) where
 import ShellCheck.Interface
 import ShellCheck.Formatter.Format
 
-import Data.List
+import Data.Either
+import qualified Data.List
 import System.IO
 import qualified Data.List.NonEmpty as NE
 
@@ -44,7 +45,7 @@ outputAll cr sys = mapM_ f groups
     f group = do
         let filename = sourceFile (NE.head group)
         result <- siReadFile sys (Just True) filename
-        let contents = either (const "") id result
+        let contents = fromRight "" result
         outputResult filename contents (NE.toList group)
 
 outputResult filename contents warnings = do
