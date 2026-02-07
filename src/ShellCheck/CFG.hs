@@ -395,7 +395,7 @@ withFunctionScope p = do
 
 -- Anything that happens recursively in f will be attributed to this id
 under :: Id -> CFM a -> CFM a
-under id f = local (\c -> c { cfTokenStack = id:(cfTokenStack c) }) f
+under id f = local (\c -> c { cfTokenStack = id:cfTokenStack c }) f
 
 nodeToRange :: Node -> Range
 nodeToRange n = Range n n
@@ -1057,7 +1057,7 @@ handleCommand cmd vars args literalCmd = do
         toEffects isFunc (T_Assignment id mode var idx t) =
             let
                 pre = idx ++ [t]
-                val = [ IdTagged id $ (writer isFunc) var $ CFValueComputed (getId t) $ [ CFStringVariable var | mode == Append ] ++ tokenToParts t ]
+                val = [ IdTagged id $ writer isFunc var $ CFValueComputed (getId t) $ [ CFStringVariable var | mode == Append ] ++ tokenToParts t ]
                 added = [ IdTagged id $ CFSetProps (scope isFunc) var addedProps | not $ S.null addedProps ]
                 removed = [ IdTagged id $ CFUnsetProps (scope isFunc) var addedProps | not $ S.null removedProps ]
             in
@@ -1073,10 +1073,10 @@ handleCommand cmd vars args literalCmd = do
                 name = fromMaybe literal match
 
                 asLiteral =
-                    IdTagged id $ (writer isFunc) name $
+                    IdTagged id $ writer isFunc name $
                         CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') $ literal ]
                 asUnknown =
-                    IdTagged id $ (writer isFunc) name $
+                    IdTagged id $ writer isFunc name $
                         CFValueString
 
                 added = [ IdTagged id $ CFSetProps (scope isFunc) name addedProps ]
@@ -1248,7 +1248,7 @@ tokenToParts t =
 
 
 -- Like & but well defined when the node already exists
-safeUpdate ctx@(_,node,_,_) graph = ctx & (delNode node graph)
+safeUpdate ctx@(_,node,_,_) graph = ctx & delNode node graph
 
 -- Change all subshell invocations to instead link directly to their contents.
 -- This is used for producing dominator trees.
