@@ -385,7 +385,7 @@ isQuoteFreeNode strict shell tree t =
     -- Is this assignment a parameter to a command like export/typeset/etc?
     isAssignmentParamToCommand id =
         case Map.lookup id tree of
-            Just (T_SimpleCommand _ _ (_:args)) -> id `elem` (map getId args)
+            Just (T_SimpleCommand _ _ (_:args)) -> id `elem` map getId args
             _ -> False
 
 -- Check if a token is a parameter to a certain command by name:
