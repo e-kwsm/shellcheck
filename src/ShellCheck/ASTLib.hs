@@ -111,7 +111,7 @@ oversimplify token =
         (T_NormalWord _ l) -> [concat (concatMap oversimplify l)]
         (T_DoubleQuoted _ l) -> [concat (concatMap oversimplify l)]
         (T_SingleQuoted _ s) -> [s]
-        (T_DollarBraced _ _ _) -> ["${VAR}"]
+        (T_DollarBraced {}) -> ["${VAR}"]
         (T_DollarArithmetic _ _) -> ["${VAR}"]
         (T_DollarExpansion _ _) -> ["${VAR}"]
         (T_Backticked _ _) -> ["${VAR}"]
