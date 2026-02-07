@@ -148,7 +148,7 @@ carriageReturn = do
     return '\r'
 
 almostSpace = do
-        parseNote ErrorC 1018 $ "This is a unicode space. Delete and retype it."
+        parseNote ErrorC 1018 "This is a unicode space. Delete and retype it."
         oneOf "\xA0\x2002\x2003\x2004\x2005\x2006\x2007\x2008\x2009\x200B\x202F"
         return ' '
 
@@ -282,7 +282,7 @@ contextItemDisablesCode alsoCheckSourced code = disabling alsoCheckSourced
     disabling checkSourced item =
         case item of
             ContextAnnotation list -> any disabling' list
-            ContextSource _ -> not $ checkSourced
+            ContextSource _ -> not checkSourced
             _ -> False
     disabling' (DisableComment n m) = code >= n && code < m
     disabling' _ = False
@@ -1750,7 +1750,7 @@ readDollarVariable = do
     let singleCharred p = do
         value <- wrapString ((:[]) <$> p)
         id <- endSpan start
-        return $ (T_DollarBraced id False value)
+        return (T_DollarBraced id False value)
 
     let positional = do
         value <- singleCharred digit
@@ -1924,7 +1924,7 @@ readPendingHereDocs = do
                 -- This may be intended as an end token. Debug why it isn't.
                 if
                     | trailerStart == ')' -> do
-                        ppt 1119 $ "Add a linefeed between end token and terminating ')'."
+                        ppt 1119 "Add a linefeed between end token and terminating ')'."
                         foundCause
                     | trailerStart == '#' -> do
                         ppt 1120 "No comments allowed after here-doc token. Comment the next line instead."
@@ -3587,7 +3587,7 @@ reparseIndices root = process root
 
     parsed name pos src =
         if isAssociative name
-        then subParse pos (called "associative array index" $ readIndexSpan) src
+        then subParse pos (called "associative array index" readIndexSpan) src
         else subParse pos (called "arithmetic array index expression" $ optional space >> readArithmeticContents) src
 
 reattachHereDocs root map =

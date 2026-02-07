@@ -932,8 +932,8 @@ handleCommand cmd vars args literalCmd = do
     -- TODO: Handle assignments in declaring commands
 
     case literalCmd of
-        Just "exit" -> regularExpansion vars (NE.toList args) $ handleExit
-        Just "return" -> regularExpansion vars (NE.toList args) $ handleReturn
+        Just "exit" -> regularExpansion vars (NE.toList args) handleExit
+        Just "return" -> regularExpansion vars (NE.toList args) handleReturn
         Just "unset" -> regularExpansionWithStatus vars args $ handleUnset args
 
         Just "declare" -> handleDeclare args
@@ -1015,7 +1015,7 @@ handleCommand cmd vars args literalCmd = do
         -- This is a bit of a kludge: we don't have great support for things like
         -- 'declare -i x=$x' so do one round with declare x=$x, followed by declare -i x
         let (evaluated, assignments, added, removed) = mconcat $ map (toEffects isFunc) args
-        before <- sequentially $ evaluated
+        before <- sequentially evaluated
         assignments <- newNodeRange $ CFApplyEffects assignments
         addedProps <- if null added then newStructuralNode else newNodeRange $ CFApplyEffects added
         removedProps <- if null removed then newStructuralNode else newNodeRange $ CFApplyEffects removed
@@ -1041,14 +1041,14 @@ handleCommand cmd vars args literalCmd = do
                 _ | isFunc -> Just LocalScope
                 _ -> Nothing
 
-        addedProps = S.fromList $ concat $ [
+        addedProps = S.fromList $ concat [
             [ CFVPArray | array ],
             [ CFVPInteger | integer ],
             [ CFVPExport | export ],
             [ CFVPAssociative | associative ]
           ]
 
-        removedProps = S.fromList $ concat $ [
+        removedProps = S.fromList $ concat [
             -- Array property can't be unset
             [ CFVPInteger | 'i' `elem` unsetOptions ],
             [ CFVPExport | 'e' `elem` unsetOptions ]
@@ -1074,10 +1074,9 @@ handleCommand cmd vars args literalCmd = do
 
                 asLiteral =
                     IdTagged id $ (writer isFunc) name $
-                        CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') $ literal ]
+                        CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') literal ]
                 asUnknown =
-                    IdTagged id $ (writer isFunc) name $
-                        CFValueString
+                    IdTagged id $ (writer isFunc) name CFValueString
 
                 added = [ IdTagged id $ CFSetProps (scope isFunc) name addedProps ]
                 removed = [ IdTagged id $ CFUnsetProps (scope isFunc) name removedProps ]
