@@ -898,8 +898,7 @@ checkReadExpansions = CommandCheck (Exactly "read") check
 
     arrayWarning word =
         when (any isUnquotedBracket $ getWordParts word) $
-            warn (getId word) 2313 $
-                "Quote array indices to avoid them expanding as globs."
+            warn (getId word) 2313 "Quote array indices to avoid them expanding as globs."
 
     isUnquotedBracket t =
         case t of
@@ -1207,7 +1206,7 @@ prop_checkLetUsage2 = verifyNot checkLetUsage "(( a=1 ))"
 checkLetUsage = CommandCheck (Exactly "let") f
   where
     f t = whenShell [Bash,Ksh] $ do
-        style (getId t) 2219 $ "Instead of 'let expr', prefer (( expr )) ."
+        style (getId t) 2219 "Instead of 'let expr', prefer (( expr )) ."
 
 
 missingDestination handler token = do
@@ -1321,8 +1320,7 @@ checkSourceArgs = CommandCheck (Exactly ".") f
   where
     f t = whenShell [Sh, Dash] $
         case arguments t of
-            (file:arg1:_) -> warn (getId arg1) 2240 $
-                "The dot command does not support arguments in sh/dash. Set them as variables."
+            (file:arg1:_) -> warn (getId arg1) 2240 "The dot command does not support arguments in sh/dash. Set them as variables."
             _ -> return ()
 
 prop_checkChmodDashr1 = verify checkChmodDashr "chmod -r 0755 dir"
@@ -1366,11 +1364,9 @@ checkArgComparison cmd = CommandCheck (Exactly cmd) wordsWithEqual
         str <- getLeadingUnquotedString arg
         case str of
             '=':_ ->
-                return $ err (headId arg) 2290 $
-                    "Remove spaces around = to assign."
+                return $ err (headId arg) 2290 "Remove spaces around = to assign."
             '+':'=':_ ->
-                return $ err (headId arg) 2290 $
-                    "Remove spaces around += to append."
+                return $ err (headId arg) 2290 "Remove spaces around += to append."
             _ -> Nothing
 
        -- 'let' is parsed as a sequence of arithmetic expansions,
@@ -1379,8 +1375,7 @@ checkArgComparison cmd = CommandCheck (Exactly cmd) wordsWithEqual
         token <- getTrailingUnquotedLiteral arg
         str <- getLiteralString token
         guard $ "=" `isSuffixOf` str
-        return $ err (getId token) 2290 $
-            "Remove spaces around = to assign."
+        return $ err (getId token) 2290 "Remove spaces around = to assign."
 
     headId t =
         case t of
