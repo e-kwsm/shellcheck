@@ -1223,7 +1223,7 @@ checkWhileGetoptsCase = CommandCheck (Exactly "getopts") f
             notRequested = M.difference handledMap requestedMap
 
     warnUnhandled optId caseId str =
-        warn caseId 2213 $ "getopts specified -" ++ (e4m str) ++ ", but it's not handled by this 'case'."
+        warn caseId 2213 $ "getopts specified -" ++ e4m str ++ ", but it's not handled by this 'case'."
 
     warnRedundant (Just str, expr)
         | str `notElem` ["*", ":", "?"] =
@@ -1628,7 +1628,7 @@ checkUnquotedEchoSpaces = CommandCheck (Basename "echo") check
 
     hasSpacesBetween redirs ((a,b), (c,d)) =
         posLine a == posLine d
-        && ((posColumn c) - (posColumn b)) >= 4
+        && (posColumn c - posColumn b) >= 4
         && not (any (\x -> b < x && x < c) redirs)
 
 
