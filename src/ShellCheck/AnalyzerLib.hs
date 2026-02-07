@@ -937,7 +937,7 @@ isTrueAssignmentSource c =
         _ -> True
 
 modifiesVariable params token name =
-    or $ map check flow
+    any check flow
   where
     flow = getVariableFlow params token
     check t =
