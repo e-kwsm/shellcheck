@@ -252,7 +252,7 @@ removeProperties props state = state {
 
 setExitCode id = setExitCodes (S.singleton id)
 setExitCodes set state = modified state {
-    sExitCodes = Just $ set
+    sExitCodes = Just set
 }
 
 -- Dependencies on values, e.g. "if there is a global variable named 'foo' without spaces"
@@ -736,10 +736,10 @@ getVariableWithScope s name =
         _ -> Nothing
 
 undefineFunction ctx name =
-    writeFunction ctx name $ FunctionUnknown
+    writeFunction ctx name FunctionUnknown
 
 undefineVariable ctx name =
-    writeVariable ctx name $ unsetVariableState
+    writeVariable ctx name unsetVariableState
 
 readVariable ctx name = fst <$> readVariableWithScope ctx name
 readVariableProperties ctx name = fst <$> readVariablePropertiesWithScope ctx name
@@ -984,7 +984,7 @@ transferSubshell ctx reason entry exit = do
     }
   where
     f entry exit ctx = do
-        (states, frame) <- withNewStackFrame ctx entry False (flip dataflow $ entry)
+        (states, frame) <- withNewStackFrame ctx entry False (flip dataflow entry)
         let (_, res) = fromMaybe (error $ pleaseReport "Subshell has no exit") $ M.lookup exit states
         deps <- readSTRef $ dependencies frame
         registerFlowResult ctx entry states deps
@@ -1023,7 +1023,7 @@ transferFunctionValue ctx funcVal =
                 else runCached ctx entry (f name entry exit)
   where
     f name entry exit ctx = do
-        (states, frame) <- withNewStackFrame ctx entry True (flip dataflow $ entry)
+        (states, frame) <- withNewStackFrame ctx entry True (flip dataflow entry)
         deps <- readSTRef $ dependencies frame
         let res =
                 case M.lookup exit states of
@@ -1256,7 +1256,7 @@ type StateMap = M.Map Node (InternalState, InternalState)
 dataflow :: forall s. Ctx s -> Node -> ST s StateMap
 dataflow ctx entry = do
     pending <- newSTRef $ S.singleton entry
-    states <- newSTRef $ M.empty
+    states <- newSTRef M.empty
     -- Should probably be done via a stack frame instead
     withoutChanges ctx $
         f iterationCount pending states
@@ -1291,9 +1291,9 @@ dataflow ctx entry = do
                     case inputs of
                         [] -> return unreachableState
                         (x:rest) -> foldM (mergeState ctx) x rest
-        writeSTRef (cInput ctx) $ input
-        writeSTRef (cOutput ctx) $ input
-        writeSTRef (cNode ctx) $ node
+        writeSTRef (cInput ctx) input
+        writeSTRef (cOutput ctx) input
+        writeSTRef (cNode ctx) node
         transfer ctx label
         newOutput <- readSTRef $ cOutput ctx
         result <-
@@ -1310,15 +1310,15 @@ dataflow ctx entry = do
                 then return []
                 else return outgoing
       where
-        (incomingL, _, label, outgoingL) = context graph $ node
-        incoming = map snd $ filter isRegular $ incomingL
+        (incomingL, _, label, outgoingL) = context graph node
+        incoming = map snd $ filter isRegular incomingL
         outgoing = map snd outgoingL
         isRegular = (== CFEFlow) . fst
 
 runRoot ctx env entry exit = do
-    writeSTRef (cInput ctx) $ env
-    writeSTRef (cOutput ctx) $ env
-    writeSTRef (cNode ctx) $ entry
+    writeSTRef (cInput ctx) env
+    writeSTRef (cOutput ctx) env
+    writeSTRef (cNode ctx) entry
     (states, frame) <- withNewStackFrame ctx entry False $ \c -> dataflow c entry
     deps <- readSTRef $ dependencies frame
     registerFlowResult ctx entry states deps

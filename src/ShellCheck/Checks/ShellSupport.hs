@@ -390,7 +390,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         in do
             when (name == "local" && not isDash) $
                 -- This is so commonly accepted that we'll make it a special case
-                warnMsg id 3043 $ "'local' is"
+                warnMsg id 3043 "'local' is"
             when (name `elem` unsupportedCommands) $
                 warnMsg id 3044 $ "'" ++ name ++ "' is"
             sequence_ $ do
@@ -443,7 +443,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             ("read", Just $ if isDash || isBusyboxSh then ["r", "p"] else ["r"]),
             ("readonly", Just ["p"]),
             ("trap", Just []),
-            ("type", Just $ (["p" | isBusyboxSh])),
+            ("type", Just (["p" | isBusyboxSh])),
             ("ulimit",
               Just $
                 if isDash
@@ -474,7 +474,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         ]
     simpleExpansions = let re = mkRegex in [
         (re $ "^[" ++ varChars ++ "*@]+:[^-=?+]", 3057, "string indexing is"),
-        (re $ "^([*@][%#]|#[@*])", 3058, "string operations on $@/$* are"),
+        (re "^([*@][%#]|#[@*])", 3058, "string operations on $@/$* are"),
         (re $ "^[" ++ varChars ++ "*@]+(\\[.*\\])?/", 3060, "string replacement is")
         ]
     bashVars = [
