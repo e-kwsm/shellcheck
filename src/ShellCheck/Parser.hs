@@ -699,8 +699,7 @@ readConditionContents single =
         char '!'
         id <- endSpan start
         spacingOrLf
-        expr <- readCondExpr
-        return $ TC_Unary id typ "!" expr
+        TC_Unary id typ "!" <$> readCondExpr
 
     readCondExpr =
       readCondGroup <|> readCondUnaryExp <|> readCondNullaryOrBinary
@@ -874,8 +873,7 @@ readArithmeticContents =
         op <- oneOf "!~"
         id <- endSpan start
         spacing
-        x <- readAnyNegated
-        return $ TA_Unary id [op] x
+        TA_Unary id [op] <$> readAnyNegated
 
     readAnySigned = readSigned <|> readAnycremented
     readSigned = do
@@ -883,8 +881,7 @@ readArithmeticContents =
         op <- choice (map readSignOp "+-")
         id <- endSpan start
         spacing
-        x <- readAnycremented
-        return $ TA_Unary id [op] x
+        TA_Unary id [op] <$> readAnycremented
      where
         readSignOp c = try $ do
             char c
@@ -898,8 +895,7 @@ readArithmeticContents =
         op <- try $ string "++" <|> string "--"
         id <- endSpan start
         spacing
-        x <- readArithTerm
-        return $ TA_Unary id (op ++ "|") x
+        TA_Unary id (op ++ "|") <$> readArithTerm
 
     readNormalOrPostfixIncremented = do
         x <- readArithTerm
@@ -2046,8 +2042,7 @@ readHereString = called "here string" $ do
     try $ string "<<<"
     id <- endSpan start
     spacing
-    word <- readNormalWord
-    return $ T_HereString id word
+    T_HereString id <$> readNormalWord
 
 prop_readNewlineList1 = isOk readScript "&> /dev/null echo foo"
 readNewlineList =
@@ -3015,15 +3010,14 @@ readAssignmentWordExt lenient = called "variable assignment" $ do
     rightPosStart <- getPosition
     hasRightSpace <- fmap (not . null) spacing
     rightPosEnd <- getPosition
-    isEndOfCommand <- fmap isJust $ optionMaybe (try . lookAhead $ (void (oneOf "\r\n;&|)") <|> eof))
+    isEndOfCommand <- isJust <$> optionMaybe (try . lookAhead $ (void (oneOf "\r\n;&|)") <|> eof))
 
     if hasRightSpace || isEndOfCommand
       then do
         when (variable /= "IFS" && hasRightSpace && not isEndOfCommand) $ do
             parseProblemAtWithEnd rightPosStart rightPosEnd WarningC 1007
                 "Remove space after = if trying to assign a value (for empty string, use var='' ... )."
-        value <- readEmptyLiteral
-        return $ T_Assignment id op variable indices value
+        T_Assignment id op variable indices <$> readEmptyLiteral
       else do
         optional $ do
             lookAhead $ char '='
@@ -3218,7 +3212,7 @@ readShebang = do
         parseProblemAtId id ErrorC 1084
             "Use #!, not !#, for the shebang."
 
-    skipSpaces = fmap (not . null) $ many linewhitespace
+    skipSpaces = (not . null) <$> many linewhitespace
     readTooManySpaces = do
         startPos <- getPosition
         startSpaces <- skipSpaces
