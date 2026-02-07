@@ -349,7 +349,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         -- Check a flag-option pair (such as -o errexit)
         checkOptions (flag@(fid,flag') : opt@(oid,opt') : rest)
             | flag' `matches` oFlagRegex = do
-                when (opt' `notElem` longOptions) $
+                unless (opt' `elem` longOptions) $
                   warnMsg oid 3040 $ "set option " <> opt' <> " is"
                 checkFlags (flag:rest)
             | otherwise = checkFlags (flag:opt:rest)
@@ -362,7 +362,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             | startsOption flag' = do
                 unless (flag' `matches` validFlagsRegex) $
                   forM_ (tail flag') $ \letter ->
-                    when (letter `notElem` optionsSet) $
+                    unless (letter `elem` optionsSet) $
                       warnMsg fid 3041 $ "set flag " <> ('-':letter:" is")
                 checkOptions rest
             | beginsWithDoubleDash flag' = do

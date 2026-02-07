@@ -1972,7 +1972,7 @@ prop_checkSpuriousExec10 = verifyNot checkSpuriousExec "exec file; r=$?; printf 
 prop_checkSpuriousExec11 = verifyNot checkSpuriousExec "exec file; :"
 prop_checkSpuriousExec12 = verifyNot checkSpuriousExec "#!/bin/bash\nshopt -s execfail; exec foo; exec bar; echo 'Error'; exit 1;"
 prop_checkSpuriousExec13 = verify checkSpuriousExec "#!/bin/dash\nshopt -s execfail; exec foo; exec bar; echo 'Error'; exit 1;"
-checkSpuriousExec params t = when (not $ hasExecfail params) $ doLists t
+checkSpuriousExec params t = unless (hasExecfail params) $ doLists t
   where
     doLists (T_Script _ _ cmds) = doList cmds False
     doLists (T_BraceGroup _ cmds) = doList cmds False
