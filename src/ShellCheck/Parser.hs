@@ -1750,7 +1750,7 @@ readDollarVariable = do
     let singleCharred p = do
         value <- wrapString ((:[]) <$> p)
         id <- endSpan start
-        return $ (T_DollarBraced id False value)
+        return $ T_DollarBraced id False value
 
     let positional = do
         value <- singleCharred digit
@@ -1977,14 +1977,14 @@ readPendingHereDocs = do
     debugHereDoc tokenId endToken doc
         | endToken `isInfixOf` doc =
             let lookAt line = when (endToken `isInfixOf` line) $
-                      parseProblemAtId tokenId ErrorC 1042 ("Close matches include '" ++ (e4m line) ++ "' (!= '" ++ (e4m endToken) ++ "').")
+                      parseProblemAtId tokenId ErrorC 1042 ("Close matches include '" ++ e4m line ++ "' (!= '" ++ e4m endToken ++ "').")
             in do
-                  parseProblemAtId tokenId ErrorC 1041 ("Found '" ++ (e4m endToken) ++ "' further down, but not on a separate line.")
+                  parseProblemAtId tokenId ErrorC 1041 ("Found '" ++ e4m endToken ++ "' further down, but not on a separate line.")
                   mapM_ lookAt (lines doc)
         | map toLower endToken `isInfixOf` map toLower doc =
-            parseProblemAtId tokenId ErrorC 1043 ("Found " ++ (e4m endToken) ++ " further down, but with wrong casing.")
+            parseProblemAtId tokenId ErrorC 1043 ("Found " ++ e4m endToken ++ " further down, but with wrong casing.")
         | otherwise =
-            parseProblemAtId tokenId ErrorC 1044 ("Couldn't find end token `" ++ (e4m endToken) ++ "' in the here document.")
+            parseProblemAtId tokenId ErrorC 1044 ("Couldn't find end token `" ++ e4m endToken ++ "' in the here document.")
 
 
 readFilename = readNormalWord
@@ -2682,7 +2682,7 @@ readSelectClause = called "select loop" $ do
         name <- readVariableName
         spacing
         values <- readInClause <|> (readSequentialSep >> return [])
-        return $ \id group -> (return $ T_SelectIn id name values group)
+        return $ \id group -> return $ T_SelectIn id name values group
 
 readInClause = do
     g_In
@@ -3304,7 +3304,7 @@ readConfigFile filename = do
         let line = "line " ++ (show . sourceLine $ errorPos err)
             suggestion = getStringFromParsec $ errorMessages err
         in
-            "Failed to process " ++ (e4m filename) ++ ", " ++ line ++ ": "
+            "Failed to process " ++ e4m filename ++ ", " ++ line ++ ": "
                 ++ suggestion
 
 prop_readConfigKVs1 = isOk readConfigKVs "disable=1234"
@@ -3347,7 +3347,7 @@ readScriptFile sourced = do
 
         -- Similarly put the filewide annotations on the stack to allow earlier suppression
         withAnnotations fileAnnotations $ do
-            when (hasBom) $
+            when hasBom $
                 parseProblemAt pos ErrorC 1082
                     "This file has a UTF-8 BOM. Remove it with: LC_CTYPE=C sed '1s/^...//' < yourscript ."
             let annotations = fileAnnotations ++ rcAnnotations
@@ -3449,7 +3449,7 @@ debugParseScript string =
 
 testEnvironment =
     Environment {
-        systemInterface = (mockedSystemInterface []),
+        systemInterface = mockedSystemInterface [],
         checkSourced = False,
         currentFilename = "myscript",
         ignoreRC = False,
@@ -3601,8 +3601,8 @@ reattachHereDocs root map =
 toPositionedComment :: ParseNote -> PositionedComment
 toPositionedComment (ParseNote start end severity code message) =
     newPositionedComment {
-        pcStartPos = (posToPos start)
-      , pcEndPos = (posToPos end)
+        pcStartPos = posToPos start
+      , pcEndPos = posToPos end
       , pcComment = newComment {
           cSeverity = severity
         , cCode = code
