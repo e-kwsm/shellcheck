@@ -1546,7 +1546,7 @@ prop_checkComparisonAgainstGlob4 = verifyNot checkComparisonAgainstGlob "[ $cow 
 prop_checkComparisonAgainstGlob5 = verify checkComparisonAgainstGlob "[[ $cow != $bar ]]"
 prop_checkComparisonAgainstGlob6 = verify checkComparisonAgainstGlob "[ $f != /* ]"
 prop_checkComparisonAgainstGlob7 = verify checkComparisonAgainstGlob "#!/bin/busybox sh\n[[ $f == *foo* ]]"
-checkComparisonAgainstGlob _ (TC_Binary _ DoubleBracket op _ (T_NormalWord id [T_DollarBraced _ _ _]))
+checkComparisonAgainstGlob _ (TC_Binary _ DoubleBracket op _ (T_NormalWord id [T_DollarBraced {}]))
     | op `elem` ["=", "==", "!="] =
         warn id 2053 $ "Quote the right-hand side of " ++ op ++ " in [[ ]] to prevent glob matching."
 checkComparisonAgainstGlob params (TC_Binary _ SingleBracket op _ word)
@@ -1926,7 +1926,7 @@ checkInexplicablyUnquoted params (T_NormalWord id tokens) = mapM_ check (tails t
     -- the quotes were probably intentional and harmless.
     quotesSingleThing x = case x of
         [T_DollarExpansion _ _] -> True
-        [T_DollarBraced _ _ _] -> True
+        [T_DollarBraced {}] -> True
         [T_Backticked _ _] -> True
         _ -> False
 
@@ -5235,7 +5235,7 @@ checkExpansionWithRedirection params t =
     walk captureId t acc =
         case t of
             T_FdRedirect _ _ (T_IoDuplicate _ _ "1") -> return ()
-            T_FdRedirect id "1" (T_IoDuplicate _ _ _) -> return ()
+            T_FdRedirect id "1" (T_IoDuplicate {}) -> return ()
             T_FdRedirect id "" (T_IoDuplicate _ op _) | op `elem` [T_GREATAND (Id 0), T_Greater (Id 0)] -> emit id captureId True
             T_FdRedirect id str (T_IoFile _ op file) | str `elem` ["", "1"] && op `elem` [ T_DGREAT (Id 0), T_Greater (Id 0) ]  ->
                 emit id captureId $ getLiteralString file /= Just "/dev/null"
