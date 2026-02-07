@@ -645,7 +645,7 @@ prop_checkSshCmdStr3 = verifyNot checkSshCommandString "ssh \"$host\""
 prop_checkSshCmdStr4 = verifyNot checkSshCommandString "ssh -i key \"$host\""
 checkSshCommandString = CommandCheck (Basename "ssh") (f . arguments)
   where
-    isOption x = "-" `isPrefixOf` (concat $ oversimplify x)
+    isOption x = "-" `isPrefixOf` concat (oversimplify x)
     f args =
         case partition isOption args of
             ([], hostport:r@(_:_)) -> checkArg $ last r

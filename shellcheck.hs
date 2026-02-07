@@ -263,7 +263,7 @@ parseEnum name value list =
         Just value -> return value
         Nothing -> do
             printErr $ "Unknown value for --" ++ name ++ ". " ++
-                       "Valid options are: " ++ (intercalate ", " $ map fst list)
+                       "Valid options are: " ++ intercalate ", " (map fst list)
             throwError SupportFailure
 
 parseColorOption value =

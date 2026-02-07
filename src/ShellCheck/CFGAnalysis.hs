@@ -167,7 +167,7 @@ variableMayBeDeclaredInteger state var = variableMayHaveState state var CFVPInte
 -- See if any execution path suggests the variable may contain an integer value
 variableMayBeAssignedInteger state var = do
     value <- M.lookup var $ variablesInScope state
-    return $ (numericalStatus $ variableValue value) >= NumericalStatusMaybe
+    return $ numericalStatus (variableValue value) >= NumericalStatusMaybe
 
 getDataForNode analysis node = M.lookup node $ nodeToData analysis
 
@@ -644,7 +644,7 @@ vmEmpty = VersionedMap {
 
 -- Map.null for VersionedMaps
 vmNull :: VersionedMap k v -> Bool
-vmNull m = mapVersion m == 0 || (M.null $ mapStorage m)
+vmNull m = mapVersion m == 0 || M.null (mapStorage m)
 
 -- Map.lookup for VersionedMaps
 vmLookup name map = M.lookup name $ mapStorage map
@@ -754,7 +754,7 @@ readGlobal ctx name = lookupStack get dep def ctx name
 readGlobalProperties ctx name = lookupStack get dep def ctx name
   where
     def = defaultProperties
-    get s name = variableProperties <$> (vmLookup name $ sGlobalValues s)
+    get s name = variableProperties <$> vmLookup name (sGlobalValues s)
     -- This dependency will fail to match if it's shadowed by a local variable,
     -- such as in  x=1; f() { local -i x; declare -ag x; } because we'll look at
     -- x and find it to be local and not global. FIXME?
@@ -775,7 +775,7 @@ readLocalProperties ctx name = fst <$> lookupStackUntilFunction get dep def ctx 
         val <- variableProperties <$> f
         return (val, tag)
 
-    get s name = (with LocalScope $ vmLookup name $ sLocalValues s) `mplus` (with PrefixScope $ vmLookup name $ sPrefixValues s)
+    get s name = with LocalScope (vmLookup name $ sLocalValues s) `mplus` with PrefixScope (vmLookup name $ sPrefixValues s)
     dep k (val, scope) = DepProperties scope k val
 
 readFunction ctx name = lookupStack get dep def ctx name
@@ -1388,7 +1388,7 @@ analyzeControlFlow params t =
     groupByNode pathMap = M.fromListWith (++) $ map (\(k,v) -> (k,[v])) $ concatMap M.toList $ M.elems pathMap
 
     -- Merge all the pre/post states for each node. This would have been a foldM if Map had one.
-    flattenByNode ctx m = M.fromDistinctAscList <$> (mapM (mergePair ctx) $ M.toList m)
+    flattenByNode ctx m = M.fromDistinctAscList <$> mapM (mergePair ctx) (M.toList m)
 
     mergeAllStates ctx pairs =
         let

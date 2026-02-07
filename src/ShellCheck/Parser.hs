@@ -1039,16 +1039,16 @@ readAnnotationWithoutPrefix sandboxed = do
                 readName = EnableComment <$> many1 (letter <|> char '-')
 
             "source" -> do
-                filename <- quoted (many1 anyChar) <|> (many1 $ noneOf " \n")
+                filename <- quoted (many1 anyChar) <|> many1 (noneOf " \n")
                 return [SourceOverride filename]
 
             "source-path" -> do
-                dirname <- quoted (many1 anyChar) <|> (many1 $ noneOf " \n")
+                dirname <- quoted (many1 anyChar) <|> many1 (noneOf " \n")
                 return [SourcePath dirname]
 
             "shell" -> do
                 pos <- getPosition
-                shell <- quoted (many1 anyChar) <|> (many1 $ noneOf " \n")
+                shell <- quoted (many1 anyChar) <|> many1 (noneOf " \n")
                 when (isNothing $ shellForExecutable shell) $
                     parseNoteAt pos ErrorC 1103
                         "This shell type is unknown. Use e.g. sh or bash."
@@ -1857,7 +1857,7 @@ readHereDoc = called "here document" $ do
     readToken = do
         str <- readStringForParser readNormalWord
         -- A here doc actually works with \r\n because the \r becomes part of the token
-        crstr <- (carriageReturn >> (return $ str ++ "\r")) <|> return str
+        crstr <- (carriageReturn >> return (str ++ "\r")) <|> return str
         return $ unquote crstr
 
 readPendingHereDocs = do
@@ -1942,7 +1942,7 @@ readPendingHereDocs = do
                         error $ pleaseReport "unexpected heredoc trailer"
 
                     -- The following cases assume no trailing text:
-                    | dashed == Undashed && (not $ null leadingSpace) -> do
+                    | dashed == Undashed && not (null leadingSpace) -> do
                         parseProblemAt leadingSpacePos ErrorC 1039 "Remove indentation before end token (or use <<- and indent with tabs)."
                         foundCause
                     | dashed == Dashed && not leadingSpacesAreTabs -> do
@@ -3527,8 +3527,7 @@ parseShell env name contents = do
             return newParseResult {
                 prComments =
                     map toPositionedComment $
-                        (filter (not . isIgnored context) $
-                            notesForContext context
+                        filter (not . isIgnored context) (notesForContext context
                             ++ [makeErrorFor err])
                         ++ parseProblems state,
                 prTokenPositions = Map.empty,
