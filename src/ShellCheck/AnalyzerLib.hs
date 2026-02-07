@@ -347,7 +347,7 @@ isQuoteFree = isQuoteFreeNode False
 
 isQuoteFreeNode strict shell tree t =
     isQuoteFreeElement t ||
-        (fromMaybe False $ msum $ map isQuoteFreeContext $ NE.tail $ getPath tree t)
+        fromMaybe False (msum $ map isQuoteFreeContext $ NE.tail $ getPath tree t)
   where
     -- Is this node self-quoting in itself?
     isQuoteFreeElement t =
@@ -609,7 +609,7 @@ getReferencedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Litera
     forDeclare =
             if
                 any (`elem` flags) ["x", "p"] &&
-                    (not $ any (`elem` flags) ["f", "F"])
+                    not (any (`elem` flags) ["f", "F"])
             then concatMap getReference rest
             else []
 

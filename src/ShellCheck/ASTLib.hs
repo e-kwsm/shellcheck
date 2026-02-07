@@ -146,10 +146,10 @@ getFlagsUntil _ _ = error $ pleaseReport "getFlags on non-command"
 getAllFlags :: Token -> [(Token, String)]
 getAllFlags = getFlagsUntil (== "--")
 -- Get all flags in a BSD way, up until first non-flag argument or --
-getLeadingFlags = getFlagsUntil (\x -> x == "--" || (not $ "-" `isPrefixOf` x))
+getLeadingFlags = getFlagsUntil (\x -> x == "--" || not ("-" `isPrefixOf` x))
 
 -- Check if a command has a flag.
-hasFlag cmd str = str `elem` (map snd $ getAllFlags cmd)
+hasFlag cmd str = str `elem` map snd (getAllFlags cmd)
 
 -- Is this token a word that starts with a dash?
 isFlag token =
@@ -467,12 +467,12 @@ escapeForMessage str = concatMap f str
         if shouldEscape c
         then
             if ord c < 256
-            then "\\x" ++ (pad0 2 $ toHex c)
-            else "\\U" ++ (pad0 4 $ toHex c)
+            then "\\x" ++ pad0 2 (toHex c)
+            else "\\U" ++ pad0 4 (toHex c)
         else [c]
 
     shouldEscape c =
-        (not $ isPrint c)
+        not (isPrint c)
         || (not (isAscii c) && not (isLetter c))
 
     pad0 :: Int -> String -> String
@@ -666,10 +666,10 @@ wordToPseudoGlob' exact word =
         case word of
             T_NormalWord _ (T_Literal _ ('~':str):rest) -> do
                 guard $ not exact
-                let this = (PGMany : (map PGChar $ dropWhile (/= '/') str))
-                tail <- concat <$> (mapM f $ concatMap getWordParts rest)
+                let this = (PGMany : map PGChar (dropWhile (/= '/') str))
+                tail <- concat <$> mapM f (concatMap getWordParts rest)
                 return $ this ++ tail
-            _ -> concat <$> (mapM f $ getWordParts word)
+            _ -> concat <$> mapM f (getWordParts word)
 
     f x = case x of
         T_Literal _ s      -> return $ map PGChar s
