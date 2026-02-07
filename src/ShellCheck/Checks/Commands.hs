@@ -706,7 +706,7 @@ prop_checkSshCmdStr3 = verifyNot checkSshCommandString "ssh \"$host\""
 prop_checkSshCmdStr4 = verifyNot checkSshCommandString "ssh -i key \"$host\""
 checkSshCommandString = CommandCheck (Basename "ssh") (f . arguments)
   where
-    isOption x = "-" `isPrefixOf` (concat $ oversimplify x)
+    isOption x = "-" `isPrefixOf` concat (oversimplify x)
     f args =
         case partition isOption args of
             ([], hostport:r@(_:_)) -> checkArg $ last r
@@ -1520,7 +1520,7 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
     findReferences cfga list = do
         let graph = CF.graph cfga
         let nodesMap = CF.tokenToNodes cfga
-        let nodes = S.unions $ map (\id -> M.findWithDefault S.empty id nodesMap) $ map getId $ list
+        let nodes = S.unions $ map ((\id -> M.findWithDefault S.empty id nodesMap) . getId) list
         let labels = mapMaybe (G.lab graph) $ S.toList nodes
         let references = M.fromList $ concatMap refFromLabel labels
         return references
