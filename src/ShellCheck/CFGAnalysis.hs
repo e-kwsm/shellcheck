@@ -543,8 +543,8 @@ mergeMaps :: (Ord k) => forall s.
     Ctx s ->
     (v -> v -> v) ->
     (Ctx s -> k -> ST s v) ->
-    (VersionedMap k v) ->
-    (VersionedMap k v) ->
+    VersionedMap k v ->
+    VersionedMap k v ->
     ST s (VersionedMap k v)
 mergeMaps ctx merger reader a b =
     if vmIsQuickEqual a b
@@ -1076,7 +1076,7 @@ runCached ctx node f = do
         Nothing -> do
             logInfo ("Cache failed", node)
             (deps, diff) <- f ctx
-            modifySTRef (cCache ctx) (M.insertWith (\_ old -> (deps, diff):(take cacheEntries old)) node [(deps,diff)])
+            modifySTRef (cCache ctx) (M.insertWith (\_ old -> (deps, diff):take cacheEntries old) node [(deps,diff)])
             logVerbose ("Recomputed cache for", node, deps)
             -- do { f <- fulfillsDependencies ctx node deps; unless (f) $ traceShowM ("New dependencies FAILED to match", node, deps); }
             patchOutputM ctx diff
@@ -1322,7 +1322,7 @@ dataflow ctx entry = do
         (incomingL, _, label, outgoingL) = context graph $ node
         incoming = map snd $ filter isRegular $ incomingL
         outgoing = map snd outgoingL
-        isRegular = ((== CFEFlow) . fst)
+        isRegular = (== CFEFlow) . fst
 
 runRoot ctx env entry exit = do
     writeSTRef (cInput ctx) $ env
