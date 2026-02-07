@@ -1162,7 +1162,7 @@ handleCommand cmd vars args literalCmd = do
             let
                 names = reverse $ map fromJust $ takeWhile isJust $ map (\c -> sequence (getId c, getLiteralString c)) $ reverse args
                 namesOrDefault = if null names then [(getId cmd, "REPLY")] else names
-                hasDashA = any (== "a") $ map fst $ getGenericOpts args
+                hasDashA = elem "a" $ map fst $ getGenericOpts args
                 value = if hasDashA then CFValueArray else CFValueString
             in
                 map (\(id, name) -> IdTagged id $ CFWriteVariable name value) namesOrDefault
