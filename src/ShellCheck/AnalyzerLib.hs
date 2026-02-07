@@ -710,9 +710,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
     getModifierParam _ _ = []
 
     letParamToLiteral token =
-          if null var
-            then []
-            else [(base, token, var, DataString $ SourceFrom [stripEqualsFrom token])]
+          [(base, token, var, DataString $ SourceFrom [stripEqualsFrom token]) | not (null var)]
         where var = takeWhile isVariableChar $ dropWhile (`elem` "+-") $ concat $ oversimplify token
 
     getSetParams (t:_:rest) | getLiteralString t == Just "-o" = getSetParams rest
@@ -788,9 +786,7 @@ getReferencedVariables parents t =
                     getIndexReferences str
                     ++ getOffsetReferences (getBracedModifier str))
         TA_Variable id name _ ->
-            if isArithmeticAssignment t
-            then []
-            else [(t, t, name)]
+            ([(t, t, name) | not (isArithmeticAssignment t)])
         T_Assignment id mode str _ word ->
             [(t, t, str) | mode == Append] ++ specialReferences str t word
 
