@@ -443,7 +443,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             ("read", Just $ if isDash || isBusyboxSh then ["r", "p"] else ["r"]),
             ("readonly", Just ["p"]),
             ("trap", Just []),
-            ("type", Just $ if isBusyboxSh then ["p"] else []),
+            ("type", Just $ ["p" | isBusyboxSh]),
             ("ulimit",
               Just $
                 if isDash
