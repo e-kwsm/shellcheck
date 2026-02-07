@@ -213,7 +213,7 @@ checker spec params = getChecker $ commandChecks ++ optionals
     optionals =
         if "all" `elem` keys
         then map snd optionalCommandChecks
-        else mapMaybe (\x -> M.lookup x optionalCheckMap) keys
+        else mapMaybe (`M.lookup` optionalCheckMap) keys
 
 prop_checkTr1 = verify checkTr "tr [a-f] [A-F]"
 prop_checkTr2 = verify checkTr "tr 'a-z' 'A-Z'"
