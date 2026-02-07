@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.0', '8.10', '9.0.1', '9.4.7', '9.6.6', 'latest']
+        ghc: ['8.2.1', '8.10', '9.0.1', '9.4.7', '9.6.6', 'latest']
         include:
           - ghc: 'latest'
             cabal_flags: '--allow-newer'
