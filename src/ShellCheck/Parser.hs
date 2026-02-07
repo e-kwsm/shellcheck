@@ -3214,7 +3214,7 @@ readShebang = do
         parseProblemAtId id ErrorC 1084
             "Use #!, not !#, for the shebang."
 
-    skipSpaces = (not . null) <$> many linewhitespace
+    skipSpaces = not . null <$> many linewhitespace
     readTooManySpaces = do
         startPos <- getPosition
         startSpaces <- skipSpaces
