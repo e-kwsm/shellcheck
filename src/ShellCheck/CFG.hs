@@ -310,7 +310,7 @@ removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
         a `S.member` candidateNodes && b `S.member` candidateNodes
 
     orderEdge (a,b,_) = if a < b then (b,a) else (a,b)
-    counter = M.fromListWith (+) . map ((, 1))
+    counter = M.fromListWith (+) . map (, 1)
     isRegularEdge (_, _, CFEFlow) = True
     isRegularEdge _ = False
 
@@ -374,7 +374,7 @@ newNode label = do
     n <- get
     stack <- asks cfTokenStack
     put (n+1)
-    tell ([(n, label)], [], [], map ((, n)) stack)
+    tell ([(n, label)], [], [], map (, n) stack)
     return n
 
 newNodeRange :: CFNode -> CFM Range
@@ -1079,7 +1079,7 @@ handleCommand cmd vars args literalCmd = do
                     IdTagged id $ writer isFunc name $
                         CFValueComputed (getId t) [ CFStringLiteral $ drop 1 $ dropWhile (/= '=') literal ]
                 asUnknown =
-                    IdTagged id $ (writer isFunc) name CFValueString
+                    IdTagged id $ writer isFunc name CFValueString
 
                 added = [ IdTagged id $ CFSetProps (scope isFunc) name addedProps ]
                 removed = [ IdTagged id $ CFUnsetProps (scope isFunc) name removedProps ]
@@ -1308,7 +1308,7 @@ findPostDominators mainexit graph = asArray
     inlined = inlineSubshells graph
     terminals = findTerminalNodes inlined
     (incoming, _, label, outgoing) = context graph mainexit
-    withExitEdges = (incoming ++ map ((CFEFlow,)) terminals, mainexit, label, outgoing) `safeUpdate` inlined
+    withExitEdges = (incoming ++ map (CFEFlow,) terminals, mainexit, label, outgoing) `safeUpdate` inlined
     reversed = grev withExitEdges
     postDoms = dom reversed mainexit
     (_, maxNode) = nodeRange graph
