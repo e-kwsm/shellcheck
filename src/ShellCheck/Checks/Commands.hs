@@ -439,7 +439,7 @@ checkExit = CommandCheck (Exactly "exit") (returnOrExit
         (\c -> err c 2241 "The exit status can only be one integer 0-255. Use stdout for other data.")
         (\c -> err c 2242 "Can only exit with status 0-255. Other data should be written to stdout/stderr."))
 
-returnOrExit multi invalid = (f . arguments)
+returnOrExit multi invalid = f . arguments
   where
     f (first:second:_) =
         multi (getId first)
@@ -1043,7 +1043,7 @@ checkWhileGetoptsCase = CommandCheck (Exactly "getopts") f
             notRequested = M.difference handledMap requestedMap
 
     warnUnhandled optId caseId str =
-        warn caseId 2213 $ "getopts specified -" ++ (e4m str) ++ ", but it's not handled by this 'case'."
+        warn caseId 2213 $ "getopts specified -" ++ e4m str ++ ", but it's not handled by this 'case'."
 
     warnRedundant (Just str, expr)
         | str `notElem` ["*", ":", "?"] =
@@ -1402,7 +1402,7 @@ checkUnquotedEchoSpaces = CommandCheck (Basename "echo") check
 
     hasSpacesBetween redirs ((a,b), (c,d)) =
         posLine a == posLine d
-        && ((posColumn c) - (posColumn b)) >= 4
+        && (posColumn c - posColumn b) >= 4
         && not (any (\x -> b < x && x < c) redirs)
 
 
