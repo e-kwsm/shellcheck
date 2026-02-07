@@ -200,8 +200,8 @@ normalizePath path =
 formatDoc color (DiffDoc name lf regions) =
     let (most, last) = splitLast regions
     in
-          (color bold $ "--- " ++ (normalizePath $ "a" </> name)) ++ "\n" ++
-          (color bold $ "+++ " ++ (normalizePath $ "b" </> name)) ++ "\n" ++
+          color bold ("--- " ++ normalizePath ("a" </> name)) ++ "\n" ++
+          color bold ("+++ " ++ normalizePath ("b" </> name)) ++ "\n" ++
           concatMap (formatRegion color LinefeedOk) most ++
           concatMap (formatRegion color lf) last
 
@@ -215,7 +215,7 @@ buildFixMap fixes = perFile
 splitFixByFile :: Fix -> [Fix]
 splitFixByFile fix = map makeFix $ groupBy sameFile (fixReplacements fix)
   where
-    sameFile rep1 rep2 = (posFile $ repStartPos rep1) == (posFile $ repStartPos rep2)
+    sameFile rep1 rep2 = posFile (repStartPos rep1) == posFile (repStartPos rep2)
     makeFix reps = newFix { fixReplacements = reps }
 
 groupByMap :: (Ord k, Monoid v) => (v -> k) -> [v] -> M.Map k v
