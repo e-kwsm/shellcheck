@@ -540,7 +540,7 @@ mergeMaps ctx merger reader a b =
     if vmIsQuickEqual a b
     then return a
     else do
-        new <- M.fromDistinctAscList <$> reverse <$> f [] (M.toAscList $ mapStorage a) (M.toAscList $ mapStorage b)
+        new <- M.fromDistinctAscList . reverse <$> f [] (M.toAscList $ mapStorage a) (M.toAscList $ mapStorage b)
         vmFromMap ctx new
   where
     f l [] [] = return l
