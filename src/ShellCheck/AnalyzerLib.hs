@@ -639,8 +639,8 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
                 parsed <- getGnuOpts flagsForRead rest
                 case lookup "a" parsed of
                     Just (_, var) -> (:[]) <$> getLiteralArray var
-                    Nothing -> return $ catMaybes $
-                        map (getLiteral . snd . snd) $ filter (null . fst) parsed
+                    Nothing -> return $
+                        mapMaybe (getLiteral . snd . snd) (filter (null . fst) parsed)
 
         "getopts" ->
             case rest of
