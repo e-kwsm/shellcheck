@@ -4091,7 +4091,7 @@ checkNullaryExpansionTest params t =
                     styleWithFix id 2243 "Prefer explicit -n to check for output (or run command without [/[[ to check for success)." fix
 
                 -- If they're constant, you get SC2157 &co
-                x | all (not . isConstant) x ->
+                x | not (any isConstant x) ->
                     styleWithFix id 2244 "Prefer explicit -n to check non-empty string (or use =/-ne to check boolean/integer)." fix
                 _ -> return ()
             where

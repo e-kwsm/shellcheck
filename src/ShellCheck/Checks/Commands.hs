@@ -448,7 +448,7 @@ returnOrExit multi invalid = (f . arguments)
             invalid (getId value)
     f _ = return ()
 
-    isInvalid s = null s || any (not . isDigit) s || length s > 5
+    isInvalid s = null s || not (all isDigit s) || length s > 5
         || let value = (read s :: Integer) in value > 255
 
     literal token = runIdentity $ getLiteralStringExt lit token
