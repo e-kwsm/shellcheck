@@ -4057,7 +4057,7 @@ checkUseBeforeDefinition params t = fromMaybe [] $ do
                 let invocations = map fst definitions
                 -- Bats loads the whole file before running a test, so functions
                 -- defined outside of tests are available in all of them.
-                guard . not $ isInBatsTest t && any (not . snd) definitions
+                guard . not $ isInBatsTest t && not (all snd definitions)
                 -- Is the function definitely being defined later?
                 -- Every definition has to be later: one whose order we can't
                 -- determine, such as in a function nothing visibly invokes,
@@ -4266,7 +4266,7 @@ checkNullaryExpansionTest params t =
                     styleWithFix id 2243 "Prefer explicit -n to check for output (or run command without [/[[ to check for success)." fix
 
                 -- If they're constant, you get SC2157 &co
-                x | all (not . isConstant) x ->
+                x | not (any isConstant x) ->
                     styleWithFix id 2244 "Prefer explicit -n to check non-empty string (or use =/-ne to check boolean/integer)." fix
                 _ -> return ()
             where
