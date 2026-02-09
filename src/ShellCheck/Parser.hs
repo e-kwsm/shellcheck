@@ -1206,7 +1206,7 @@ readDollarBracedPart = readSingleQuoted <|> readDoubleQuoted <|>
 
 readDollarBracedLiteral = do
     start <- startSpan
-    vars <- (readBraceEscaped <|> ((\x -> [x]) <$> anyChar)) `reluctantlyTill1` bracedQuotable
+    vars <- (readBraceEscaped <|> (((: [])) <$> anyChar)) `reluctantlyTill1` bracedQuotable
     id <- endSpan start
     return $ T_Literal id $ concat vars
 
@@ -1568,7 +1568,7 @@ readGenericLiteral endChars = do
     return $ concat strings
 
 readGenericLiteral1 endExp = do
-    strings <- (readGenericEscaped <|> ((\x -> [x]) <$> anyChar)) `reluctantlyTill1` endExp
+    strings <- (readGenericEscaped <|> (((: [])) <$> anyChar)) `reluctantlyTill1` endExp
     return $ concat strings
 
 readGenericEscaped = do
