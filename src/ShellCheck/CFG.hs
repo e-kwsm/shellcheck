@@ -1051,11 +1051,10 @@ handleCommand cmd vars args literalCmd = do
             [ CFVPAssociative | associative ]
           ]
 
-        removedProps = S.fromList $ concat [
+        removedProps = S.fromList $ ((
             -- Array property can't be unset
-            [ CFVPInteger | 'i' `elem` unsetOptions ],
-            [ CFVPExport | 'e' `elem` unsetOptions ]
-          ]
+            [ CFVPInteger | 'i' `elem` unsetOptions ]) ++ (
+            [ CFVPExport | 'e' `elem` unsetOptions ]))
 
         toEffects isFunc (T_Assignment id mode var idx t) =
             let
