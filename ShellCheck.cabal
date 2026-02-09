@@ -50,6 +50,7 @@ library
     if impl(ghc < 8.0)
       build-depends:
         semigroups
+    ghc-options: -Werror=unused-matches
     build-depends:
       -- The lower bounds are based on GHC 7.10.3
       -- The upper bounds are based on GHC 9.14.1
@@ -111,6 +112,7 @@ executable shellcheck
     if impl(ghc < 8.0)
       build-depends:
         semigroups
+    ghc-options: -Werror=unused-matches
     build-depends:
       aeson,
       array,
@@ -145,6 +147,7 @@ executable shellcheck-dev
 
 test-suite test-shellcheck
     type: exitcode-stdio-1.0
+    ghc-options: -Werror=unused-matches
     build-depends:
       aeson,
       array,
