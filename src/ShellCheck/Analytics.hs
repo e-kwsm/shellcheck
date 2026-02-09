@@ -3854,7 +3854,7 @@ checkPipeToNowhere params t =
             T_FdRedirect _ num x | all isDigit num ->
                 -- Don't report the number unless we know what it is.
                 -- This avoids triggering on 3>&1 1>&3
-                getDefaultFds x *> return [read num]
+                getDefaultFds x $> [read num]
             -- Don't bother with {fd}>42 and such
             _ -> Nothing
 
