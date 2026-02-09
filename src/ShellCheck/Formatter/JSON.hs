@@ -99,12 +99,12 @@ instance ToJSON Fix where
 
 outputError file msg = hPutStrLn stderr $ file ++ ": " ++ msg
 
-collectResult ref cr sys = mapM_ f groups
+collectResult ref cr _sys = mapM_ f groups
   where
     comments = crComments cr
     groups = groupWith sourceFile comments
     f :: [PositionedComment] -> IO ()
-    f group = deepseq comments $ modifyIORef ref (\x -> comments ++ x)
+    f _group = deepseq comments $ modifyIORef ref (\x -> comments ++ x)
 
 finish ref = do
     list <- readIORef ref

@@ -263,7 +263,7 @@ cfgToGraphVizWith nodeLabel graph = concat [
     "}\n"
     ]
   where
-    dumpNode l@(node, label) = show node ++ " [label=" ++ quoteViz (nodeLabel l) ++ "]\n"
+    dumpNode l@(node, _label) = show node ++ " [label=" ++ quoteViz (nodeLabel l) ++ "]\n"
     dumpLink (from, to, typ) = show from ++ " -> " ++ show to ++ " [style=" ++ quoteViz (edgeStyle typ)  ++ "]\n"
     edgeStyle CFEFlow = "solid"
     edgeStyle CFEExit = "bold"

@@ -211,7 +211,7 @@ getChecker list = Checker {
 
 
 checker :: AnalysisSpec -> Parameters -> Checker
-checker spec params = getChecker $ commandChecks ++ optionals
+checker spec _params = getChecker $ commandChecks ++ optionals
   where
     keys = asOptionalChecks spec
     optionals =
@@ -504,7 +504,7 @@ checkExit = CommandCheck (Exactly "exit") (returnOrExit
 
 returnOrExit multi invalid = (f . arguments)
   where
-    f (first:second:_) =
+    f (first:_second:_) =
         multi (getId first)
     f [value] =
         when (isInvalid $ literal value) $
@@ -577,7 +577,7 @@ checkInjectableFindSh = CommandCheck (Basename "find") (check . arguments)
 
     match _ [] = return ()
     match [] (next:_) = action next
-    match (p:tests) ((id, arg):args) = do
+    match (p:tests) ((_id, arg):args) = do
         when (p arg) $ match tests args
         match (p:tests) args
 
@@ -636,7 +636,7 @@ checkMkdirDashPM = CommandCheck (Basename "mkdir") check
   where
     check t = sequence_ $ do
         let flags = getAllFlags t
-        dashP <- find (\(_,f) -> f == "p" || f == "parents") flags
+        _dashP <- find (\(_,f) -> f == "p" || f == "parents") flags
         dashM <- find (\(_,f) -> f == "m" || f == "mode") flags
         -- mkdir -pm 0700 dir  is fine, so is ../dir, but dir/subdir is not.
         guard $ any couldHaveSubdirs (drop 1 $ arguments t)
@@ -710,9 +710,9 @@ checkSshCommandString = CommandCheck (Basename "ssh") (f . arguments)
     isOption x = "-" `isPrefixOf` (concat $ oversimplify x)
     f args =
         case partition isOption args of
-            ([], hostport:r@(_:_)) -> checkArg $ last r
+            ([], _hostport:r@(_:_)) -> checkArg $ last r
             _ -> return ()
-    checkArg (T_NormalWord _ [T_DoubleQuoted id parts]) =
+    checkArg (T_NormalWord _ [T_DoubleQuoted _id parts]) =
         forM_ (find (not . isConstant) parts) $
             \x -> info (getId x) 2029
                 "Note that, unescaped, this expands on the client side."
@@ -745,7 +745,7 @@ prop_checkPrintfVar23 = verifyNot checkPrintfVar "printf -vTODAY '%(%Y)T'"
 
 checkPrintfVar = CommandCheck (Exactly "printf") (f . arguments) where
     f (doubledash:rest) | getLiteralString doubledash == Just "--" = f rest
-    f (dashv:var:rest) | getLiteralString dashv == Just "-v" = f rest
+    f (dashv:_var:rest) | getLiteralString dashv == Just "-v" = f rest
     f (dashvVar:rest) | Just ('-':'v':_:_) <- getLiteralString dashvVar = f rest
     f (format:params) = check format params
     f _ = return ()
@@ -811,7 +811,7 @@ getPrintfFormats = getFormats
 
     regexBasedGetFormats rest =
         case matchRegex re rest of
-            Just [width, precision, len, typ, rest, _] ->
+            Just [width, precision, _len, typ, rest, _] ->
                 (if width == "*" then "*" else "") ++
                 (if precision == "*" then "*" else "") ++
                 typ ++ getFormats rest
@@ -1068,7 +1068,7 @@ prop_checkWhileGetoptsCase8 = verifyNot checkWhileGetoptsCase "while getopts 'a:
 checkWhileGetoptsCase = CommandCheck (Exactly "getopts") f
   where
     f :: Token -> Analysis
-    f t@(T_SimpleCommand _ _ (cmd:arg1:name:_))  = do
+    f t@(T_SimpleCommand _ _ (_cmd:arg1:name:_))  = do
         path <- getPathM t
         params <- ask
         sequence_ $ do
@@ -1105,7 +1105,7 @@ checkWhileGetoptsCase = CommandCheck (Exactly "getopts") f
             notHandled = M.difference requestedMap handledMap
             notRequested = M.difference handledMap requestedMap
 
-    warnUnhandled optId caseId str =
+    warnUnhandled _optId caseId str =
         warn caseId 2213 $ "getopts specified -" ++ (e4m str) ++ ", but it's not handled by this 'case'."
 
     warnRedundant (Just str, expr)
@@ -1281,7 +1281,7 @@ checkSudoRedirect cmd = CommandCheck (Basename cmd) f
         case t_redir of
             Just (T_Redirecting _ redirs _) ->
                 mapM_ warnAbout redirs
-    warnAbout (T_FdRedirect _ s (T_IoFile id op file))
+    warnAbout (T_FdRedirect _ s (T_IoFile _id op file))
         | (null s || s == "&") && not (special file) =
         case op of
             T_Less _ ->
@@ -1323,7 +1323,7 @@ checkSourceArgs = CommandCheck (Exactly ".") f
   where
     f t = whenShell [Sh, Dash] $
         case arguments t of
-            (file:arg1:_) -> warn (getId arg1) 2240 $
+            (_file:arg1:_) -> warn (getId arg1) 2240 $
                 "The dot command does not support arguments in sh/dash. Set them as variables."
             _ -> return ()
 
@@ -1347,7 +1347,7 @@ checkXargsDashi = CommandCheck (Basename "xargs") f
   where
     f t = sequence_ $ do
         opts <- parseOpts $ arguments t
-        (option, value) <- lookup "i" opts
+        (option, _value) <- lookup "i" opts
         return $ info (getId option) 2267 "GNU xargs -i is deprecated in favor of -I{}"
     parseOpts = getBsdOpts "0oprtxadR:S:J:L:l:n:P:s:e:E:i:I:"
 
@@ -1519,7 +1519,7 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
         let reused = M.intersection backrefs references
         mapM msg $ M.toList reused
 
-    msg (name, id) = warn id 2318 $ "This assignment is used again in this '" ++ cmd ++ "', but won't have taken effect. Use two '" ++ cmd ++ "'s."
+    msg (_name, id) = warn id 2318 $ "This assignment is used again in this '" ++ cmd ++ "', but won't have taken effect. Use two '" ++ cmd ++ "'s."
 
     findReferences cfga list = do
         let graph = CF.graph cfga

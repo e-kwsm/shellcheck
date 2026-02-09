@@ -56,7 +56,7 @@ type ControlFlowEffectCheck = IdTagged CFEffect -> Node -> (ProgramState, Progra
 
 
 checker :: AnalysisSpec -> Parameters -> Checker
-checker spec params = Checker {
+checker _spec _params = Checker {
     perScript = const $ sequence_ controlFlowChecks,
     perToken = const $ return ()
 }
@@ -80,7 +80,7 @@ runNodeChecks perNode = do
     cfg <- asks cfgAnalysis
     mapM_ runOnAll cfg
   where
-    getData datas n@(node, label) = do
+    getData datas n@(node, _label) = do
         (pre, post) <- M.lookup node datas
         return (n, (pre, post))
 

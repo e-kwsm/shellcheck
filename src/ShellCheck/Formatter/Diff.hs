@@ -59,7 +59,7 @@ yellow = 33
 cyan = 36
 bold = 1
 
-nocolor n = id
+nocolor _n = id
 colorize n s = (ansi n) ++ s ++ (ansi 0)
 ansi n = "\x1B[" ++ show n ++ "m"
 
@@ -142,7 +142,7 @@ groupDiff = filter (\(_, l) -> not (null l)) . hunt []
         in (True, reverse previous) : hunt context list
 
     gather current n (x@Both {}:rest) = gather (x:current) (n+1) rest
-    gather current n (x:rest) = gather (x:current) 0 rest
+    gather current _n (x:rest) = gather (x:current) 0 rest
 
 -- Get line numbers for hunks
 findRegions :: [(Bool, [Diff String])] -> [DiffRegion String]

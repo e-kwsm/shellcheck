@@ -37,7 +37,7 @@ import Numeric (readHex, readOct, showHex)
 
 import Test.QuickCheck
 
-arguments (T_SimpleCommand _ _ (cmd:args)) = args
+arguments (T_SimpleCommand _ _ (_cmd:args)) = args
 
 -- Is this a type of loop?
 isLoop t = case t of
@@ -119,7 +119,7 @@ oversimplify token =
         (T_Pipeline _ _ [x]) -> oversimplify x
         (T_Literal _ x) -> [x]
         (T_ParamSubSpecialChar _ x) -> [x]
-        (T_SimpleCommand _ vars words) -> concatMap oversimplify words
+        (T_SimpleCommand _ _vars words) -> concatMap oversimplify words
         (T_Redirecting _ _ foo) -> oversimplify foo
         (T_DollarSingleQuoted _ s) -> [s]
         (T_Annotation _ _ s) -> oversimplify s
@@ -223,7 +223,7 @@ getOpts (gnu, arbitraryLongOpts) string longopts args = process args
                     -- Consider splitting up token to get arg
                     return $ (name, (token, token)) : more
             '-':opts -> shortToOpts opts token rest
-            arg ->
+            _arg ->
                 if gnu
                 then do
                     more <- process rest
@@ -295,7 +295,7 @@ mayBecomeMultipleArgs t = willBecomeMultipleArgs t || f False t
     f quoted (T_DollarBraced _ _ l) =
         let string = concat $ oversimplify l in
             not quoted || "!" `isPrefixOf` string
-    f quoted (T_DoubleQuoted _ parts) = any (f True) parts
+    f _quoted (T_DoubleQuoted _ parts) = any (f True) parts
     f quoted (T_NormalWord _ parts) = any (f quoted) parts
     f _ _ = False
 
@@ -503,7 +503,7 @@ braceExpand (T_NormalWord id list) = take 1000 $ do
     items <- mapM part list
     return $ T_NormalWord id items
   where
-    part (T_BraceExpansion id items) = do
+    part (T_BraceExpansion _id items) = do
         item <- items
         braceExpand item
     part x = return x
@@ -512,7 +512,7 @@ braceExpand (T_NormalWord id list) = take 1000 $ do
 getCommand t =
     case t of
         T_Redirecting _ _ w -> getCommand w
-        T_SimpleCommand _ _ (w:_) -> return t
+        T_SimpleCommand _ _ (_w:_) -> return t
         T_Annotation _ _ t -> getCommand t
         _ -> Nothing
 
@@ -543,7 +543,7 @@ getCommandNameAndToken direct t = fromMaybe (Nothing, t) $ do
         actual <- getEffectiveCommandToken s cmd rest
         return (getLiteralString actual, actual)
   where
-    getEffectiveCommandToken str cmd args =
+    getEffectiveCommandToken str _cmd args =
         let
             firstArg = do
                 arg <- listToMaybe args
@@ -582,7 +582,7 @@ basename = reverse . takeWhile (/= '/') . reverse
 isAssignment t =
     case t of
         T_Redirecting _ _ w -> isAssignment w
-        T_SimpleCommand _ (w:_) [] -> True
+        T_SimpleCommand _ (_w:_) [] -> True
         T_Assignment {} -> True
         T_Annotation _ _ w -> isAssignment w
         _ -> False
@@ -783,13 +783,13 @@ executableFromShebang = shellFor
     re = mkRegex "/env +(-S|--split-string=?)? *(.*)"
     shellFor s | s `matches` re =
         case matchRegex re s of
-            Just [flag, shell] -> fromEnvArgs (words shell)
+            Just [_flag, shell] -> fromEnvArgs (words shell)
             _ -> ""
     shellFor sb =
         case words sb of
             [] -> ""
             [x] -> basename x
-            (first:second:args) | basename first == "busybox" ->
+            (first:second:_args) | basename first == "busybox" ->
                 case basename second of
                    "sh" -> "busybox sh"
                    "ash" -> "busybox ash"
