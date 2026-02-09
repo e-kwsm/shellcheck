@@ -387,7 +387,7 @@ subshell id reason p = do
     start <- newNode $ CFEntryPoint $ "Subshell " ++ show id ++ ": " ++ reason
     end <- newNode CFStructuralNode
     middle <- local (\c -> c { cfExitTarget = Just end, cfReturnTarget = Just end}) p
-    linkRanges [nodeToRange start, middle, nodeToRange end]
+    _ <- linkRanges [nodeToRange start, middle, nodeToRange end]
     newNodeRange $ CFExecuteSubshell reason start end
 
 
@@ -500,7 +500,7 @@ build t = do
             ifthen <- build a
             elsethen <- build b
             end <- newStructuralNode
-            linkRanges [condition, ifthen, end]
+            _ <- linkRanges [condition, ifthen, end]
             linkRanges [condition, elsethen, end]
 
         TA_Variable id name indices -> do
@@ -530,7 +530,7 @@ build t = do
             right <- build rhs
             end <- newStructuralNode
             -- complete
-            linkRanges [left, right, end]
+            _ <- linkRanges [left, right, end]
             -- short circuit
             linkRange left end
 
@@ -554,7 +554,7 @@ build t = do
             right <- build rhs
             end <- newStructuralNode
             -- complete
-            linkRanges [left, right, end]
+            _ <- linkRanges [left, right, end]
             -- short circuit
             linkRange left end
 
@@ -571,8 +571,8 @@ build t = do
             left <- build lhs
             right <- build rhs
             end <- newStructuralNode
-            linkRange left right
-            linkRange right end
+            _ <- linkRange left right
+            _ <- linkRange right end
             linkRange left end
 
         T_Array _ list -> sequentially list
@@ -615,8 +615,8 @@ build t = do
             let neighbors = zip (NE.toList branches) $ (NE.tail branches ++ [(end, end, undefined, undefined)])
             let (firstCond, _, _, _) = NE.head branches
 
-            linkRange start token
-            linkRange token firstCond
+            _ <- linkRange start token
+            _ <- linkRange token firstCond
             mapM_ (uncurry linkBranch) neighbors
 
             return $ spanRange start end
@@ -627,18 +627,18 @@ build t = do
                 condNode <- buildCond bodyNode cond
                 nextCondNode <- newStructuralNode
                 nextBodyNode <- newStructuralNode
-                case typ of
+                _ <- case typ of
                     CaseBreak -> linkRange bodyNode end
                     CaseFallThrough -> linkRange bodyNode nextBodyNode
                     CaseContinue -> linkRange bodyNode nextCondNode
-                linkRange condNode nextCondNode
+                _ <- linkRange condNode nextCondNode
                 return (condNode, bodyNode, nextCondNode, nextBodyNode)
 
             -- for a | b | c, evaluate each in turn and allow short circuiting
             buildCond _ [] = newStructuralNode
             buildCond body (alt:rest) = do
                 altNode <- build alt
-                linkRange altNode body
+                _ <- linkRange altNode body
 
                 let isCatchAll = fromMaybe False $ do
                         pg <- wordToExactPseudoGlob alt
@@ -651,7 +651,7 @@ build t = do
                 return $ spanRange altNode nextNode
 
             linkBranch (cond, body, nextCond, nextBody) (cond2, body2, nextCond2, nextBody2) = do
-                linkRange nextCond cond2
+                _ <- linkRange nextCond cond2
                 linkRange nextBody body2
 
 
@@ -675,10 +675,10 @@ build t = do
             child <- subshell id "coproc" $ build t
             end <- newNodeRange $ CFSetExitCode id
 
-            linkRange start parent
-            linkRange start child
-            linkRange parent end
-            linkRangeAs CFEFalseFlow child end
+            _ <- linkRange start parent
+            _ <- linkRange start child
+            _ <- linkRange parent end
+            _ <- linkRangeAs CFEFalseFlow child end
 
             return $ spanRange start end
         T_CoProcBody _ t -> build t
@@ -704,7 +704,7 @@ build t = do
               then do
                 optionalAssign <- newNodeRange (applySingle $ IdTagged id $ CFWriteVariable reference CFValueString)
                 result <- newStructuralNode
-                linkRange optionalAssign result
+                _ <- linkRange optionalAssign result
                 linkRange totalRead result
               else return totalRead
 
@@ -740,10 +740,10 @@ build t = do
             end <- newStructuralNode
 
             -- Forward edges
-            linkRanges [init, cond, body, inc]
-            linkRange cond end
+            _ <- linkRanges [init, cond, body, inc]
+            _ <- linkRange cond end
             -- Backward edge
-            linkRange inc cond
+            _ <- linkRange inc cond
             return $ spanRange init end
 
         T_ForIn id name words body -> forInHelper id name words body
@@ -774,15 +774,15 @@ build t = do
             doBranches start ((conds, thens):rest) elses result = do
                 cond <- asCondition $ sequentially conds
                 action <- sequentially thens
-                linkRange start cond
-                linkRange cond action
+                _ <- linkRange start cond
+                _ <- linkRange cond action
                 doBranches cond rest elses (action:result)
             doBranches start [] elses result = do
                 rest <-
                     if null elses
                     then newNodeRange (CFSetExitCode id)
                     else sequentially elses
-                linkRange start rest
+                _ <- linkRange start rest
                 return (rest:result)
 
         T_Include _ t -> build t
@@ -807,8 +807,8 @@ build t = do
             left <- build lhs
             right <- build rhs
             end <- newStructuralNode
-            linkRange left right
-            linkRange right end
+            _ <- linkRange left right
+            _ <- linkRange right end
             linkRange left end
 
         T_Pipeline _ _ [cmd] -> build cmd
@@ -837,8 +837,8 @@ build t = do
             body <- subshell id (op ++ "() process substitution") $ sequentially cmds
             end <- newStructuralNode
 
-            linkRange start body
-            linkRangeAs CFEFalseFlow body end
+            _ <- linkRange start body
+            _ <- linkRangeAs CFEFalseFlow body end
             linkRange start end
 
         T_Redirecting _ redirs cmd -> do
@@ -873,8 +873,8 @@ build t = do
               else do
                 end <- newStructuralNode
                 inline <- withReturn end $ build inlinedSource
-                linkRange cmd inline
-                linkRange inline end
+                _ <- linkRange cmd inline
+                _ <- linkRange inline end
                 return $ spanRange cmd inline
 
         T_Subshell id body -> do
@@ -895,7 +895,7 @@ build t = do
         T_ParamSubSpecialChar _ _ -> none
 
         x -> do
-            error ("Unimplemented: " ++ show x) -- STRIP
+            _ <- error ("Unimplemented: " ++ show x) -- STRIP
             none
 
 --  Still in `where` clause
@@ -905,9 +905,9 @@ build t = do
         pid <- newNodeRange $ CFSetBackgroundPid id
         status <- newNodeRange $ CFSetExitCode id
 
-        linkRange start fork
+        _ <- linkRange start fork
         -- Add a join from the fork to warn about variable changes
-        linkRangeAs CFEFalseFlow fork pid
+        _ <- linkRangeAs CFEFalseFlow fork pid
         linkRanges [start, pid, status]
 
     forInHelper id name words body = do
@@ -921,12 +921,12 @@ build t = do
         body <- sequentially body
         exit <- newStructuralNode
         -- Forward edges
-        linkRanges [entry, expansion, assignmentChoice]
+        _ <- linkRanges [entry, expansion, assignmentChoice]
         mapM_ (\t -> linkRanges [assignmentChoice, t, body]) assignments
-        linkRange body exit
-        linkRange expansion exit
+        _ <- linkRange body exit
+        _ <- linkRange expansion exit
         -- Backward edge
-        linkRange body assignmentChoice
+        _ <- linkRange body assignmentChoice
         return $ spanRange entry exit
 
     whileHelper id cond body = do
@@ -934,8 +934,8 @@ build t = do
         bodyRange <- sequentially body
         end <- newNodeRange (CFSetExitCode id)
 
-        linkRange condRange bodyRange
-        linkRange bodyRange condRange
+        _ <- linkRange condRange bodyRange
+        _ <- linkRange bodyRange condRange
         linkRange condRange end
 
 

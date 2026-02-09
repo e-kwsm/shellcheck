@@ -1668,10 +1668,10 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
     perArg cfga leftArgs t =
         case t of
             T_Assignment id _ name idx t -> do
-                warnIfBackreferencing cfga leftArgs $ t:idx
+                _ <- warnIfBackreferencing cfga leftArgs $ t:idx
                 return $ M.insert name id leftArgs
             t -> do
-                warnIfBackreferencing cfga leftArgs [t]
+                _ <- warnIfBackreferencing cfga leftArgs [t]
                 return leftArgs
 
     warnIfBackreferencing cfga backrefs l = do

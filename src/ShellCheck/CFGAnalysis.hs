@@ -1018,7 +1018,7 @@ transferMultiple ctx funcs = do
     out = cOutput ctx
     apply ctx original f = do
         writeSTRef out original
-        f ctx
+        _ <- f ctx
         readSTRef out
 
 -- Transfer the effects of a single function definition.

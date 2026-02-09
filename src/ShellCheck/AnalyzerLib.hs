@@ -161,7 +161,7 @@ producesComments c s = fmap (not . null) $ runAndGetCodes c s
 runAndGetCodes :: Checker -> String -> Maybe [Integer]
 runAndGetCodes c s = do
         let pr = pScript s
-        prRoot pr
+        _ <- prRoot pr
         let spec = defaultSpec pr
         let params = makeParameters spec
         return . (sort . map (cCode . tcComment)) $ filterByAnnotation spec params $ runChecker params c

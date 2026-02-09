@@ -597,7 +597,7 @@ prop_checkPipePitfalls21 = verifyNot checkPipePitfalls "foo | grep --after-conte
 prop_checkPipePitfalls22 = verifyNot checkPipePitfalls "foo | grep -B 1 --after-context 999 bar | wc -l"
 prop_checkPipePitfalls23 = verifyNot checkPipePitfalls "ps -o pid,args -p $(pgrep java) | grep -F net.shellcheck.Test"
 checkPipePitfalls _ (T_Pipeline id _ commands) = do
-    for ["find", "xargs"] $
+    _ <- for ["find", "xargs"] $
         \(find:xargs:_) ->
           let args = oversimplify xargs ++ oversimplify find
           in
@@ -609,7 +609,7 @@ checkPipePitfalls _ (T_Pipeline id _ commands) = do
               ]) $ warn (getId find) 2038
                       "Use 'find .. -print0 | xargs -0 ..' or 'find .. -exec .. +' to allow non-alphanumeric filenames."
 
-    for ["ps", "grep"] $
+    _ <- for ["ps", "grep"] $
         \(ps:grep:_) ->
             let
                 psFlags = maybe [] (map snd . getAllFlags) $ getCommand ps
@@ -619,7 +619,7 @@ checkPipePitfalls _ (T_Pipeline id _ commands) = do
                 unless (any (`elem` ["p", "pid", "q", "quick-pid"]) psFlags) $
                     info (getId ps) 2009 "Consider using pgrep instead of grepping ps output."
 
-    for ["grep", "wc"] $
+    _ <- for ["grep", "wc"] $
         \(grep:wc:_) ->
             let flagsGrep = maybe [] (map snd . getAllFlags) $ getCommand grep
                 flagsWc = maybe [] (map snd . getAllFlags) $ getCommand wc
