@@ -10,7 +10,7 @@ import ShellCheck.AnalyzerLib
 import Test.QuickCheck
 
 checker :: Parameters -> Checker
-checker params = Checker {
+checker _params = Checker {
     perScript = const $ return (),
     perToken = const $ return ()
   }

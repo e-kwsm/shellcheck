@@ -27,7 +27,7 @@ import Data.IORef
 import System.Exit
 
 format :: FormatterOptions -> IO Formatter
-format options =
+format _options =
     return Formatter {
         header = return (),
         footer = return (),
