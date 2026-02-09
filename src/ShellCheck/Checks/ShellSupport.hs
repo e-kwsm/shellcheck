@@ -275,7 +275,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
 
     bashism (TC_Binary id _ op _ _) =
         checkTestOp bashismBinaryTestFlags op id
-    bashism (T_SimpleCommand id _ [asStr -> Just "test", lhs, asStr -> Just op, rhs]) =
+    bashism (T_SimpleCommand id _ [asStr -> Just "test", _lhs, asStr -> Just op, _rhs]) =
         checkTestOp bashismBinaryTestFlags op id
     bashism (TC_Unary id _ op _) =
         checkTestOp bashismUnaryTestFlags op id
@@ -303,10 +303,10 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
     bashism (T_Glob id str) | "[^" `isInfixOf` str =
             warnMsg id 3026 "^ in place of ! in glob bracket expressions is"
 
-    bashism t@(TA_Variable id str _) | isBashVariable str =
+    bashism _t@(TA_Variable id str _) | isBashVariable str =
         warnMsg id 3028 $ str ++ " is"
 
-    bashism t@(T_DollarBraced id _ token) = do
+    bashism _t@(T_DollarBraced id _ token) = do
         unless isBusyboxSh $ mapM_ check simpleExpansions
         mapM_ check advancedExpansions
         when (isBashVariable var) $
@@ -317,7 +317,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
         check (regex, code, feature) =
             when (isJust $ matchRegex regex str) $ warnMsg id code feature
 
-    bashism t@(T_Pipe id "|&") =
+    bashism _t@(T_Pipe id "|&") =
         warnMsg id 3029 "|& in place of 2>&1 | is"
     bashism (T_Array id _) =
         warnMsg id 3030 "arrays are"
@@ -334,7 +334,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
     bashism (T_Backticked id [x]) | isOnlyRedirection x =
         warnMsg id 3035 "`<file` to read files is"
 
-    bashism t@(T_SimpleCommand _ _ (cmd:arg:_))
+    bashism t@(T_SimpleCommand _ _ (_cmd:arg:_))
         | t `isCommand` "echo" && argString `matches` flagRegex =
             if isBusyboxSh
             then
@@ -351,12 +351,12 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
           flagRegex = mkRegex "^-[eEsn]+$"
           busyboxFlagRegex = mkRegex "^-[en]+$"
 
-    bashism t@(T_SimpleCommand _ _ (cmd:arg:_))
+    bashism _t@(T_SimpleCommand _ _ (cmd:arg:_))
         | getLiteralString cmd == Just "exec" && "-" `isPrefixOf` concat (oversimplify arg) =
             warnMsg (getId arg) 3038 "exec flags are"
     bashism t@(T_SimpleCommand id _ _)
         | t `isCommand` "let" = warnMsg id 3039 "'let' is"
-    bashism t@(T_SimpleCommand _ _ (cmd:args))
+    bashism t@(T_SimpleCommand _ _ (_cmd:args))
         | t `isCommand` "set" = unless isDash $
             checkOptions $ getLiteralArgs args
       where
@@ -370,7 +370,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
                 Nothing -> []
 
         -- Check a flag-option pair (such as -o errexit)
-        checkOptions (flag@(fid,flag') : opt@(oid,opt') : rest)
+        checkOptions (flag@(_fid,flag') : opt@(oid,opt') : rest)
             | flag' `matches` oFlagRegex = do
                 when (opt' `notElem` longOptions) $
                   warnMsg oid 3040 $ "set option " <> opt' <> " is"
@@ -381,7 +381,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
 
         -- Check that each option in a sequence of flags
         -- (such as -aveo) is valid
-        checkFlags (flag@(fid, flag'):rest)
+        checkFlags (_flag@(fid, flag'):rest)
             | startsOption flag' = do
                 unless (flag' `matches` validFlagsRegex) $
                   forM_ (tail flag') $ \letter ->
@@ -477,7 +477,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             ("unset", Just ["f", "v"]),
             ("wait", Just [])
             ]
-    bashism t@(T_SourceCommand id src _)
+    bashism _t@(T_SourceCommand id src _)
       | getCommandName src == Just "source" =
           unless isBusyboxSh $
             warnMsg id 3051 "'source' in place of '.' is"
@@ -618,7 +618,7 @@ prop_checkBraceExpansionVars3 = verify checkBraceExpansionVars "eval echo DSC{00
 prop_checkBraceExpansionVars4 = verify checkBraceExpansionVars "echo {$i..100}"
 checkBraceExpansionVars = ForShell [Bash] f
   where
-    f t@(T_BraceExpansion id list) = mapM_ check list
+    f _t@(T_BraceExpansion id list) = mapM_ check list
       where
         check element =
             when (any (`isInfixOf` toString element) ["$..", "..$"]) $ do
@@ -650,8 +650,8 @@ checkMultiDimensionalArrays = ForShell [Bash] f
   where
     f token =
         case token of
-            T_Assignment _ _ name (first:second:_) _ -> about second
-            T_IndexedElement _ (first:second:_) _ -> about second
+            T_Assignment _ _ _name (_first:second:_) _ -> about second
+            T_IndexedElement _ (_first:second:_) _ -> about second
             T_DollarBraced _ _ l ->
                 when (isMultiDim l) $ about token
             _ -> return ()

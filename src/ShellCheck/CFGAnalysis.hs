@@ -93,10 +93,10 @@ fallbackThreshold = 10000
 -- The number of cache entries to keep per node
 cacheEntries = 10
 
-logVerbose log = do
+logVerbose _log = do
     -- traceShowM log
     return ()
-logInfo log = do
+logInfo _log = do
     -- traceShowM log
     return ()
 
@@ -137,13 +137,13 @@ internalToExternal s =
 -- Conveniently get the state before a token id
 getIncomingState :: CFGAnalysis -> Id -> Maybe ProgramState
 getIncomingState analysis id = do
-    (start,end) <- M.lookup id $ tokenToRange analysis
+    (start,_end) <- M.lookup id $ tokenToRange analysis
     fst <$> M.lookup start (nodeToData analysis)
 
 -- Conveniently get the state after a token id
 getOutgoingState :: CFGAnalysis -> Id -> Maybe ProgramState
 getOutgoingState analysis id = do
-    (start,end) <- M.lookup id $ tokenToRange analysis
+    (_start,end) <- M.lookup id $ tokenToRange analysis
     snd <$> M.lookup end (nodeToData analysis)
 
 -- Conveniently determine whether one node postdominates another,
@@ -571,7 +571,7 @@ mergeMaybes ctx merger reader a b =
         result <- merger val <$> reader ctx
         return $ Just result
 
-vmFromMap ctx map = return $ VersionedMap {
+vmFromMap _ctx map = return $ VersionedMap {
     mapVersion = -1,
     mapStorage = map
 }
@@ -850,9 +850,9 @@ fulfillsDependency ctx entry dep =
         DepFunction name val -> (== val) <$> peekFunc ctx name
         -- Hack. Since we haven't pushed the soon-to-be invoked function on the stack,
         -- it won't be found by the normal check.
-        DepIsRecursive node val | node == entry -> return True
+        DepIsRecursive node _val | node == entry -> return True
         DepIsRecursive node val -> return $ val == any (\f -> entryPoint f == node) (cStack ctx)
-        DepExitCodes val -> (== val) <$> peekStack (\s k -> sExitCodes s) S.empty ctx ()
+        DepExitCodes val -> (== val) <$> peekStack (\s _k -> sExitCodes s) S.empty ctx ()
   --      _ -> error $ "Unknown dep " ++ show dep
   where
     peek scope = peekStack getVariableWithScope $ if scope == GlobalScope then (unknownVariableState, GlobalScope) else (unsetVariableState, LocalScope)
@@ -972,7 +972,7 @@ transfer ctx label =
 -- Transfer the effects of a subshell invocation. This is similar to a function call
 -- to allow easily discarding the effects (otherwise the InternalState would have
 -- to represent subshell depth, while this way it can simply use the function stack).
-transferSubshell ctx reason entry exit = do
+transferSubshell ctx _reason entry exit = do
     let cout = cOutput ctx
     initial <- readSTRef cout
     runCached ctx entry (f entry exit)
@@ -990,7 +990,7 @@ transferSubshell ctx reason entry exit = do
         return (deps, res)
 
 -- Transfer the effects of executing a command, i.e. the merged union of all possible function definitions.
-transferCommand ctx Nothing = return ()
+transferCommand _ctx Nothing = return ()
 transferCommand ctx (Just name) = do
     targets <- readFunction ctx name
     logVerbose ("Transferring ",name,targets)
@@ -1021,12 +1021,12 @@ transferFunctionValue ctx funcVal =
                 then return () -- TODO: Find a better strategy for recursion
                 else runCached ctx entry (f name entry exit)
   where
-    f name entry exit ctx = do
+    f _name entry exit ctx = do
         (states, frame) <- withNewStackFrame ctx entry True (flip dataflow $ entry)
         deps <- readSTRef $ dependencies frame
         let res =
                 case M.lookup exit states of
-                    Just (input, output) -> do
+                    Just (_input, output) -> do
                         -- Discard local variables. TODO: track&retain variables declared local in previous scopes?
                         modified output { sLocalValues = vmEmpty }
                     Nothing -> do
@@ -1117,7 +1117,7 @@ transferEffect ctx effect =
                     state <- readGlobal ctx name
                     writeGlobal ctx name $ addProperties props state
                 Just LocalScope -> do
-                    out <- readSTRef (cOutput ctx)
+                    _out <- readSTRef (cOutput ctx)
                     state <- readLocal ctx name
                     writeLocal ctx name $ addProperties props state
                 Just PrefixScope -> do
@@ -1134,7 +1134,7 @@ transferEffect ctx effect =
                     state <- readGlobal ctx name
                     writeGlobal ctx name $ removeProperties props state
                 Just LocalScope -> do
-                    out <- readSTRef (cOutput ctx)
+                    _out <- readSTRef (cOutput ctx)
                     state <- readLocal ctx name
                     writeLocal ctx name $ removeProperties props state
                 Just PrefixScope -> do
@@ -1149,13 +1149,13 @@ transferEffect ctx effect =
             -- This should really just unset one or the other
             undefineVariable ctx name
             undefineFunction ctx name
-        CFDefineFunction name id entry exit ->
+        CFDefineFunction name _id entry exit ->
             writeFunction ctx name $ FunctionDefinition name entry exit
 
         -- TODO
         CFUndefineNameref name -> undefineVariable ctx name
-        CFHintArray name -> return ()
-        CFHintDefined name -> return ()
+        CFHintArray _name -> return ()
+        CFHintDefined _name -> return ()
 --        _ -> error $ "Unknown effect " ++ show effect
 
 
@@ -1304,7 +1304,7 @@ dataflow ctx entry = do
         writeSTRef states $ M.insert node (input, result) stateMap
         case M.lookup node stateMap of
             Nothing -> return outgoing
-            Just (oldInput, oldOutput) ->
+            Just (_oldInput, oldOutput) ->
                 if oldOutput == result
                 then return []
                 else return outgoing
@@ -1418,7 +1418,7 @@ analyzeControlFlow params t =
 analyzeStragglers ctx state stragglers = do
     mapM_ f $ M.elems stragglers
   where
-    f def@(FunctionDefinition name entry exit) = do
+    f def@(FunctionDefinition _name entry _exit) = do
         writeSTRef (cInput ctx) state
         writeSTRef (cOutput ctx) state
         writeSTRef (cNode ctx) entry

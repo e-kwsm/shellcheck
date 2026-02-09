@@ -193,7 +193,7 @@ buildGraph params root =
                     base
 
         idToRange = M.fromList mapping
-        isRealEdge (from, to, edge) = case edge of CFEFlow -> True; CFEExit -> True; _ -> False
+        isRealEdge (_from, _to, edge) = case edge of CFEFlow -> True; CFEExit -> True; _ -> False
         onlyRealEdges = filter isRealEdge edges
         (_, mainExit) = fromJust $ M.lookup (getId root) idToRange
 
@@ -234,7 +234,7 @@ prop_testRenumbering =
 
 -- Renumber the graph for prettiness, so there are no gaps in node numbers
 renumberGraph :: CFW -> CFW
-renumberGraph g@(nodes, edges, mapping, assoc) =
+renumberGraph g@(nodes, _edges, _mapping, _assoc) =
     let renumbering = M.fromList (flip zip [0..] $ sort $ map fst nodes)
     in remapGraph renumbering g
 
@@ -256,7 +256,7 @@ prop_testRenumberTopologically =
     in after == renumberTopologically before
 
 -- Renumber the graph in topological order
-renumberTopologically g@(nodes, edges, mapping, assoc) =
+renumberTopologically g@(nodes, edges, _mapping, _assoc) =
     let renumbering = M.fromList (flip zip [0..] $ topsort (mkGraph nodes edges :: CFGraph))
     in remapGraph renumbering g
 
@@ -293,8 +293,8 @@ removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
         )
   where
     regularEdges = filter isRegularEdge edges
-    inDegree = counter $ map (\(from,to,_) -> from) regularEdges
-    outDegree = counter $ map (\(from,to,_) -> to) regularEdges
+    inDegree = counter $ map (\(from,_to,_) -> from) regularEdges
+    outDegree = counter $ map (\(_from,to,_) -> to) regularEdges
     structuralNodes = S.fromList [node | (node, CFStructuralNode) <- nodes]
     candidateNodes = S.filter isLinear structuralNodes
     edgesToCollapse = S.fromList $ filter filterEdges regularEdges
@@ -331,7 +331,7 @@ remapNode m (node, label) =
         CFExecuteSubshell s a b -> CFExecuteSubshell s (remapHelper m a) (remapHelper m b)
         _ -> label
 
-remapEffect map old@(IdTagged id effect) =
+remapEffect map old@(IdTagged _id effect) =
     case effect of
         CFDefineFunction name id start end -> IdTagged id $ CFDefineFunction name id (remapHelper map start) (remapHelper map end)
         _ -> old
@@ -417,7 +417,7 @@ linkRangeAs label (Range start mid1) (Range mid2 end) = do
 
 -- Like linkRange but without actually linking
 spanRange :: Range -> Range -> Range
-spanRange (Range start mid1) (Range mid2 end) = Range start end
+spanRange (Range start _mid1) (Range _mid2 end) = Range start end
 
 linkRanges :: [Range] -> CFM Range
 linkRanges [] = error "Empty range"
@@ -464,7 +464,7 @@ build t = do
         T_Script _ _ list -> do
             sequentially list
 
-        TA_Assignment id op var@(TA_Variable _ name indices) rhs -> do
+        TA_Assignment id op _var@(TA_Variable _ name indices) rhs -> do
             -- value first: (( var[x=1] = (x=2) )) runs x=1 last
             value <- build rhs
             subscript <- sequentially indices
@@ -481,7 +481,7 @@ build t = do
 
             linkRanges [value, subscript, read, write]
 
-        TA_Assignment id op lhs rhs -> do
+        TA_Assignment _id _op lhs rhs -> do
             -- This is likely an invalid assignment like (( 1 = 2 )), but it
             -- could be e.g. x=y; (( $x = 3 )); echo $y, so expand both sides
             -- without updating anything
@@ -532,7 +532,7 @@ build t = do
             linkRange left end
 
         -- TODO: Handle integer ops
-        TC_Binary _ mode str lhs rhs -> do
+        TC_Binary _ _mode _str lhs rhs -> do
             left <- build lhs
             right <- build rhs
             linkRange left right
@@ -556,7 +556,7 @@ build t = do
             linkRange left end
 
         -- TODO: Handle -v, -z, -n
-        TC_Unary _ _ op arg -> do
+        TC_Unary _ _ _op arg -> do
             build arg
 
         T_Arithmetic id root -> do
@@ -605,12 +605,12 @@ build t = do
 
         T_BraceExpansion _ list -> sequentially list
 
-        T_BraceGroup id body ->
+        T_BraceGroup _id body ->
             sequentially body
 
-        T_CaseExpression id t [] -> build t
+        T_CaseExpression _id t [] -> build t
 
-        T_CaseExpression id t list@(hd:tl) -> do
+        T_CaseExpression _id t list@(hd:tl) -> do
             start <- newStructuralNode
             token <- build t
             branches <- mapM buildBranch (hd NE.:| tl)
@@ -716,7 +716,7 @@ build t = do
                 linkRange totalRead result
               else return totalRead
 
-        T_DollarBraceCommandExpansion id _ body ->
+        T_DollarBraceCommandExpansion _id _ body ->
             sequentially body
 
         T_DoubleQuoted _ list -> sequentially list
@@ -737,7 +737,7 @@ build t = do
             linkRange expression rw
 
 
-        T_FdRedirect _ name t -> do
+        T_FdRedirect _ _name t -> do
             build t
 
         T_ForArithmetic _ initT condT incT bodyT -> do
@@ -864,7 +864,7 @@ build t = do
             status <- newNodeRange (CFSetExitCode id)
             linkRange assignments status
 
-        T_SimpleCommand id vars (cmd:args) ->
+        T_SimpleCommand _id vars (cmd:args) ->
             handleCommand t vars (cmd NE.:| args) $ getUnquotedLiteral cmd
 
         T_SingleQuoted _ _ -> none
@@ -991,7 +991,7 @@ handleCommand cmd vars args literalCmd = do
                 unreachable <- newNode CFUnreachable
                 return $ Range ret unreachable
 
-    handleUnset (cmd NE.:| args) = do
+    handleUnset (_cmd NE.:| args) = do
         case () of
                 _ | "n" `elem` flagNames -> unsetWith CFUndefineNameref
                 _ | "v" `elem` flagNames -> unsetWith CFUndefineVariable
@@ -999,7 +999,7 @@ handleCommand cmd vars args literalCmd = do
                 _ -> unsetWith CFUndefine
       where
         pairs :: [(String, Token)] -- [(Flag string, token)] e.g. [("-f", t), ("", myfunc)]
-        pairs = map (\(str, (flag, val)) -> (str, flag)) $ fromMaybe (map (\c -> ("", (c,c))) args) $ getGnuOpts "vfn" args
+        pairs = map (\(str, (flag, _val)) -> (str, flag)) $ fromMaybe (map (\c -> ("", (c,c))) args) $ getGnuOpts "vfn" args
         (names, flags) = partition (null . fst) pairs
         flagNames = map fst flags
         literalNames :: [(Token, String)] -- Literal names to unset, e.g. [(myfuncToken, "myfunc")]
@@ -1099,21 +1099,21 @@ handleCommand cmd vars args literalCmd = do
             in
                 concatMap (drop 1) plusses
 
-    handlePrintf (cmd NE.:| args) =
+    handlePrintf (_cmd NE.:| args) =
         newNodeRange $ CFApplyEffects $ maybeToList findVar
       where
         findVar = do
             flags <- getBsdOpts "v:" args
-            (flag, arg) <- lookup "v" flags
+            (_flag, arg) <- lookup "v" flags
             name <- getLiteralString arg
             return $ IdTagged (getId arg) $ CFWriteVariable name CFValueString
 
-    handleWait (cmd NE.:| args) =
+    handleWait (_cmd NE.:| args) =
         newNodeRange $ CFApplyEffects $ maybeToList findVar
       where
         findVar = do
             let flags = getGenericOpts args
-            (flag, arg) <- lookup "p" flags
+            (_flag, arg) <- lookup "p" flags
             name <- getLiteralString arg
             return $ IdTagged (getId arg) $ CFWriteVariable name CFValueInteger
 
@@ -1167,7 +1167,7 @@ handleCommand cmd vars args literalCmd = do
             in
                 map (\(id, name) -> IdTagged id $ CFWriteVariable name value) namesOrDefault
 
-    handleDEFINE (cmd NE.:| args) =
+    handleDEFINE (_cmd NE.:| args) =
         newNodeRange $ CFApplyEffects $ maybeToList findVar
       where
         findVar = do
@@ -1227,7 +1227,7 @@ buildAssignment scope t = do
               where
                 f :: Id -> Token -> CFValue
                 f id t@T_NormalWord {} = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
-                f id t@(T_Literal _ str) = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
+                f id t@(T_Literal _ _str) = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
                 f _ T_Array {} = CFValueArray
 
     registerNode (getId t) op
@@ -1297,7 +1297,7 @@ findTerminalNodes graph = ufold find [] graph
             _ -> list
 
     f [] list = list
-    f (IdTagged _ (CFDefineFunction _ id start end):rest) list = f rest (end:list)
+    f (IdTagged _ (CFDefineFunction _ _id _start end):rest) list = f rest (end:list)
     f (_:rest) list = f rest list
 
 findPostDominators :: Node -> CFGraph -> Array Node [Node]

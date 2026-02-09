@@ -76,5 +76,5 @@ subRegex re input replacement = f input
 splitOn :: String -> Regex -> [String]
 splitOn input re =
     case matchM re input :: Maybe (String, String, String) of
-        Just (before, match, after) -> before : after `splitOn` re
+        Just (before, _match, after) -> before : after `splitOn` re
         Nothing -> [input]

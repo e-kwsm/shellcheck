@@ -470,10 +470,10 @@ findFirst p = foldr go Nothing
 
 -- Check whether a word is entirely output from a single command
 tokenIsJustCommandOutput t = case t of
-    T_NormalWord id [T_DollarExpansion _ cmds] -> check cmds
-    T_NormalWord id [T_DoubleQuoted _ [T_DollarExpansion _ cmds]] -> check cmds
-    T_NormalWord id [T_Backticked _ cmds] -> check cmds
-    T_NormalWord id [T_DoubleQuoted _ [T_Backticked _ cmds]] -> check cmds
+    T_NormalWord _id [T_DollarExpansion _ cmds] -> check cmds
+    T_NormalWord _id [T_DoubleQuoted _ [T_DollarExpansion _ cmds]] -> check cmds
+    T_NormalWord _id [T_Backticked _ cmds] -> check cmds
+    T_NormalWord _id [T_DoubleQuoted _ [T_Backticked _ cmds]] -> check cmds
     _ -> False
   where
     check [x] = not $ isOnlyRedirection x
@@ -539,13 +539,13 @@ leadType params t =
 getModifiedVariables t =
     case t of
         T_SimpleCommand _ vars [] ->
-            [(x, x, name, dataTypeFrom DataString w) | x@(T_Assignment id _ name _ w) <- vars]
+            [(x, x, name, dataTypeFrom DataString w) | x@(T_Assignment _id _ name _ w) <- vars]
         T_SimpleCommand {} ->
             getModifiedVariableCommand t
 
         TA_Unary _ op v@(TA_Variable _ name _) | "--" `isInfixOf` op || "++" `isInfixOf` op ->
             [(t, v, name, DataString SourceInteger)]
-        TA_Assignment _ op (TA_Variable _ name _) rhs -> do
+        TA_Assignment _ op (TA_Variable _ name _) _rhs -> do
             guard $ op `elem` ["=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|="]
             return (t, t, name, DataString SourceInteger)
 
@@ -559,7 +559,7 @@ getModifiedVariables t =
 
         -- Count [[ -v foo ]] as an "assignment".
         -- This is to prevent [ -v foo ] being unassigned or unused.
-        TC_Unary id _ "-v" token -> maybeToList $ do
+        TC_Unary _id _ "-v" token -> maybeToList $ do
             str <- getVariableForTestDashV token
             return (t, token, str, DataString SourceChecked)
 
@@ -584,9 +584,9 @@ getModifiedVariables t =
             [(t, t, name, DataArray SourceInteger)]
 
         --Points to 'for' rather than variable
-        T_ForIn id str [] _ -> [(t, t, str, DataString SourceExternal)]
-        T_ForIn id str words _ -> [(t, t, str, DataString $ SourceFrom words)]
-        T_SelectIn id str words _ -> [(t, t, str, DataString $ SourceFrom words)]
+        T_ForIn _id str [] _ -> [(t, t, str, DataString SourceExternal)]
+        T_ForIn _id str words _ -> [(t, t, str, DataString $ SourceFrom words)]
+        T_SelectIn _id str words _ -> [(t, t, str, DataString $ SourceFrom words)]
         _ -> []
   where
     markAsChecked place token = mapMaybe (f place) $ getWordParts token
@@ -624,7 +624,7 @@ getReferencedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Litera
             then concatMap getReference rest
             else []
 
-    getReference t@(T_Assignment _ _ name _ value) = [(t, t, name)]
+    getReference t@(T_Assignment _ _ name _ _value) = [(t, t, name)]
     getReference t@(T_NormalWord _ [T_Literal _ name]) | not ("-" `isPrefixOf` name) = [(t, t, name)]
     getReference _ = []
     flags = map snd $ getAllFlags base
@@ -655,8 +655,8 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
 
         "getopts" ->
             case rest of
-                opts:var:_ -> maybeToList $ getLiteral var
-                _          -> []
+                _opts:var:_ -> maybeToList $ getLiteral var
+                _           -> []
 
         "let" -> concatMap letParamToLiteral rest
 
@@ -741,7 +741,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
 
     getFlagAssignedVariable str dataSource maybeFlags = do
         flags <- maybeFlags
-        (_, (flag, value)) <- find ((== str) . fst) flags
+        (_, (_flag, value)) <- find ((== str) . fst) flags
         variableName <- getLiteralStringExt (const $ return "!") value
         let (baseName, index) = span (/= '[') variableName
         return (base, value, baseName, (if null index then DataString else DataArray) dataSource)
@@ -771,7 +771,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
             return (name, arg)
 
     -- get the FLAGS_ variable created by a shflags DEFINE_ call
-    getFlagVariable (n:v:_) = do
+    getFlagVariable (n:_v:_) = do
         name <- getLiteralString n
         return (base, n, "FLAGS_" ++ name, DataString $ SourceExternal)
     getFlagVariable _ = Nothing
@@ -794,21 +794,21 @@ getVariableForTestDashV t = do
 
 getReferencedVariables parents t =
     case t of
-        T_DollarBraced id _ l -> let str = concat $ oversimplify l in
+        T_DollarBraced _id _ l -> let str = concat $ oversimplify l in
             (t, t, getBracedReference str) :
                 map (\x -> (l, l, x)) (
                     getIndexReferences str
                     ++ getOffsetReferences (getBracedModifier str))
-        TA_Variable id name _ ->
+        TA_Variable _id name _ ->
             if isArithmeticAssignment t
             then []
             else [(t, t, name)]
-        T_Assignment id mode str _ word ->
+        T_Assignment _id mode str _ word ->
             [(t, t, str) | mode == Append] ++ specialReferences str t word
 
-        TC_Unary id _ "-v" token -> getIfReference t token
-        TC_Unary id _ "-R" token -> getIfReference t token
-        TC_Binary id DoubleBracket op lhs rhs ->
+        TC_Unary _id _ "-v" token -> getIfReference t token
+        TC_Unary _id _ "-R" token -> getIfReference t token
+        TC_Binary _id DoubleBracket op lhs rhs ->
             if isDereferencingBinaryOp op
             then concatMap (getIfReference t) [lhs, rhs]
             else []
@@ -843,7 +843,7 @@ getReferencedVariables parents t =
             return (context, token, getBracedReference str)
 
     isArithmeticAssignment t = case getPath parents t of
-        this NE.:| TA_Assignment _ "=" lhs _ :_ -> lhs == t
+        _this NE.:| TA_Assignment _ "=" lhs _ :_ -> lhs == t
         _                                  -> False
 
 isDereferencingBinaryOp = (`elem` ["-eq", "-ne", "-lt", "-le", "-gt", "-ge"])
@@ -906,7 +906,7 @@ shouldIgnoreCode params code t =
         getPath (parentMap params) t
 
 -- Is this a ${#anything}, to get string length or array count?
-isCountingReference (T_DollarBraced id _ token) =
+isCountingReference (T_DollarBraced _id _ token) =
     case concat $ oversimplify token of
         '#':_ -> True
         _     -> False
