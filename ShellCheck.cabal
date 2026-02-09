@@ -1,9 +1,9 @@
-Cabal-Version:    2.0
+Cabal-Version:    2.2
 
 Name:             ShellCheck
 Version:          0.11.0
 Synopsis:         Shell script analysis tool
-License:          GPL-3
+License:          GPL-3.0-only
 License-file:     LICENSE
 Category:         Static Analysis
 Author:           Vidar Holen
@@ -38,6 +38,9 @@ Extra-Source-Files:
     -- tests
     test/shellcheck.hs
 
+common warnings
+    ghc-options: -Wall
+
 source-repository head
     type: git
     location: https://github.com/koalaman/shellcheck.git
@@ -47,6 +50,7 @@ flag dev-mode
     default: False
 
 library
+    import: warnings
     hs-source-dirs: src
     if impl(ghc < 8.0)
       build-depends:
@@ -109,6 +113,7 @@ library
     default-language: Haskell2010
 
 executable shellcheck
+    import: warnings
     if impl(ghc < 8.0)
       build-depends:
         semigroups
@@ -133,6 +138,7 @@ executable shellcheck
     main-is: shellcheck.hs
 
 executable shellcheck-dev
+    import: warnings
     if flag(dev-mode)
       buildable: True
     else
@@ -145,6 +151,7 @@ executable shellcheck-dev
     main-is: shellcheck-dev.hs
 
 test-suite test-shellcheck
+    import: warnings
     type: exitcode-stdio-1.0
     build-depends:
       aeson,
