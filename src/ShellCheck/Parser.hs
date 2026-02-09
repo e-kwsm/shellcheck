@@ -1856,7 +1856,7 @@ readHereDoc = called "here document" $ do
     unquote s@(cl:tl) =
       case reverse tl of
         (cr:tr) | cr == cl && cl `elem` "\"'" -> (Quoted, reverse tr)
-        _ -> (if '\\' `elem` s then (Quoted, filter ((/=) '\\') s) else (Unquoted, s))
+        _ -> (if '\\' `elem` s then (Quoted, filter ('\\' /=) s) else (Unquoted, s))
     -- Fun fact: bash considers << foo"" quoted, but not << <("foo").
     readToken = do
         str <- readStringForParser readNormalWord
