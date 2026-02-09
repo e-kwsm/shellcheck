@@ -319,7 +319,7 @@ getParentTree :: Token -> Map.Map Id Token
 getParentTree t =
     snd $ execState (doStackAnalysis pre post t) ([], Map.empty)
   where
-    pre t = modify (first ((:) t))
+    pre t = modify (first (t :))
     post t = do
         (x, map) <- get
         case x of
