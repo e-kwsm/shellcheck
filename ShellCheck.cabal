@@ -1,3 +1,5 @@
+Cabal-Version:    2.0
+
 Name:             ShellCheck
 Version:          0.11.0
 Synopsis:         Shell script analysis tool
@@ -8,7 +10,6 @@ Author:           Vidar Holen
 Maintainer:       vidar@vidarholen.net
 Homepage:         https://www.shellcheck.net/
 Build-Type:       Simple
-Cabal-Version:    1.18
 Bug-reports:      https://github.com/koalaman/shellcheck/issues
 Description:
   The goals of ShellCheck are:
