@@ -96,6 +96,7 @@ library
       ShellCheck.Regex
     other-modules:
       Paths_ShellCheck
+    ghc-options: -Werror=missing-deriving-strategies
     default-language: Haskell2010
 
 executable shellcheck
@@ -116,6 +117,7 @@ executable shellcheck
       regex-tdfa,
       transformers,
       ShellCheck
+    ghc-options: -Werrror=missing-deriving-strategies
     default-language: Haskell2010
     main-is: shellcheck.hs
 
@@ -138,5 +140,6 @@ test-suite test-shellcheck
       regex-tdfa,
       transformers,
       ShellCheck
+    ghc-options: -Werrror=missing-deriving-strategies
     default-language: Haskell2010
     main-is: test/shellcheck.hs
