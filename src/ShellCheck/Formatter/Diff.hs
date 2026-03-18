@@ -60,12 +60,12 @@ cyan = 36
 bold = 1
 
 nocolor n = id
-colorize n s = (ansi n) ++ s ++ (ansi 0)
-ansi n = "\x1B[" ++ show n ++ "m"
+colorize n s = ansi n <> (s <> ansi 0)
+ansi n = "\x1B[" <> (show n <> "m")
 
 printErr :: ColorFunc -> String -> IO ()
 printErr color = hPutStrLn stderr . color bold . color red
-reportFailure color file msg = printErr color $ file ++ ": " ++ msg
+reportFailure color file msg = printErr color $ (file <> (": " <> msg))
 
 checkFooter foundIssues reportedIssues color = do
     found <- readIORef foundIssues
@@ -170,7 +170,7 @@ countDelta = count' 0 0
 
 formatRegion :: ColorFunc -> LFStatus -> DiffRegion String -> String
 formatRegion color lf (DiffRegion left right diffs) =
-    let header = color cyan ("@@ -" ++ (tup left) ++ " +" ++ (tup right) ++" @@")
+    let header = color cyan ("@@ -" <> (tup left <> (" +" <> (tup right <> " @@"))))
     in
         unlines $ header : reverse (getStrings lf (reverse diffs))
   where
@@ -181,7 +181,7 @@ formatRegion color lf (DiffRegion left right diffs) =
     getStrings LinefeedMissing list@((First _):_) = noLF : map format list
     getStrings LinefeedMissing (last:rest) = format last : getStrings LinefeedMissing rest
 
-    tup (a,b) = (show a) ++ "," ++ (show b)
+    tup (a,b) = show a <> ("," <> show b)
     format (Both x _) = ' ':x
     format (First x) = color red $ '-':x
     format (Second x) = color green $ '+':x
@@ -200,10 +200,7 @@ normalizePath path =
 formatDoc color (DiffDoc name lf regions) =
     let (most, last) = splitLast regions
     in
-          (color bold $ "--- " ++ (normalizePath $ "a" </> name)) ++ "\n" ++
-          (color bold $ "+++ " ++ (normalizePath $ "b" </> name)) ++ "\n" ++
-          concatMap (formatRegion color LinefeedOk) most ++
-          concatMap (formatRegion color lf) last
+          ((color bold $ ("--- " <> (normalizePath $ "a" </> name))) <> ("\n" <> ((color bold $ ("+++ " <> (normalizePath $ "b" </> name))) <> ("\n" <> (concatMap (formatRegion color LinefeedOk) most <> concatMap (formatRegion color lf) last)))))
 
 -- Create a Map from filename to Fix
 buildFixMap :: [Fix] -> M.Map String Fix

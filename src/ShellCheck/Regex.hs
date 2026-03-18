@@ -69,8 +69,8 @@ subRegex re input replacement = f input
   where
     f str = fromMaybe str $ do
         (before, match, after) <- matchM re str :: Maybe (String, String, String)
-        when (null match) $ error ("Internal error: substituted empty in " ++ str)
-        return $ before ++ replacement ++ f after
+        when (null match) $ error ("Internal error: substituted empty in " <> str)
+        return $ (before <> (replacement <> f after))
 
 -- Split a string based on a regex.
 splitOn :: String -> Regex -> [String]

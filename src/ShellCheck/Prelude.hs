@@ -48,4 +48,4 @@ sconcatOrDefault def [] = def
 sconcatOrDefault _ list = sconcat1 list
 
 -- For more actionable "impossible" errors
-pleaseReport str = "ShellCheck internal error, please report: " ++ str
+pleaseReport str = "ShellCheck internal error, please report: " <> str

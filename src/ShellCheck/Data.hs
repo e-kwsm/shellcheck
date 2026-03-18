@@ -75,7 +75,7 @@ specialIntegerVariables = [
 
 specialVariablesWithoutSpaces = "-" : specialIntegerVariables
 
-variablesWithoutSpaces = specialVariablesWithoutSpaces ++ [
+variablesWithoutSpaces = specialVariablesWithoutSpaces <> [
     "BASHPID", "BASH_ARGC", "BASH_LINENO", "BASH_SUBSHELL", "EUID",
     "EPOCHREALTIME", "EPOCHSECONDS", "LINENO", "OPTIND", "PPID", "RANDOM",
     "READLINE_ARGUMENT", "READLINE_MARK", "READLINE_POINT", "SECONDS",
@@ -86,9 +86,9 @@ variablesWithoutSpaces = specialVariablesWithoutSpaces ++ [
     , "FLAGS_ERROR", "FLAGS_FALSE", "FLAGS_TRUE"
   ]
 
-specialVariables = specialVariablesWithoutSpaces ++ ["@", "*"]
+specialVariables = specialVariablesWithoutSpaces <> ["@", "*"]
 
-unbracedVariables = specialVariables ++ [
+unbracedVariables = specialVariables <> [
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
   ]
 

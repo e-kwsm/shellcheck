@@ -89,15 +89,15 @@ checkScript sys spec = do
                     asExecutionMode = Executed,
                     asTokenPositions = tokenPositions,
                     asExtendedAnalysis = csExtendedAnalysis spec,
-                    asOptionalChecks = getEnableDirectives root ++ csOptionalChecks spec
+                    asOptionalChecks = getEnableDirectives root <> csOptionalChecks spec
                 } where as = newAnalysisSpec root
         let analysisMessages =
-                maybe []
+                foldMap
                     (arComments . analyzeScript . analysisSpec)
                         $ prRoot result
         let translator = tokenToPosition tokenPositions
         return . nub . sortMessages . filter shouldInclude $
-            (parseMessages ++ map translator analysisMessages)
+            (parseMessages <> map translator analysisMessages)
 
     shouldInclude pc =
             severity <= csMinSeverity spec &&
