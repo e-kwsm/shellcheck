@@ -149,7 +149,7 @@ stringToAst :: String -> Token
 stringToAst scriptString =
     case maybeRoot of
         Just root -> root
-        Nothing -> error $ "Script failed to parse: " ++ show parserWarnings
+        Nothing -> error $ ("Script failed to parse: " <> show parserWarnings)
   where
     parseResult :: ParseResult
     parseResult = parseScriptString scriptString
@@ -217,20 +217,20 @@ stringToDetailedCfgViz scriptString = cfgToGraphVizWith nodeLabel graph
                 M.toList idToNode
 
     formatId :: Id -> String
-    formatId id = fromMaybe ("Unknown " ++ show id) $ do
+    formatId id = fromMaybe ("Unknown " <> show id) $ do
         (OuterToken _ token) <- M.lookup id idToToken
         firstWord <- words (show token) !!! 0
         -- Strip off "Inner_"
         (_ : tokenName) <- return $ dropWhile (/= '_') firstWord
-        return $ tokenName ++ " " ++ show id
+        return $ (tokenName <> (" " <> show id))
 
     formatGroup :: S.Set Id -> String
     formatGroup set = intercalate ", " $ map formatId $ S.toList set
 
     nodeLabel (node, label) = unlines [
-        show node ++ ". " ++ show label,
-        "Begin: " ++ formatGroup (M.findWithDefault S.empty node nodeToStartIds),
-        "End: " ++ formatGroup (M.findWithDefault S.empty node nodeToEndIds)
+        show node <> (". " <> show label),
+        "Begin: " <> formatGroup (M.findWithDefault S.empty node nodeToStartIds),
+        "End: " <> formatGroup (M.findWithDefault S.empty node nodeToEndIds)
         ]
 
 
@@ -240,16 +240,16 @@ dfaToGraphViz analysis = cfgToGraphVizWith label $ CF.graph analysis
   where
     label (node, label) =
         let
-            desc = show node ++ ". " ++ show label
+            desc = (show node <> (". " <> show label))
         in
-            fromMaybe ("No DFA available\n\n" ++ desc) $ do
+            fromMaybe ("No DFA available\n\n" <> desc) $ do
                 (pre, post) <- M.lookup node $ CF.nodeToData analysis
                 return $ unlines [
-                    "Precondition: " ++ show pre,
+                    "Precondition: " <> show pre,
                     "",
                     desc,
                     "",
-                    "Postcondition: " ++ show post
+                    "Postcondition: " <> show post
                     ]
 
 
@@ -263,13 +263,13 @@ cfgToGraphVizWith nodeLabel graph = concat [
     "}\n"
     ]
   where
-    dumpNode l@(node, label) = show node ++ " [label=" ++ quoteViz (nodeLabel l) ++ "]\n"
-    dumpLink (from, to, typ) = show from ++ " -> " ++ show to ++ " [style=" ++ quoteViz (edgeStyle typ)  ++ "]\n"
+    dumpNode l@(node, label) = show node <> (" [label=" <> (quoteViz (nodeLabel l) <> "]\n"))
+    dumpLink (from, to, typ) = show from <> (" -> " <> (show to <> (" [style=" <> (quoteViz (edgeStyle typ) <> "]\n"))))
     edgeStyle CFEFlow = "solid"
     edgeStyle CFEExit = "bold"
     edgeStyle CFEFalseFlow = "dotted"
 
-quoteViz str = "\"" ++ escapeViz str ++ "\""
+quoteViz str = "\"" <> (escapeViz str <> "\"")
 escapeViz [] = []
 escapeViz (c:rest) =
     case c of
@@ -296,8 +296,8 @@ astToGraphViz token = concat [
         put (n : stack)
         case stack of
             [] -> return ()
-            (top:_) -> tell $ show top ++ " -> " ++ show n ++ "\n"
-        tell $ show n ++ " [label=" ++ quoteViz (show n ++ ": " ++ take 32 (show inner)) ++ "]\n"
+            (top:_) -> tell $ (show top <> (" -> " <> (show n <> "\n")))
+        tell $ (show n <> (" [label=" <> (quoteViz (show n <> (": " <> take 32 (show inner))) <> "]\n")))
 
     pop :: Token -> RWS () String [Int] ()
     pop _ = modify tail
@@ -305,7 +305,7 @@ astToGraphViz token = concat [
 
 -- For each entry point, set the rank so that they'll align in the graph
 tagVizEntries :: CFGraph -> String
-tagVizEntries graph = "{ rank=same " ++ rank ++ " }"
+tagVizEntries graph = "{ rank=same " <> (rank <> " }")
   where
     entries = mapMaybe find $ labNodes graph
     find (node, CFEntryPoint name) = return (node, name)

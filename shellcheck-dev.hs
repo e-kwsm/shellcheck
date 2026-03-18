@@ -45,8 +45,8 @@ main = do
             case Map.lookup cmd commands of
                 Just f -> putStrLn $ f arg
                 Nothing -> do
-                    putStrLnErr $ "Unknown command. Try one of: " ++ validCommands
+                    putStrLnErr $ ("Unknown command. Try one of: " <> validCommands)
                     exitFailure
         _ -> do
-            putStrLnErr $ "Usage: shellcheck-dev command argument, where command is: " ++ validCommands
+            putStrLnErr $ ("Usage: shellcheck-dev command argument, where command is: " <> validCommands)
             exitFailure
