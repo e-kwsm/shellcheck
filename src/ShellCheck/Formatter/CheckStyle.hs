@@ -68,7 +68,7 @@ formatComment c = concat [
     attr "column" $ show . colNo $ c,
     attr "severity" . severity $ severityText c,
     attr "message" $ messageText c,
-    attr "source" $ "ShellCheck.SC" ++ show (codeNo c),
+    attr "source" $ ("ShellCheck.SC" <> show (codeNo c)),
     "/>\n"
     ]
 
@@ -87,7 +87,7 @@ outputError file error = putStrLn $ concat [
 
 attr s v = concat [ s, "='", escape v, "' " ]
 escape = concatMap escape'
-escape' c = if isOk c then [c] else "&#" ++ show (ord c) ++ ";"
+escape' c = if isOk c then [c] else "&#" <> (show (ord c) <> ";")
 isOk x = any ($ x) [isAsciiUpper, isAsciiLower, isDigit, (`elem` " ./")]
 
 severity "error" = "error"
