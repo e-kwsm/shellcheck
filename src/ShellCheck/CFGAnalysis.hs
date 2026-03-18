@@ -394,7 +394,7 @@ data VersionedMap k v = VersionedMap {
 
 -- This makes states more readable but inhibits copy-paste
 instance (Show k, Show v) => Show (VersionedMap k v) where
-    show m = (if mapVersion m >= 0 then "V" ++ show (mapVersion m) else "U") ++ " " ++ show (mapStorage m)
+    show m = (if mapVersion m >= 0 then "V" <> show (mapVersion m) else "U") <> (" " <> show (mapStorage m))
 
 instance Eq InternalState where
     (==) a b = stateIsQuickEqual a b || stateIsSlowEqual a b

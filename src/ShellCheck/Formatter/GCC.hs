@@ -34,7 +34,7 @@ format = return Formatter {
     onResult = outputAll
 }
 
-outputError file error = hPutStrLn stderr $ file ++ ": " ++ error
+outputError file error = hPutStrLn stderr $ (file <> (": " <> error))
 
 outputAll cr sys = mapM_ f groups
   where

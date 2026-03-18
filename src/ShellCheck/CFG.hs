@@ -381,7 +381,7 @@ newNodeRange label = nodeToRange <$> newNode label
 -- Build a disjoint piece of the graph and return a CFExecuteSubshell. The Id is used purely for debug naming.
 subshell :: Id -> String -> CFM Range -> CFM Range
 subshell id reason p = do
-    start <- newNode $ CFEntryPoint $ "Subshell " ++ show id ++ ": " ++ reason
+    start <- newNode $ CFEntryPoint $ ("Subshell " <> (show id <> (": " <> reason)))
     end <- newNode CFStructuralNode
     middle <- local (\c -> c { cfExitTarget = Just end, cfReturnTarget = Just end}) p
     linkRanges [nodeToRange start, middle, nodeToRange end]
@@ -703,7 +703,7 @@ build t = do
             let indices = getIndexReferences str
             let offsets = getOffsetReferences str
             vals <- build t
-            others <- mapM (\x -> nodeToRange <$> newNode (applySingle $ IdTagged id $ CFReadVariable x)) (indices ++ offsets)
+            others <- mapM (\x -> nodeToRange <$> newNode (applySingle $ IdTagged id $ CFReadVariable x)) (indices <> offsets)
             deps <- linkRanges (vals:others)
             read <- nodeToRange <$> newNode (applySingle $ IdTagged id $ CFReadVariable reference)
             totalRead <- linkRange deps read
@@ -759,7 +759,7 @@ build t = do
         -- For functions we generate an unlinked subgraph, and mention that in its definition node
         T_Function id _ _ name body -> do
             range <- local (\c -> c { cfExitTarget = Nothing }) $ do
-                entry <- newNodeRange $ CFEntryPoint $ "function " ++ name
+                entry <- newNodeRange $ CFEntryPoint $ ("function " <> name)
                 f <- withFunctionScope $ build body
                 linkRange entry f
             let (Range entry exit) = range
@@ -829,7 +829,7 @@ build t = do
 
             mapM_ (linkRange start) leading
             mapM_ (\c -> linkRangeAs CFEFalseFlow c end) leading
-            linkRanges $ [start] ++ last ++ [end]
+            linkRanges $ ([start] <> (last <> [end]))
           where
             buildPipe True [x] = do
                 last <- build x
@@ -842,7 +842,7 @@ build t = do
 
         T_ProcSub id op cmds -> do
             start <- newStructuralNode
-            body <- subshell id (op ++ "() process substitution") $ sequentially cmds
+            body <- subshell id (op <> "() process substitution") $ sequentially cmds
             end <- newStructuralNode
 
             linkRange start body
@@ -895,7 +895,7 @@ build t = do
         T_ParamSubSpecialChar _ _ -> none
 
         x -> do
-            error ("Unimplemented: " ++ show x) -- STRIP
+            error ("Unimplemented: " <> show x) -- STRIP
             none
 
 --  Still in `where` clause
@@ -1056,8 +1056,8 @@ handleCommand cmd vars args literalCmd = do
 
         toEffects isFunc (T_Assignment id mode var idx t) =
             let
-                pre = idx ++ [t]
-                val = [ IdTagged id $ (writer isFunc) var $ CFValueComputed (getId t) $ [ CFStringVariable var | mode == Append ] ++ tokenToParts t ]
+                pre = (idx <> [t])
+                val = [ IdTagged id $ (writer isFunc) var $ CFValueComputed (getId t) $ (([ CFStringVariable var | mode == Append ]) <> tokenToParts t) ]
                 added = [ IdTagged id $ CFSetProps (scope isFunc) var addedProps | not $ S.null addedProps ]
                 removed = [ IdTagged id $ CFUnsetProps (scope isFunc) var addedProps | not $ S.null removedProps ]
             in
@@ -1194,7 +1194,7 @@ handleCommand cmd vars args literalCmd = do
                     drop <- newNodeRange CFDropPrefixAssignments
                     return [drop]
 
-            linkRanges $ [args] ++ assignments ++ [exe] ++ dropAssignments
+            linkRanges $ ([args] <> (assignments <> ([exe] <> dropAssignments)))
 
     regularExpansionWithStatus vars args@(cmd NE.:| _) p = do
         initial <- regularExpansion vars (NE.toList args) p
@@ -1226,8 +1226,8 @@ buildAssignment scope t = do
                 linkRanges [expand, index, read, write]
               where
                 f :: Id -> Token -> CFValue
-                f id t@T_NormalWord {} = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
-                f id t@(T_Literal _ str) = CFValueComputed id $ [CFStringVariable var | mode == Append] ++ tokenToParts t
+                f id t@T_NormalWord {} = CFValueComputed id $ (([CFStringVariable var | mode == Append]) <> tokenToParts t)
+                f id t@(T_Literal _ str) = CFValueComputed id $ (([CFStringVariable var | mode == Append]) <> tokenToParts t)
                 f _ T_Array {} = CFValueArray
 
     registerNode (getId t) op
@@ -1306,7 +1306,7 @@ findPostDominators mainexit graph = asArray
     inlined = inlineSubshells graph
     terminals = findTerminalNodes inlined
     (incoming, _, label, outgoing) = context graph mainexit
-    withExitEdges = (incoming ++ map (\c -> (CFEFlow, c)) terminals, mainexit, label, outgoing) `safeUpdate` inlined
+    withExitEdges = (incoming <> map (\c -> (CFEFlow, c)) terminals, mainexit, label, outgoing) `safeUpdate` inlined
     reversed = grev withExitEdges
     postDoms = dom reversed mainexit
     (_, maxNode) = nodeRange graph

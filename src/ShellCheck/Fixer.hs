@@ -97,7 +97,7 @@ instance Semigroup Fix where
         if or [ r2 `overlap` r1 | r1 <- fixReplacements f1, r2 <- fixReplacements f2 ]
         then f1
         else newFix {
-            fixReplacements = fixReplacements f1 ++ fixReplacements f2
+            fixReplacements = fixReplacements f1 <> fixReplacements f2
             }
 
 -- Conveniently apply a transformation to positions in a Fix
@@ -205,7 +205,7 @@ doReplace start end o r =
         (x, xs) = splitAt si o
         z = drop (ei - si) xs
     in
-    x ++ r ++ z
+    (x <> (r <> z))
 
 -- Fail if the 'expected' string is not result when applying 'fixes' to 'original'.
 testFixes :: String -> String -> [Fix] -> Bool

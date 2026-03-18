@@ -106,7 +106,7 @@ options = [
         (ReqArg (Flag "extended-analysis") "bool") "Perform dataflow analysis (default true)",
     Option "f" ["format"]
         (ReqArg (Flag "format") "FORMAT") $
-        "Output format (" ++ formatList ++ ")",
+        ("Output format (" <> (formatList <> ")")),
     Option "" ["list-optional"]
         (NoArg $ Flag "list-optional" "true") "List checks disabled by default",
     Option "" ["norc"]
@@ -145,7 +145,7 @@ parseArguments argv =
     case getOpt Permute options argv of
         (opts, files, []) -> return (opts, files)
         (_, _, errors) -> do
-            printErr $ concat errors ++ "\n" ++ getUsageInfo
+            printErr $ (concat errors <> ("\n" <> getUsageInfo))
             throwError SyntaxFailure
 
 formats :: FormatterOptions -> Map.Map String (IO Formatter)
@@ -191,7 +191,7 @@ getEnvArgs = do
 main = do
     params <- getArgs
     envOpts  <- getEnvArgs
-    let args = envOpts ++ params
+    let args = envOpts <> params
     status <- toStatus $ do
         (flags, files) <- parseArguments args
         process flags files
@@ -214,11 +214,11 @@ process flags files = do
     formatter <-
         case Map.lookup format formatters of
             Nothing -> do
-                printErr $ "Unknown format " ++ format
+                printErr $ ("Unknown format " <> format)
                 printErr "Supported formats:"
                 mapM_ (printErr . write) $ Map.keys formatters
                 throwError SupportFailure
-              where write s = "  " ++ s
+              where write s = "  " <> s
             Just f -> ExceptT $ fmap Right f
     sys <- lift $ ioInterface options files
     lift $ runFormatter sys formatter options files
@@ -262,8 +262,7 @@ parseEnum name value list =
     case lookup value list of
         Just value -> return value
         Nothing -> do
-            printErr $ "Unknown value for --" ++ name ++ ". " ++
-                       "Valid options are: " ++ (intercalate ", " $ map fst list)
+            printErr $ ("Unknown value for --" <> (name <> (". " <> ("Valid options are: " <> (intercalate ", " $ map fst list)))))
             throwError SupportFailure
 
 parseColorOption value =
@@ -284,7 +283,7 @@ parseSeverityOption value =
 parseOption flag options =
     case flag of
         Flag "shell" str ->
-            fromMaybe (die $ "Unknown shell: " ++ str) $ do
+            fromMaybe (die $ ("Unknown shell: " <> str)) $ do
                 shell <- shellForExecutable str
                 return $ return options {
                             checkSpec = (checkSpec options) {
@@ -297,7 +296,7 @@ parseOption flag options =
             let old = csExcludedWarnings . checkSpec $ options
             return options {
                 checkSpec = (checkSpec options) {
-                    csExcludedWarnings = new ++ old
+                    csExcludedWarnings = new <> old
                 }
             }
 
@@ -341,7 +340,7 @@ parseOption flag options =
         Flag "source-path" str -> do
             let paths = splitSearchPath str
             return options {
-                sourcePaths = (sourcePaths options) ++ paths
+                sourcePaths = sourcePaths options <> paths
             }
 
         Flag "sourced" _ ->
@@ -382,7 +381,7 @@ parseOption flag options =
         Flag "enable" value ->
             let cs = checkSpec options in return options {
                 checkSpec = cs {
-                    csOptionalChecks = (csOptionalChecks cs) ++ split ',' value
+                    csOptionalChecks = csOptionalChecks cs <> split ',' value
                 }
             }
 
@@ -398,7 +397,7 @@ parseOption flag options =
         Flag "format" _ -> return options
 
         Flag str _ -> do
-            printErr $ "Internal error for --" ++ str ++ ". Please file a bug :("
+            printErr $ ("Internal error for --" <> (str <> ". Please file a bug :("))
             return options
   where
     die s = do
@@ -407,7 +406,7 @@ parseOption flag options =
     parseNum ('S':'C':str) = parseNum str
     parseNum num = do
         unless (all isDigit num) $ do
-            printErr $ "Invalid number: " ++ num
+            printErr $ ("Invalid number: " <> num)
             throwError SyntaxFailure
         return (Prelude.read num :: Integer)
 
@@ -416,7 +415,7 @@ parseOption flag options =
             "true" -> return True
             "false" -> return False
             _ -> do
-                printErr $ "Invalid boolean, expected true/false: " ++ str
+                printErr $ ("Invalid boolean, expected true/false: " <> str)
                 throwError SyntaxFailure
 
 ioInterface :: Options -> [FilePath] -> IO (SystemInterface IO)
@@ -450,8 +449,8 @@ ioInterface options files = do
             ) `catch` handler
           else
             if rcSuggestsExternal == Just False
-            then return $ Left (file ++ " was not specified as input, and external files were disabled via directive.")
-            else return $ Left (file ++ " was not specified as input (see shellcheck -x).")
+            then return $ Left (file <> " was not specified as input, and external files were disabled via directive.")
+            else return $ Left (file <> " was not specified as input (see shellcheck -x).")
       where
         handler :: IOException -> IO (Either ErrorMessage String)
         handler ex = return . Left $ show ex
@@ -481,7 +480,7 @@ ioInterface options files = do
                   else do
                     result <- readConfig file
                     when (isNothing result) $
-                        hPutStrLn stderr $ "Warning: unable to read --rcfile " ++ file
+                        hPutStrLn stderr $ ("Warning: unable to read --rcfile " <> file)
                     writeIORef cache ("/", result)
                     return result
 
@@ -533,7 +532,7 @@ ioInterface options files = do
       where
         handler :: FilePath -> IOException -> IO (String, Bool)
         handler file err = do
-            hPutStrLn stderr $ file ++ ": " ++ show err
+            hPutStrLn stderr $ (file <> (": " <> show err))
             return ("", True)
 
     andM a b arg = do
@@ -556,7 +555,7 @@ ioInterface options files = do
       where
         find filename deflt = do
             sources <- findM ((allowable rcSuggestsExternal inputs) `andM` doesFileExist) $
-                        (adjustPath filename):(map ((</> filename) . adjustPath) $ sourcePathFlag ++ sourcePathAnnotation)
+                        (adjustPath filename):(map ((</> filename) . adjustPath) $ (sourcePathFlag <> sourcePathAnnotation))
             case sources of
                 Nothing -> return deflt
                 Just first -> return first
@@ -619,7 +618,7 @@ verifyFiles files =
 
 printVersion = do
     putStrLn   "ShellCheck - shell script analysis tool"
-    putStrLn $ "version: " ++ shellcheckVersion
+    putStrLn $ ("version: " <> shellcheckVersion)
     putStrLn   "license: GNU General Public License, version 3"
     putStrLn   "website: https://www.shellcheck.net"
 
@@ -628,8 +627,8 @@ printOptional = do
   where
     list = sortOn cdName ShellCheck.Analyzer.optionalChecks
     f item = do
-        putStrLn $ "name:    " ++ cdName item
-        putStrLn $ "desc:    " ++ cdDescription item
-        putStrLn $ "example: " ++ cdPositive item
-        putStrLn $ "fix:     " ++ cdNegative item
+        putStrLn $ ("name:    " <> cdName item)
+        putStrLn $ ("desc:    " <> cdDescription item)
+        putStrLn $ ("example: " <> cdPositive item)
+        putStrLn $ ("fix:     " <> cdNegative item)
         putStrLn ""

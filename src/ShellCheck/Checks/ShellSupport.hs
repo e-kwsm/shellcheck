@@ -234,8 +234,8 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
     isDash = shellType params == Dash || isBusyboxSh
     warnMsg id code s =
         if isDash
-        then err  id code $ "In dash, " ++ s ++ " not supported."
-        else warn id code $ "In POSIX sh, " ++ s ++ " undefined."
+        then err  id code $ ("In dash, " <> (s <> " not supported."))
+        else warn id code $ ("In POSIX sh, " <> (s <> " undefined."))
     asStr = getLiteralString
 
     bashism (T_ProcSub id _ _) = warnMsg id 3001 "process substitution is"
@@ -261,7 +261,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
 
     bashism (TA_Unary id op _)
         | op `elem` [ "|++", "|--", "++|", "--|"] =
-            warnMsg id 3018 $ filter (/= '|') op ++ " is"
+            warnMsg id 3018 $ (filter (/= '|') op <> " is")
     bashism (TA_Binary id "**" _ _) = warnMsg id 3019 "exponentials are"
     bashism (T_FdRedirect id "&" (T_IoFile _ (T_Greater _) _)) =
         unless isBusyboxSh $ warnMsg id 3020 "&> is"
@@ -281,13 +281,13 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
             warnMsg id 3026 "^ in place of ! in glob bracket expressions is"
 
     bashism t@(TA_Variable id str _) | isBashVariable str =
-        warnMsg id 3028 $ str ++ " is"
+        warnMsg id 3028 $ (str <> " is")
 
     bashism t@(T_DollarBraced id _ token) = do
         unless isBusyboxSh $ mapM_ check simpleExpansions
         mapM_ check advancedExpansions
         when (isBashVariable var) $
-            warnMsg id 3028 $ var ++ " is"
+            warnMsg id 3028 $ (var <> " is")
       where
         str = concat $ oversimplify token
         var = getBracedReference str
@@ -392,13 +392,13 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
                 -- This is so commonly accepted that we'll make it a special case
                 warnMsg id 3043 $ "'local' is"
             when (name `elem` unsupportedCommands) $
-                warnMsg id 3044 $ "'" ++ name ++ "' is"
+                warnMsg id 3044 $ ("'" <> (name <> "' is"))
             sequence_ $ do
                 allowed' <- Map.lookup name allowedFlags
                 allowed <- allowed'
                 (word, flag) <- find
                     (\x -> (not . null . snd $ x) && snd x `notElem` allowed) flags
-                return . warnMsg (getId word) 3045 $ name ++ " -" ++ flag ++ " is"
+                return . warnMsg (getId word) 3045 $ (name <> (" -" <> (flag <> " is")))
 
             when (name == "source" && not isBusyboxSh) $
                 warnMsg id 3046 "'source' in place of '.' is"
@@ -409,7 +409,7 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
                         let upper = map toUpper str
                         return $ do
                             when (upper `elem` ["ERR", "DEBUG", "RETURN"]) $
-                                warnMsg (getId token) 3047 $ "trapping " ++ str ++ " is"
+                                warnMsg (getId token) 3047 $ ("trapping " <> (str <> " is"))
                             when (not isBusyboxSh && "SIG" `isPrefixOf` upper) $
                                 warnMsg (getId token) 3048
                                     "prefixing signal names with 'SIG' is"
@@ -466,16 +466,16 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
 
     varChars="_0-9a-zA-Z"
     advancedExpansions = let re = mkRegex in [
-        (re $ "^![" ++ varChars ++ "]", 3053, "indirect expansion is"),
-        (re $ "^[" ++ varChars ++ "]+\\[.*\\]$", 3054, "array references are"),
-        (re $ "^![" ++ varChars ++ "]+\\[[*@]]$", 3055, "array key expansion is"),
-        (re $ "^![" ++ varChars ++ "]+[*@]$", 3056, "name matching prefixes are"),
-        (re $ "^[" ++ varChars ++ "*@]+(\\[.*\\])?[,^]", 3059, "case modification is")
+        (re $ ("^![" <> (varChars <> "]")), 3053, "indirect expansion is"),
+        (re $ ("^[" <> (varChars <> "]+\\[.*\\]$")), 3054, "array references are"),
+        (re $ ("^![" <> (varChars <> "]+\\[[*@]]$")), 3055, "array key expansion is"),
+        (re $ ("^![" <> (varChars <> "]+[*@]$")), 3056, "name matching prefixes are"),
+        (re $ ("^[" <> (varChars <> "*@]+(\\[.*\\])?[,^]")), 3059, "case modification is")
         ]
     simpleExpansions = let re = mkRegex in [
-        (re $ "^[" ++ varChars ++ "*@]+:[^-=?+]", 3057, "string indexing is"),
+        (re $ ("^[" <> (varChars <> "*@]+:[^-=?+]")), 3057, "string indexing is"),
         (re $ "^([*@][%#]|#[@*])", 3058, "string operations on $@/$* are"),
-        (re $ "^[" ++ varChars ++ "*@]+(\\[.*\\])?/", 3060, "string replacement is")
+        (re $ ("^[" <> (varChars <> "*@]+(\\[.*\\])?/")), 3060, "string replacement is")
         ]
     bashVars = [
         -- This list deliberately excludes $BASH_VERSION as it's often used
@@ -519,31 +519,31 @@ bashismBinaryTestFlags = buildTestFlagMap [
     -- Distinct error codes allow the wiki to give more helpful, targeted
     -- information.
     (["<", ">", "\\<", "\\>", "<=", ">=", "\\<=", "\\>="],
-        (3012, [Dash, BusyboxSh], \op -> "lexicographical " ++ op ++ " is")),
+        (3012, [Dash, BusyboxSh], \op -> "lexicographical " <> (op <> " is"))),
     (["=="],
-        (3014, [BusyboxSh], \op -> op ++ " in place of = is")),
+        (3014, [BusyboxSh], \op -> op <> " in place of = is")),
     (["=~"],
-        (3015, [], \op -> op ++ " regex matching is")),
+        (3015, [], \op -> op <> " regex matching is")),
 
     ([], (0,[],const ""))
   ]
 bashismUnaryTestFlags = buildTestFlagMap [
     (["-v"],
-        (3016, [], \op -> "test " ++ op ++ " (in place of [ -n \"${var+x}\" ]) is")),
+        (3016, [], \op -> "test " <> (op <> " (in place of [ -n \"${var+x}\" ]) is"))),
     (["-a"],
-        (3017, [], \op -> "unary " ++ op ++ " in place of -e is")),
+        (3017, [], \op -> "unary " <> (op <> " in place of -e is"))),
     (["-o"],
-        (3062, [], \op -> "test " ++ op ++ " to check options is")),
+        (3062, [], \op -> "test " <> (op <> " to check options is"))),
     (["-R"],
-        (3063, [], \op -> "test " ++ op ++ " and namerefs in general are")),
+        (3063, [], \op -> "test " <> (op <> " and namerefs in general are"))),
     (["-N"],
-        (3064, [], \op -> "test " ++ op ++ " is")),
+        (3064, [], \op -> "test " <> (op <> " is"))),
     (["-k"],
-        (3065, [Dash, BusyboxSh], \op -> "test " ++ op ++ " is")),
+        (3065, [Dash, BusyboxSh], \op -> "test " <> (op <> " is"))),
     (["-G"],
-        (3066, [Dash, BusyboxSh], \op -> "test " ++ op ++ " is")),
+        (3066, [Dash, BusyboxSh], \op -> "test " <> (op <> " is"))),
     (["-O"],
-        (3067, [Dash, BusyboxSh], \op -> "test " ++ op ++ " is")),
+        (3067, [Dash, BusyboxSh], \op -> "test " <> (op <> " is"))),
 
     ([], (0,[],const ""))
   ]
