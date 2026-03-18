@@ -109,7 +109,7 @@ instance ToJSON Fix where
         "replacements" .= fixReplacements fix
         ]
 
-outputError file msg = hPutStrLn stderr $ file ++ ": " ++ msg
+outputError file msg = hPutStrLn stderr $ (file <> (": " <> msg))
 
 collectResult ref cr sys = mapM_ f groups
   where
@@ -121,7 +121,7 @@ collectResult ref cr sys = mapM_ f groups
         result <- siReadFile sys (Just True) filename
         let contents = either (const "") id result
         let comments' = makeNonVirtual (NE.toList group) contents
-        deepseq comments' $ modifyIORef ref (\x -> comments' ++ x)
+        deepseq comments' $ modifyIORef ref (\x -> comments' <> x)
 
 finish ref = do
     list <- readIORef ref

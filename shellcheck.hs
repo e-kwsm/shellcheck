@@ -107,7 +107,7 @@ options = [
         (ReqArg (Flag "extended-analysis") "bool") "Perform dataflow analysis (default true)",
     Option "f" ["format"]
         (ReqArg (Flag "format") "FORMAT") $
-        "Output format (" ++ formatList ++ ")",
+        ("Output format (" <> (formatList <> ")")),
     Option "" ["list-optional"]
         (NoArg $ Flag "list-optional" "true") "List checks disabled by default",
     Option "" ["norc"]
@@ -123,7 +123,7 @@ options = [
         "Specify path when looking for sourced files (\"SCRIPTDIR\" for script's dir)",
     Option "s" ["shell"]
         (ReqArg (Flag "shell") "SHELLNAME") $
-        "Specify dialect (" ++ intercalate ", " supportedShellDialects ++ ")",
+        ("Specify dialect (" <> (intercalate ", " supportedShellDialects <> ")")),
     Option "S" ["severity"]
         (ReqArg (Flag "severity") "SEVERITY")
         "Minimum severity of errors to consider (error, warning, info, style)",
@@ -162,7 +162,7 @@ parseArguments argv =
     case getOpt Permute options argv of
         (opts, files, []) -> return (opts, files)
         (_, _, errors) -> do
-            printErr $ concat errors ++ "\n" ++ getUsageInfo
+            printErr $ (concat errors <> ("\n" <> getUsageInfo))
             throwError SyntaxFailure
 
 formats :: FormatterOptions -> Map.Map String (IO Formatter)
@@ -208,7 +208,7 @@ getEnvArgs = do
 main = do
     params <- getArgs
     envOpts  <- getEnvArgs
-    let args = envOpts ++ params
+    let args = envOpts <> params
     status <- toStatus $ do
         (flags, files) <- parseArguments args
         process flags files
@@ -228,7 +228,7 @@ process flags files = do
 
     let filesFrom = getOptions flags "files-from"
     extra <- fmap concat $ mapM readFilesFrom filesFrom
-    let allFiles = extra ++ files
+    let allFiles = extra <> files
 
     -- It shouldn't be an error to do --files-from=/dev/null
     when (null filesFrom) $
@@ -238,7 +238,7 @@ process flags files = do
     let formatters = formats $ formatterOptions options
     formatter <- case Map.lookup format formatters of
         Nothing -> do
-            printErr $ "Unknown format " ++ format
+            printErr $ ("Unknown format " <> format)
             printErr "Supported formats:"
             mapM_ (printErr . ("  " ++)) $ Map.keys formatters
             throwError SupportFailure
@@ -261,7 +261,7 @@ process flags files = do
         result <- liftIO (try (readFile path) :: IO (Either IOException String))
         case result of
             Left e -> do
-                printErr $ "Could not read file list: " ++ path ++ ": " ++ show e
+                printErr $ ("Could not read file list: " <> (path <> (": " <> show e)))
                 throwError RuntimeException
             Right contents ->
                 return (parseFileListLines contents)
@@ -316,8 +316,8 @@ parseEnum name value list =
     case lookup value list of
         Just value -> return value
         Nothing -> do
-            printErr $ "Unknown value for --" ++ name ++ ". " ++
-                       "Valid options are: " ++ (intercalate ", " $ map fst list)
+            printErr $ ("Unknown value for --" <> (name <> (". " <>
+                       ("Valid options are: " <> (intercalate ", " $ map fst list)))))
             throwError SupportFailure
 
 parseColorOption value =
@@ -338,7 +338,7 @@ parseSeverityOption value =
 parseOption flag options =
     case flag of
         Flag "shell" str ->
-            fromMaybe (die $ "Unknown shell: " ++ str) $ do
+            fromMaybe (die $ ("Unknown shell: " <> str)) $ do
                 guard $ str `elem` supportedShellDialects
                 shell <- shellForExecutable str
                 return $ return options {
@@ -352,7 +352,7 @@ parseOption flag options =
             let old = csExcludedWarnings . checkSpec $ options
             return options {
                 checkSpec = (checkSpec options) {
-                    csExcludedWarnings = new ++ old
+                    csExcludedWarnings = new <> old
                 }
             }
 
@@ -396,7 +396,7 @@ parseOption flag options =
         Flag "source-path" str -> do
             let paths = splitSearchPath str
             return options {
-                sourcePaths = (sourcePaths options) ++ paths
+                sourcePaths = sourcePaths options <> paths
             }
 
         Flag "sourced" _ ->
@@ -439,13 +439,13 @@ parseOption flag options =
             let supported = map cdName ShellCheck.Analyzer.optionalChecks
             let unknown = filter (\name -> name /= "all" && name `notElem` supported) checks
             unless (null unknown) $ do
-                printErr $ "Unrecognized optional checks: " ++ intercalate ", " unknown
+                printErr $ ("Unrecognized optional checks: " <> intercalate ", " unknown)
                 printErr "Supported checks: see `shellcheck --list-optional` (or 'all')"
                 throwError SupportFailure
             let cs = checkSpec options
             return options {
                 checkSpec = cs {
-                    csOptionalChecks = (csOptionalChecks cs) ++ checks
+                    csOptionalChecks = csOptionalChecks cs <> checks
                 }
             }
 
@@ -464,7 +464,7 @@ parseOption flag options =
         Flag "files-from" _ -> return options
 
         Flag str _ -> do
-            printErr $ "Internal error for --" ++ str ++ ". Please file a bug :("
+            printErr $ ("Internal error for --" <> (str <> ". Please file a bug :("))
             return options
   where
     die s = do
@@ -473,7 +473,7 @@ parseOption flag options =
     parseNum ('S':'C':str) = parseNum str
     parseNum num = do
         unless (all isDigit num) $ do
-            printErr $ "Invalid number: " ++ num
+            printErr $ ("Invalid number: " <> num)
             throwError SyntaxFailure
         return (Prelude.read num :: Integer)
 
@@ -482,7 +482,7 @@ parseOption flag options =
             "true" -> return True
             "false" -> return False
             _ -> do
-                printErr $ "Invalid boolean, expected true/false: " ++ str
+                printErr $ ("Invalid boolean, expected true/false: " <> str)
                 throwError SyntaxFailure
 
 ioInterface :: Options -> [FilePath] -> IO () -> IO (SystemInterface IO)
@@ -516,8 +516,8 @@ ioInterface options files onRcReadFailure = do
             ) `catch` handler
           else
             if rcSuggestsExternal == Just False
-            then return $ Left (file ++ " was not specified as input, and external files were disabled via directive.")
-            else return $ Left (file ++ " was not specified as input (see shellcheck -x).")
+            then return $ Left (file <> " was not specified as input, and external files were disabled via directive.")
+            else return $ Left (file <> " was not specified as input (see shellcheck -x).")
       where
         handler :: IOException -> IO (Either ErrorMessage String)
         handler ex = return . Left $ show ex
@@ -552,7 +552,7 @@ ioInterface options files onRcReadFailure = do
             (Just (rcPath, rc), Just (ecPath, ec)) ->
                 if isEditorConfigRejection ec
                     then Just (ecPath, ec)
-                    else Just (rcPath, rc ++ "\n" ++ ec)
+                    else Just (rcPath, rc <> ("\n" <> ec))
 
     isEditorConfigRejection ec =
         all (\l -> null (trim l) || l == "invalid editorconfig value") (lines ec)
@@ -568,7 +568,7 @@ ioInterface options files onRcReadFailure = do
                   else do
                     result <- readConfig doesFileExist onRcReadFailure file
                     when (isNothing result) $ do
-                        hPutStrLn stderr $ "Warning: unable to read --rcfile " ++ file
+                        hPutStrLn stderr $ ("Warning: unable to read --rcfile " <> file)
                         onRcReadFailure
                     writeIORef cache ("/", result)
                     return result
@@ -598,7 +598,7 @@ ioInterface options files onRcReadFailure = do
         let path = dir </> name
         dirConfigs <- collectDirConfigs dir
         globalConfig <- readGlobalEditorConfig
-        let allConfigs = dirConfigs ++ globalConfig
+        let allConfigs = dirConfigs <> globalConfig
             contributions = concatMap (directivesFor path) allConfigs
         return $ case contributions of
             [] -> Nothing
@@ -613,7 +613,7 @@ ioInterface options files onRcReadFailure = do
             let relative = makeRelativeTo (takeDirectory file) path
             in case invalidRootLines contents of
                 (badLine:_) ->
-                    [(file, replicate (badLine - 1) '\n' ++ "invalid editorconfig value\n")]
+                    [(file, replicate (badLine - 1) '\n' <> "invalid editorconfig value\n")]
                 [] ->
                     case editorConfigDirectives contents relative of
                         Nothing -> []
@@ -627,7 +627,7 @@ ioInterface options files onRcReadFailure = do
         addTrailingSlash dir
             | null dir = dir
             | last dir == '/' = dir
-            | otherwise = dir ++ "/"
+            | otherwise = dir <> "/"
 
         collectDirConfigs dir = do
             current <- readConfig doesFileExist (return ()) (dir </> ".editorconfig")
@@ -636,7 +636,7 @@ ioInterface options files onRcReadFailure = do
             rest <- if next /= dir && not isRoot
                     then collectDirConfigs next
                     else return []
-            return $ maybeToList current ++ rest
+            return $ (maybeToList current <> rest)
 
         readGlobalEditorConfig = do
             path <- (getXdgDirectory XdgConfig "editorconfig.ini")
@@ -691,7 +691,7 @@ ioInterface options files onRcReadFailure = do
       where
         handler :: FilePath -> IOException -> IO (String, Bool)
         handler file err = do
-            hPutStrLn stderr $ file ++ ": " ++ show err
+            hPutStrLn stderr $ (file <> (": " <> show err))
             onReadFailure
             return ("", True)
 
@@ -715,7 +715,7 @@ ioInterface options files onRcReadFailure = do
       where
         find filename deflt = do
             sources <- findM ((allowable rcSuggestsExternal inputs) `andM` doesFileExist) $
-                        (adjustPath filename):(map ((</> filename) . adjustPath) $ sourcePathFlag ++ sourcePathAnnotation)
+                        (adjustPath filename):(map ((</> filename) . adjustPath) $ (sourcePathFlag <> sourcePathAnnotation))
             case sources of
                 Nothing -> return deflt
                 Just first -> return first
@@ -778,7 +778,7 @@ verifyFiles files =
 
 printVersion = do
     putStrLn   "ShellCheck - shell script analysis tool"
-    putStrLn $ "version: " ++ shellcheckVersion
+    putStrLn $ ("version: " <> shellcheckVersion)
     putStrLn   "license: GNU General Public License, version 3"
     putStrLn   "website: https://www.shellcheck.net"
 
@@ -787,10 +787,10 @@ printOptional = do
   where
     list = sortOn cdName ShellCheck.Analyzer.optionalChecks
     f item = do
-        putStrLn $ "name:    " ++ cdName item
-        putStrLn $ "id:      " ++ intercalate ", " ["SC" ++ show n | n <- cdId item]
-        putStrLn $ "wiki:    " ++ intercalate ", " [ShellCheck.Formatter.TTY.wikiLink ++ "SC" ++ show n | n <- cdId item]
-        putStrLn $ "desc:    " ++ cdDescription item
-        putStrLn $ "example: " ++ cdPositive item
-        putStrLn $ "fix:     " ++ cdNegative item
+        putStrLn $ "name:    " <> cdName item
+        putStrLn $ "id:      " <> intercalate ", " ["SC" <> show n | n <- cdId item]
+        putStrLn $ "wiki:    " <> intercalate ", " [ShellCheck.Formatter.TTY.wikiLink <> ("SC" <> show n) | n <- cdId item]
+        putStrLn $ "desc:    " <> cdDescription item
+        putStrLn $ "example: " <> cdPositive item
+        putStrLn $ "fix:     " <> cdNegative item
         putStrLn ""

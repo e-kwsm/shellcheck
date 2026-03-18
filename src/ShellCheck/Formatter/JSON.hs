@@ -97,14 +97,14 @@ instance ToJSON Fix where
         "replacements" .= fixReplacements fix
         ]
 
-outputError file msg = hPutStrLn stderr $ file ++ ": " ++ msg
+outputError file msg = hPutStrLn stderr $ (file <> (": " <> msg))
 
 collectResult ref cr sys = mapM_ f groups
   where
     comments = crComments cr
     groups = groupWith sourceFile comments
     f :: [PositionedComment] -> IO ()
-    f group = deepseq comments $ modifyIORef ref (\x -> comments ++ x)
+    f group = deepseq comments $ modifyIORef ref (\x -> comments <> x)
 
 finish ref = do
     list <- readIORef ref

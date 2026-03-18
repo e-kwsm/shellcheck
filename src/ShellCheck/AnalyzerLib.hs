@@ -270,7 +270,7 @@ isOptionSet' longOpt shortOpt root = isNothing $ doAnalysis (guard . not . isSet
                     (longOpt `elem` oversimplify t ||
                         [shortOpt] `elem` map snd (getAllFlags t))
             _ -> False
-    re = mkRegex $ "[[:space:]]-[^-]*" ++ [shortOpt]
+    re = mkRegex $ ("[[:space:]]-[^-]*" <> [shortOpt])
 
 containsAllexport = isOptionSet' "allexport" 'a'
 -- Does this script mention 'set -e' anywhere?
@@ -610,10 +610,10 @@ getBatsRunVariables args =
         ("status", DataString SourceInteger),
         ("output", DataString SourceExternal),
         ("lines", DataArray SourceExternal)
-    ] ++ if "--separate-stderr" `elem` opts then [
+    ] <> (if "--separate-stderr" `elem` opts then [
         ("stderr", DataString SourceExternal),
         ("stderr_lines", DataArray SourceExternal)
-    ] else []
+    ] else [])
   where
     opts = takeWhile (\s -> s == "!" || (s /= "--" && "-" `isPrefixOf` s)) $
         map (fromMaybe "" . getLiteralString) args
@@ -804,7 +804,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
     -- get the FLAGS_ variable created by a shflags DEFINE_ call
     getFlagVariable (n:v:_) = do
         name <- getLiteralString n
-        return (base, n, "FLAGS_" ++ name, DataString $ SourceExternal)
+        return (base, n, "FLAGS_" <> name, DataString $ SourceExternal)
     getFlagVariable _ = Nothing
 
 getModifiedVariableCommand _ = []
@@ -828,14 +828,13 @@ getReferencedVariables parents t =
         T_DollarBraced id _ l -> let str = concat $ oversimplify l in
             (t, t, getBracedReference str) :
                 map (\x -> (l, l, x)) (
-                    getIndexReferences str
-                    ++ getOffsetReferences (getBracedModifier str))
+                    getIndexReferences str <> getOffsetReferences (getBracedModifier str))
         TA_Variable id name _ ->
             if isArithmeticAssignment t
             then []
             else [(t, t, name)]
         T_Assignment id mode str _ word ->
-            [(t, t, str) | mode == Append] ++ specialReferences str t word
+            ([(t, t, str) | mode == Append]) <> specialReferences str t word
 
         TC_Unary id _ "-v" token -> getIfReference t token
         TC_Unary id _ "-R" token -> getIfReference t token

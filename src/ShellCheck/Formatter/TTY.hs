@@ -89,7 +89,7 @@ rankError err = (ranking, cSeverity $ pcComment err, cCode $ pcComment err)
 appendComments errRef comments max = do
     previous <- readIORef errRef
     let current = map (\x -> (rankError x, cCode $ pcComment x, cMessage $ pcComment x)) comments
-    writeIORef errRef $! force . take max . nubBy equal . sort $ previous ++ current
+    writeIORef errRef $! force . take max . nubBy equal . sort $ (previous <> current)
   where
     fst3 (x,_,_) = x
     equal x y = fst3 x == fst3 y
@@ -102,16 +102,16 @@ outputWiki errRef = do
         mapM_ showErr issues
   where
     showErr (_, code, msg) =
-        putStrLn $ "  " ++ wikiLink ++ "SC" ++ show code ++ " -- " ++ shorten msg
+        putStrLn $ ("  " <> (wikiLink <> ("SC" <> (show code <> (" -- " <> shorten msg)))))
     limit = 36
     shorten msg =
         if length msg < limit
         then msg
-        else (take (limit-3) msg) ++ "..."
+        else take (limit-3) msg <> "..."
 
 outputError options file error = do
     color <- getColorFunc $ foColorOption options
-    hPutStrLn stderr $ color "error" $ file ++ ": " ++ error
+    hPutStrLn stderr $ color "error" $ (file <> (": " <> error))
 
 outputResult options ref result sys = do
     color <- getColorFunc $ foColorOption options
@@ -135,7 +135,7 @@ outputForFile color sys comments = do
                         else fileLines ! fromIntegral lineNum
         putStrLn ""
         putStrLn $ color "message" $
-           "In " ++ fileName ++" line " ++ show lineNum ++ ":"
+           ("In " <> (fileName <> (" line " <> (show lineNum <> ":"))))
         putStrLn (color "source" line)
         forM_ commentsForLine $ \c -> putStrLn $ color (severityText c) $ cuteIndent c
         putStrLn ""
@@ -174,17 +174,16 @@ showFixedString color comments lineNum fileLines =
 
 cuteIndent :: PositionedComment -> String
 cuteIndent comment =
-    replicate (fromIntegral $ colNo comment - 1) ' ' ++
-        makeArrow ++ " " ++ code (codeNo comment) ++ " (" ++ severityText comment ++ "): " ++ messageText comment
+    replicate (fromIntegral $ colNo comment - 1) ' ' <> (makeArrow <> (" " <> (code (codeNo comment) <> (" (" <> (severityText comment <> ("): " <> messageText comment))))))
   where
-    arrow n = '^' : replicate (fromIntegral $ n-2) '-' ++ "^"
+    arrow n = '^' : (replicate (fromIntegral $ n-2) '-' <> "^")
     makeArrow =
         let sameLine = lineNo comment == endLineNo comment
             delta = endColNo comment - colNo comment
         in
             if sameLine && delta > 2 && delta < 32 then arrow delta else "^--"
 
-code num = "SC" ++ show num
+code num = "SC" <> show num
 
 getColorFunc :: ColorOption -> IO ColorFunc
 getColorFunc colorOption = do
@@ -192,6 +191,6 @@ getColorFunc colorOption = do
     return $ if useColor then colorComment else const id
   where
     colorComment level comment =
-        ansi (colorForLevel level) ++ comment ++ clear
+        ansi (colorForLevel level) <> (comment <> clear)
     clear = ansi 0
-    ansi n = "\x1B[" ++ show n ++ "m"
+    ansi n = "\x1B[" <> (show n <> "m")
