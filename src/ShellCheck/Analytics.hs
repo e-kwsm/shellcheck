@@ -22,6 +22,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE NondecreasingIndentation #-}
+{-# LANGUAGE TupleSections #-}
 module ShellCheck.Analytics (checker, optionalChecks, ShellCheck.Analytics.runTests) where
 
 import ShellCheck.AST
@@ -2549,7 +2550,7 @@ checkUnassignedReferences = checkUnassignedReferences' False
 checkUnassignedReferences' includeGlobals params t = warnings
   where
     (readMap, writeMap) = execState (mapM tally $ variableFlow params) (Map.empty, Map.empty)
-    defaultAssigned = Map.fromList $ map (\a -> (a, ())) $ filter (not . null) internalVariables
+    defaultAssigned = Map.fromList $ map ((, ())) $ filter (not . null) internalVariables
 
     tally (Assignment (_, _, name, _))  =
         modify (Data.Bifunctor.second (Map.insert name ()))
@@ -3770,7 +3771,7 @@ checkPipeToNowhere params t =
 
             let fdAndToken :: [(Integer, Token)]
                 fdAndToken =
-                  concatMap (\(list, redir) -> map (\n -> (n, redir)) list) $
+                  concatMap (\(list, redir) -> map ((, redir)) list) $
                     zip fds redirs
 
             let fdMap =
