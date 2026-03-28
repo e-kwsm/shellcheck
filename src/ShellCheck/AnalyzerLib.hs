@@ -19,6 +19,7 @@
 -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TupleSections    #-}
 module ShellCheck.AnalyzerLib where
 
 import ShellCheck.AST
@@ -601,7 +602,7 @@ getReferencedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Litera
             else []
         "trap" ->
             case rest of
-                head:_ -> map (\x -> (base, head, x)) $ getVariablesFromLiteralToken head
+                head:_ -> map ((base, head,)) $ getVariablesFromLiteralToken head
                 _ -> []
         "alias" -> [(base, token, name) | token <- rest, name <- getVariablesFromLiteralToken token]
         _ -> []
@@ -782,7 +783,7 @@ getReferencedVariables parents t =
     case t of
         T_DollarBraced id _ l -> let str = concat $ oversimplify l in
             (t, t, getBracedReference str) :
-                map (\x -> (l, l, x)) (
+                map ((l, l,)) (
                     getIndexReferences str
                     ++ getOffsetReferences (getBracedModifier str))
         TA_Variable id name _ ->
@@ -814,7 +815,7 @@ getReferencedVariables parents t =
             "PROMPT_COMMAND"
           ]
         then
-            map (\x -> (base, base, x)) $
+            map ((base, base,)) $
                 getVariablesFromLiteralToken word
         else []
 
