@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 
 -- Constructs a Control Flow Graph from an AST
@@ -376,7 +377,7 @@ newNode label = do
     n <- get
     stack <- asks cfTokenStack
     put (n+1)
-    tell ([(n, label)], [], [], map (\c -> (c, n)) stack)
+    tell ([(n, label)], [], [], map ((, n)) stack)
     return n
 
 newNodeRange :: CFNode -> CFM Range
@@ -1324,7 +1325,7 @@ findPostDominators mainexit graph = asArray
     inlined = inlineSubshells graph
     terminals = findTerminalNodes inlined
     (incoming, _, label, outgoing) = context graph mainexit
-    withExitEdges = (incoming ++ map (\c -> (CFEFlow, c)) terminals, mainexit, label, outgoing) `safeUpdate` inlined
+    withExitEdges = (incoming ++ map ((CFEFlow,)) terminals, mainexit, label, outgoing) `safeUpdate` inlined
     reversed = grev withExitEdges
     postDoms = dom reversed mainexit
     (_, maxNode) = nodeRange graph
