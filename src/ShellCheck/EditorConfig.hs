@@ -421,19 +421,19 @@ prop_isEditorConfigRootEmpty = not $ isEditorConfigRoot "root =\n"
 prop_isEditorConfigRootFalse = not $ isEditorConfigRoot "root = false\n"
 prop_isEditorConfigRootTrue = isEditorConfigRoot "root = TRUE\n"
 prop_invalidRootLinesEmpty = invalidRootLines "root =\n" == [1]
-prop_invalidRootLinesTrue = invalidRootLines "root = true\n" == []
-prop_invalidRootLinesFalse = invalidRootLines "root = false\n" == []
+prop_invalidRootLinesTrue = null $ invalidRootLines "root = true\n"
+prop_invalidRootLinesFalse = null $ invalidRootLines "root = false\n"
 prop_invalidRootLinesInSection =
-    invalidRootLines "[*]\nroot = true\n" == []
+    null $ invalidRootLines "[*]\nroot = true\n"
 -- An unsupported non-empty shell is reported at its line.
 prop_invalidDirectiveLinesUnknownShell =
     invalidDirectiveLines "[*]\nshellcheck.shell=zsh\n" "foo" == [2]
 -- An empty shell is valid (the rc parser rejects it), so no error.
 prop_invalidDirectiveLinesEmptyShell =
-    invalidDirectiveLines "[*]\nshellcheck.shell=\n" "foo" == []
+    null $ invalidDirectiveLines "[*]\nshellcheck.shell=\n" "foo"
 -- A known shell is fine.
 prop_invalidDirectiveLinesKnownShell =
-    invalidDirectiveLines "[*]\nshellcheck.shell=bash\n" "foo" == []
+    null $ invalidDirectiveLines "[*]\nshellcheck.shell=bash\n" "foo"
 -- A '#'-prefixed value is reported (EditorConfig has no inline comments).
 prop_invalidDirectiveLinesHashValue =
     invalidDirectiveLines "[foo]\nshellcheck.disable = #abc\n" "foo" == [2]
@@ -452,17 +452,17 @@ prop_invalidDirectiveLinesEmbeddedSemicolonValue =
 -- a no-op, unlike a value that was truncated down to empty by a leading
 -- comment marker.
 prop_invalidDirectiveLinesEmptyValueNotInvalid =
-    invalidDirectiveLines "[foo]\nshellcheck.disable =\n" "foo" == []
+    null $ invalidDirectiveLines "[foo]\nshellcheck.disable =\n" "foo"
 -- A plain invalid value (no comment marker) is not reported here; it is
 -- rejected by the .shellcheckrc parser as SC1134 instead.
 prop_invalidDirectiveLinesPlainValue =
-    invalidDirectiveLines "[foo]\nshellcheck.disable = abc\n" "foo" == []
+    null $ invalidDirectiveLines "[foo]\nshellcheck.disable = abc\n" "foo"
 -- Directives in non-matching sections are ignored.
 prop_invalidDirectiveLinesNoMatch =
-    invalidDirectiveLines "[*.txt]\nshellcheck.shell=zsh\n" "foo" == []
+    null $ invalidDirectiveLines "[*.txt]\nshellcheck.shell=zsh\n" "foo"
 -- Only the matching section's invalid directive is reported.
 prop_invalidDirectiveLinesMatchingSection =
-    invalidDirectiveLines "[*.txt]\nshellcheck.shell=zsh\n[foo]\nshellcheck.shell=bash\n" "foo" == []
+    null $ invalidDirectiveLines "[*.txt]\nshellcheck.shell=zsh\n[foo]\nshellcheck.shell=bash\n" "foo"
 
 return []
 runTests = $quickCheckAll
