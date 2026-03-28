@@ -283,7 +283,7 @@ newReplacement = Replacement {
     repInsertionPoint = InsertAfter
 }
 
-data Fix = Fix {
+newtype Fix = Fix {
     fixReplacements :: [Replacement]
 } deriving (Show, Eq, Generic, NFData)
 
