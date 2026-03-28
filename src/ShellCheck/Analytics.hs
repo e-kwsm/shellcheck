@@ -4296,7 +4296,7 @@ isSourced params t =
 
 -- Like groupBy, but compares pairs of adjacent elements, rather than against the first of the span
 prop_groupByLink1 = groupByLink (\a b -> a+1 == b) [1,2,3,2,3,7,8,9] == [[1,2,3], [2,3], [7,8,9]]
-prop_groupByLink2 = groupByLink (==) ([] :: [()]) == []
+prop_groupByLink2 = null (groupByLink (==) ([] :: [()]))
 groupByLink :: (a -> a -> Bool) -> [a] -> [[a]]
 groupByLink f list =
     case list of
