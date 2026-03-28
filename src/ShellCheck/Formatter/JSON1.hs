@@ -42,7 +42,7 @@ format = do
         footer = finish ref
     }
 
-data Json1Output = Json1Output {
+newtype Json1Output = Json1Output {
     comments :: [PositionedComment]
     }
 
