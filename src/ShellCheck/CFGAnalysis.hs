@@ -20,6 +20,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
+{-# LANGUAGE TupleSections #-}
 
 {-
     Data Flow Analysis on a Control Flow Graph.
@@ -1364,7 +1365,7 @@ analyzeControlFlow params t =
         invokedStates <- flattenByNode ctx $ groupByNode $ M.map addDeps invocations
 
         -- Fill in the map with unreachable states for anything we didn't get to
-        let baseStates = M.fromDistinctAscList $ map (\c -> (c, (unreachableState, unreachableState))) $ uncurry enumFromTo $ nodeRange $ cfGraph cfg
+        let baseStates = M.fromDistinctAscList $ map ((, (unreachableState, unreachableState))) $ uncurry enumFromTo $ nodeRange $ cfGraph cfg
         let allStates = M.union invokedStates baseStates
 
         -- Convert to external states
