@@ -218,7 +218,7 @@ getSpanForId id =
 getNewIdFor :: Monad m => Id -> SCParser m Id
 getNewIdFor id = getSpanForId id >>= uncurry getNextIdBetween
 
-data IncompleteInterval = IncompleteInterval SourcePos
+newtype IncompleteInterval = IncompleteInterval SourcePos
 
 startSpan = IncompleteInterval <$> getPosition
 
