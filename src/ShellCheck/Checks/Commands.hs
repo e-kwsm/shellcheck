@@ -21,6 +21,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE TupleSections #-}
 
 -- This module contains checks that examine specific commands by name.
 module ShellCheck.Checks.Commands (checker, optionalChecks, ShellCheck.Checks.Commands.runTests) where
@@ -451,7 +452,7 @@ checkGrepSendsPipefailImpl cmd = do
     isEarlyExitFlag name = name `elem` earlyExitFlags
     parseGrepOpts = getOpts (True, True)
         "cilLnoqsvwxhHrRbaEFGPe:f:m:A:B:C:d:D:"
-        (map (\name -> (name, True)) longOptionsConsumingParameter)
+        (map (, True) longOptionsConsumingParameter)
     longOptionsConsumingParameter =
         ["regexp", "file", "max-count", "after-context", "before-context",
             "context", "directories", "devices"]
