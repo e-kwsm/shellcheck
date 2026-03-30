@@ -17,7 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveTraversable, PatternSynonyms #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveTraversable, DerivingStrategies, PatternSynonyms #-}
 module ShellCheck.AST where
 
 import GHC.Generics (Generic)
@@ -27,7 +27,9 @@ import Text.Parsec
 import qualified ShellCheck.Regex as Re
 import Prelude hiding (id)
 
-newtype Id = Id Int deriving (Show, Eq, Ord, Generic, NFData)
+newtype Id = Id Int
+    deriving stock (Show, Eq, Ord, Generic)
+    deriving anyclass (NFData)
 
 data Quoted = Quoted | Unquoted deriving (Show, Eq)
 data Dashed = Dashed | Undashed deriving (Show, Eq)
