@@ -429,9 +429,9 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
                 warnMsg (getId cmd) 3061 "read without a variable is"
       where
         unsupportedCommands = [
-            "let", "caller", "builtin", "complete", "compgen", "declare", "dirs", "disown",
-            "enable", "mapfile", "readarray", "pushd", "popd", "shopt", "suspend",
-            "typeset"
+            "builtin", "caller", "compgen", "complete", "declare", "dirs", "disown",
+            "enable", "let", "mapfile", "popd", "pushd", "readarray", "shopt",
+            "suspend", "typeset"
             ]
         allowedFlags = Map.fromList [
             ("cd", Just ["L", "P"]),
@@ -480,15 +480,14 @@ checkBashisms = ForShell [Sh, Dash, BusyboxSh] $ \t -> do
     bashVars = [
         -- This list deliberately excludes $BASH_VERSION as it's often used
         -- for shell identification.
-        "OSTYPE", "MACHTYPE", "HOSTTYPE", "HOSTNAME",
-        "DIRSTACK", "EUID", "UID", "SHLVL", "PIPESTATUS", "SHELLOPTS",
-        "_", "BASH", "BASHOPTS", "BASHPID", "BASH_ALIASES", "BASH_ARGC",
+        "BASH", "BASHOPTS", "BASHPID", "BASH_ALIASES", "BASH_ARGC",
         "BASH_ARGV", "BASH_ARGV0", "BASH_CMDS", "BASH_COMMAND",
         "BASH_EXECUTION_STRING", "BASH_LINENO", "BASH_LOADABLES_PATH",
         "BASH_REMATCH", "BASH_SOURCE", "BASH_SUBSHELL", "BASH_VERSINFO",
         "COMP_CWORD", "COMP_KEY", "COMP_LINE", "COMP_POINT", "COMP_TYPE",
-        "COMP_WORDBREAKS", "COMP_WORDS", "COPROC", "FUNCNAME", "GROUPS",
-        "HISTCMD", "MAPFILE"
+        "COMP_WORDBREAKS", "COMP_WORDS", "COPROC", "DIRSTACK", "EUID",
+        "FUNCNAME", "GROUPS", "HISTCMD", "HOSTNAME", "HOSTTYPE", "MACHTYPE",
+        "MAPFILE", "OSTYPE", "PIPESTATUS", "SHELLOPTS", "SHLVL", "UID", "_"
         ]
     bashDynamicVars = [
         "BASH_MONOSECONDS", "EPOCHREALTIME", "EPOCHSECONDS", "RANDOM",

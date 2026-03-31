@@ -1105,29 +1105,29 @@ checkSingleQuotedVariables params t@(T_SingleQuoted id s) =
     isProbablyOk =
             any isOkAssignment (NE.take 3 $ getPath parents t)
             || commandName `elem` [
-                "trap"
-                ,"sh"
+                "alias"
                 ,"bash"
-                ,"ksh"
-                ,"zsh"
-                ,"ssh"
-                ,"eval"
-                ,"xprop"
-                ,"alias"
-                ,"sudo" -- covering "sudo sh" and such
                 ,"doas" -- same as sudo
-                ,"run0" -- same as sudo
                 ,"docker" -- like above
-                ,"podman"
-                ,"oc"
                 ,"dpkg-query"
-                ,"jq"  -- could also check that user provides --arg
-                ,"rename"
-                ,"rg"
-                ,"unset"
+                ,"eval"
                 ,"git filter-branch"
+                ,"jq"  -- could also check that user provides --arg
+                ,"ksh"
                 ,"mumps -run %XCMD"
                 ,"mumps -run LOOP%XCMD"
+                ,"oc"
+                ,"podman"
+                ,"rename"
+                ,"rg"
+                ,"run0" -- same as sudo
+                ,"sh"
+                ,"ssh"
+                ,"sudo" -- covering "sudo sh" and such
+                ,"trap"
+                ,"unset"
+                ,"xprop"
+                ,"zsh"
                 ]
             || "awk" `isSuffixOf` commandName
             || "perl" `isPrefixOf` commandName
@@ -2376,16 +2376,16 @@ checkFunctionsUsedExternally params t =
     getPotentialCommands name argAndString =
         case name of
             "chroot" -> firstNonFlag
-            "screen" -> firstNonFlag
-            "sudo" -> firstNonFlag
             "doas" -> firstNonFlag
-            "run0" -> firstNonFlag
-            "xargs" -> firstNonFlag
-            "tmux" -> firstNonFlag
-            "timeout" -> take 1 $ drop 1 $ dropFlags argAndString
-            "ssh" -> take 1 $ drop 1 $ dropFlags argAndString
             "find" -> take 1 $ drop 1 $
                 dropWhile (\x -> fst x `notElem` findExecFlags) argAndString
+            "run0" -> firstNonFlag
+            "screen" -> firstNonFlag
+            "ssh" -> take 1 $ drop 1 $ dropFlags argAndString
+            "sudo" -> firstNonFlag
+            "timeout" -> take 1 $ drop 1 $ dropFlags argAndString
+            "tmux" -> firstNonFlag
+            "xargs" -> firstNonFlag
             _ -> []
       where
         firstNonFlag = take 1 $ dropFlags argAndString

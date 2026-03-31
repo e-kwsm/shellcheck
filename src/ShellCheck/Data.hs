@@ -37,25 +37,26 @@ internalVariables = [
     -- Bash
     "BASH", "BASHOPTS", "BASHPID", "BASH_ALIASES", "BASH_ARGC",
     "BASH_ARGV", "BASH_ARGV0", "BASH_CMDS", "BASH_COMMAND",
-    "BASH_EXECUTION_STRING", "BASH_LINENO", "BASH_LOADABLES_PATH",
-    "BASH_REMATCH", "BASH_SOURCE", "BASH_SUBSHELL", "BASH_VERSINFO",
-    "BASH_VERSION", "COMP_CWORD", "COMP_KEY", "COMP_LINE", "COMP_POINT",
-    "COMP_TYPE", "COMP_WORDBREAKS", "COMP_WORDS", "COPROC", "DIRSTACK",
-    "EPOCHREALTIME", "EPOCHSECONDS", "EUID", "FUNCNAME", "GROUPS", "HISTCMD",
-    "HOSTNAME", "HOSTTYPE", "MACHTYPE", "MAPFILE", "OSTYPE", "PIPESTATUS",
+    "BASH_COMPAT", "BASH_ENV", "BASH_EXECUTION_STRING", "BASH_LINENO",
+    "BASH_LOADABLES_PATH", "BASH_MONOSECONDS", "BASH_REMATCH", "BASH_SOURCE",
+    "BASH_SUBSHELL", "BASH_TRAPSIG", "BASH_VERSINFO", "BASH_VERSION",
+    "BASH_XTRACEFD", "CHILD_MAX", "COLUMNS", "COMPREPLY", "COMP_CWORD",
+    "COMP_KEY", "COMP_LINE", "COMP_POINT", "COMP_TYPE", "COMP_WORDBREAKS",
+    "COMP_WORDS", "COPROC", "DIRSTACK", "EMACS", "EPOCHREALTIME",
+    "EPOCHSECONDS", "EUID", "EXECIGNORE", "FIGNORE", "FUNCNAME", "FUNCNEST",
+    "GLOBIGNORE", "GLOBSORT", "GROUPS", "HISTCMD", "HISTCONTROL",
+    "HISTFILESIZE", "HISTIGNORE", "HISTTIMEFORMAT", "HOSTFILE", "HOSTNAME",
+    "HOSTTYPE", "IGNOREEOF", "INPUTRC", "INSIDE_EMACS", "LINES", "MACHTYPE",
+    "MAPFILE", "OPTERR", "OSTYPE", "PIPESTATUS", "POSIXLY_CORRECT",
+    "PROMPT_COMMAND", "PROMPT_DIRTRIM", "PS0", "PS1", "PS2", "PS3", "PS4",
     "RANDOM", "READLINE_ARGUMENT", "READLINE_LINE", "READLINE_MARK",
-    "READLINE_POINT", "REPLY", "SECONDS", "SHELLOPTS", "SHLVL", "SRANDOM",
-    "UID", "BASH_COMPAT", "BASH_ENV", "BASH_XTRACEFD", "CHILD_MAX", "COLUMNS",
-    "COMPREPLY", "EMACS", "EXECIGNORE", "FIGNORE", "FUNCNEST", "GLOBIGNORE",
-    "HISTCONTROL", "HISTFILESIZE", "HISTIGNORE", "HISTTIMEFORMAT", "HOSTFILE",
-    "IGNOREEOF", "INPUTRC", "INSIDE_EMACS", "LINES", "OPTERR",
-    "POSIXLY_CORRECT", "PROMPT_COMMAND", "PROMPT_DIRTRIM", "PS0", "PS1", "PS2",
-    "PS3", "PS4", "SHELL", "TIMEFORMAT", "TMOUT", "BASH_MONOSECONDS",
-    "BASH_TRAPSIG", "GLOBSORT", "auto_resume", "histchars",
+    "READLINE_POINT", "REPLY", "SECONDS", "SHELL", "SHELLOPTS", "SHLVL",
+    "SRANDOM", "TIMEFORMAT", "TMOUT", "UID", "auto_resume", "histchars",
+
 
     -- Other
-    "USER", "TZ", "TERM", "LOGNAME", "LD_LIBRARY_PATH", "LANGUAGE", "DISPLAY",
-    "HOSTNAME", "KRB5CCNAME", "LINENO", "PPID", "TMPDIR", "XAUTHORITY"
+    "DISPLAY", "HOSTNAME", "KRB5CCNAME", "LANGUAGE", "LD_LIBRARY_PATH",
+    "LINENO", "LOGNAME", "PPID", "TERM", "TMPDIR", "TZ", "USER", "XAUTHORITY"
 
     -- Ksh
     , ".sh.version"
@@ -76,11 +77,11 @@ specialIntegerVariables = [
 specialVariablesWithoutSpaces = "-" : specialIntegerVariables
 
 variablesWithoutSpaces = specialVariablesWithoutSpaces ++ [
-    "BASHPID", "BASH_ARGC", "BASH_LINENO", "BASH_SUBSHELL", "EUID",
-    "EPOCHREALTIME", "EPOCHSECONDS", "LINENO", "OPTIND", "PPID", "RANDOM",
+    "BASHPID", "BASH_ARGC", "BASH_LINENO", "BASH_MONOSECONDS", "BASH_SUBSHELL",
+    "BASH_TRAPSIG" "COLUMNS", "EPOCHREALTIME", "EPOCHSECONDS", "EUID",
+    "HISTFILESIZE", "HISTSIZE", "LINENO", "LINES", "OPTIND", "PPID", "RANDOM",
     "READLINE_ARGUMENT", "READLINE_MARK", "READLINE_POINT", "SECONDS",
-    "SHELLOPTS", "SHLVL", "SRANDOM", "UID", "COLUMNS", "HISTFILESIZE",
-    "HISTSIZE", "LINES", "BASH_MONOSECONDS", "BASH_TRAPSIG"
+    "SHELLOPTS", "SHLVL", "SRANDOM", "UID",
 
     -- shflags
     , "FLAGS_ERROR", "FLAGS_FALSE", "FLAGS_TRUE"
@@ -94,8 +95,8 @@ unbracedVariables = specialVariables ++ [
 
 arrayVariables = [
     "BASH_ALIASES", "BASH_ARGC", "BASH_ARGV", "BASH_CMDS", "BASH_LINENO",
-    "BASH_REMATCH", "BASH_SOURCE", "BASH_VERSINFO", "COMP_WORDS", "COPROC",
-    "DIRSTACK", "FUNCNAME", "GROUPS", "MAPFILE", "PIPESTATUS", "COMPREPLY"
+    "BASH_REMATCH", "BASH_SOURCE", "BASH_VERSINFO", "COMPREPLY", "COMP_WORDS",
+    "COPROC", "DIRSTACK", "FUNCNAME", "GROUPS", "MAPFILE", "PIPESTATUS"
   ]
 
 commonCommands = [
@@ -126,8 +127,8 @@ commonCommands = [
 nonReadingCommands = [
     "alias", "basename", "bg", "cal", "cd", "chgrp", "chmod", "chown",
     "cp", "du", "echo", "export", "fg", "fuser", "getconf",
-    "getopt", "getopts", "ipcrm", "ipcs", "jobs", "kill", "ln", "ls",
-    "locale", "mv", "printf", "ps", "pwd", "readlink", "realpath",
+    "getopt", "getopts", "ipcrm", "ipcs", "jobs", "kill", "ln",
+    "locale", "ls", "mv", "printf", "ps", "pwd", "readlink", "realpath",
     "renice", "rm", "rmdir", "set", "sleep", "touch", "trap", "ulimit",
     "unalias", "uname"
     ]
@@ -175,6 +176,6 @@ shellForExecutable name =
 flagsForRead = "sreu:n:N:i:p:a:t:"
 flagsForMapfile = "d:n:O:s:u:C:c:t"
 
-declaringCommands = ["local", "declare", "export", "readonly", "typeset", "let"]
+declaringCommands = ["declare", "export", "let", "local", "readonly", "typeset"]
 
-privilegeElevationCommands = ["sudo", "doas", "run0"]
+privilegeElevationCommands = ["doas", "run0", "sudo"]
