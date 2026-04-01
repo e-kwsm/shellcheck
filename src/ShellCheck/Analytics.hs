@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE NondecreasingIndentation #-}
@@ -3714,7 +3715,7 @@ prop_checkPipeToNowhere20 = verifyNot checkPipeToNowhere "find . | du --exclude-
 prop_checkPipeToNowhere21 = verifyNot checkPipeToNowhere "yes | cp -ri foo/* bar"
 prop_checkPipeToNowhere22 = verifyNot checkPipeToNowhere "yes | rm --interactive *"
 
-data PipeType = StdoutPipe | StdoutStderrPipe | NoPipe deriving (Eq)
+data PipeType = StdoutPipe | StdoutStderrPipe | NoPipe deriving stock (Eq)
 checkPipeToNowhere :: Parameters -> Token -> WriterT [TokenComment] Identity ()
 checkPipeToNowhere params t =
     case t of

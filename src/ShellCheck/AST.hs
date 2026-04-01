@@ -31,16 +31,16 @@ newtype Id = Id Int
     deriving stock (Show, Eq, Ord, Generic)
     deriving anyclass (NFData)
 
-data Quoted = Quoted | Unquoted deriving (Show, Eq)
-data Dashed = Dashed | Undashed deriving (Show, Eq)
-data Piped = Piped | Unpiped deriving (Show, Eq)
-data AssignmentMode = Assign | Append deriving (Show, Eq)
-newtype FunctionKeyword = FunctionKeyword Bool deriving (Show, Eq)
-newtype FunctionParentheses = FunctionParentheses Bool deriving (Show, Eq)
-data CaseType = CaseBreak | CaseFallThrough | CaseContinue deriving (Show, Eq)
+data Quoted = Quoted | Unquoted deriving stock (Show, Eq)
+data Dashed = Dashed | Undashed deriving stock (Show, Eq)
+data Piped = Piped | Unpiped deriving stock (Show, Eq)
+data AssignmentMode = Assign | Append deriving stock (Show, Eq)
+newtype FunctionKeyword = FunctionKeyword Bool deriving stock (Show, Eq)
+newtype FunctionParentheses = FunctionParentheses Bool deriving stock (Show, Eq)
+data CaseType = CaseBreak | CaseFallThrough | CaseContinue deriving stock (Show, Eq)
 
 newtype Root = Root Token
-data Token = OuterToken Id (InnerToken Token) deriving (Show)
+data Token = OuterToken Id (InnerToken Token) deriving stock (Show)
 
 data InnerToken t =
     Inner_TA_Binary String t t
@@ -146,7 +146,7 @@ data InnerToken t =
     | Inner_T_Include t
     | Inner_T_SourceCommand t t
     | Inner_T_BatsTest String t
-    deriving (Show, Eq, Functor, Foldable, Traversable)
+    deriving stock (Show, Eq, Functor, Foldable, Traversable)
 
 data Annotation =
     DisableComment Integer Integer -- [from, to)
@@ -156,8 +156,8 @@ data Annotation =
     | SourcePath String
     | ExternalSources Bool
     | ExtendedAnalysis Bool
-    deriving (Show, Eq)
-data ConditionType = DoubleBracket | SingleBracket deriving (Show, Eq)
+    deriving stock (Show, Eq)
+data ConditionType = DoubleBracket | SingleBracket deriving stock (Show, Eq)
 
 pattern T_AND_IF id = OuterToken id Inner_T_AND_IF
 pattern T_Bang id = OuterToken id Inner_T_Bang

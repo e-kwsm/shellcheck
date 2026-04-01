@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TemplateHaskell  #-}
 module ShellCheck.AnalyzerLib where
 
@@ -107,22 +108,22 @@ data Parameters = Parameters {
     tokenPositions     :: Map.Map Id (Position, Position),
     -- Result from Control Flow Graph analysis (including data flow analysis)
     cfgAnalysis :: Maybe CF.CFGAnalysis
-    } deriving (Show)
+    } deriving stock (Show)
 
 -- TODO: Cache results of common AST ops here
 data Cache = Cache {}
 
-data Scope = SubshellScope String | NoneScope deriving (Show, Eq)
+data Scope = SubshellScope String | NoneScope deriving stock (Show, Eq)
 data StackData =
     StackScope Scope
     | StackScopeEnd
     -- (Base expression, specific position, var name, assigned values)
     | Assignment (Token, Token, String, DataType)
     | Reference (Token, Token, String)
-  deriving (Show)
+  deriving stock (Show)
 
 data DataType = DataString DataSource | DataArray DataSource
-  deriving (Show)
+  deriving stock (Show)
 
 data DataSource =
     SourceFrom [Token]
@@ -130,9 +131,9 @@ data DataSource =
     | SourceDeclaration
     | SourceInteger
     | SourceChecked
-  deriving (Show)
+  deriving stock (Show)
 
-data VariableState = Dead Token String | Alive deriving (Show)
+data VariableState = Dead Token String | Alive deriving stock (Show)
 
 defaultSpec pr = spec {
     asShellType = Nothing,
