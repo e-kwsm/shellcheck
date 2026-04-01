@@ -395,9 +395,7 @@ isParamTo :: Map.Map Id Token -> String -> Token -> Bool
 isParamTo tree cmd =
     go
   where
-    go x = case Map.lookup (getId x) tree of
-                Nothing     -> False
-                Just parent -> check parent
+    go x = maybe False check (Map.lookup (getId x) tree)
     check t =
         case t of
             T_SingleQuoted _ _ -> go t
