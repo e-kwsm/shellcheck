@@ -19,6 +19,7 @@
 -}
 
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DerivingStrategies #-}
 module ShellCheck.Fixer (applyFix, removeTabStops, mapPositions, Ranged(..), runTests) where
 
 import ShellCheck.Interface
@@ -265,7 +266,7 @@ runFixer f = evalState f newPSTree
 -- It's implemented essentially as a Fenwick tree without the bit-based balancing.
 -- The last Num is the sum of the left branch plus current element.
 data PSTree n = PSBranch n (PSTree n) (PSTree n) n | PSLeaf
-    deriving (Show)
+    deriving stock (Show)
 
 newPSTree :: Num n => PSTree n
 newPSTree = PSLeaf
