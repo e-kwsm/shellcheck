@@ -18,7 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass, DeriveGeneric, DerivingStrategies #-}
 
 -- Constructs a Control Flow Graph from an AST
 module ShellCheck.CFG (
@@ -97,7 +97,7 @@ data CFNode =
     | CFUnreachable
     -- Assignment of $!
     | CFSetBackgroundPid Id
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 -- Edge labels in a Control Flow Graph
 data CFEdge =
@@ -108,7 +108,7 @@ data CFEdge =
     | CFEFalseFlow
     -- An edge followed on exit
     | CFEExit
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 -- Actions we track
 data CFEffect =
@@ -128,10 +128,10 @@ data CFEffect =
     | CFHintArray String
     -- Operation implies that the variable will be defined (e.g. [ -z "$var" ])
     | CFHintDefined String
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 data IdTagged a = IdTagged Id a
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 -- Where a variable's value comes from
 data CFValue =
@@ -145,7 +145,7 @@ data CFValue =
     | CFValueInteger
     -- Token 'Id' concatenates and assigns the given parts
     | CFValueComputed Id [CFStringPart]
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 -- Simplified computed strings
 data CFStringPart =
@@ -157,11 +157,11 @@ data CFStringPart =
     | CFStringInteger
     -- An unknown string value, for things we can't handle
     | CFStringUnknown
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 -- The properties of a variable
 data CFVariableProp = CFVPExport | CFVPArray | CFVPAssociative | CFVPInteger
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 -- Options when generating CFG
 data CFGParameters = CFGParameters {
@@ -181,7 +181,7 @@ data CFGResult = CFGResult {
     -- An array (from,to) saying whether 'from' postdominates 'to'
     cfPostDominators :: Array Node [Node]
 }
-  deriving (Show)
+  deriving stock (Show)
 
 buildGraph :: CFGParameters -> Token -> CFGResult
 buildGraph params root =
@@ -341,7 +341,7 @@ remapEdge map (from, to, label) = (remapHelper map from, remapHelper map to, lab
 remapHelper map n = M.findWithDefault n n map
 
 data Range = Range Node Node
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data CFContext = CFContext {
     cfIsCondition :: Bool,
@@ -1205,7 +1205,7 @@ handleCommand cmd vars args literalCmd = do
 none = newStructuralNode
 
 data Scope = GlobalScope | LocalScope | PrefixScope
-  deriving (Eq, Ord, Show, Generic, NFData)
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
 
 buildAssignment scope t = do
     op <- case t of
