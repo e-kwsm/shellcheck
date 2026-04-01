@@ -846,7 +846,7 @@ checkRedirectToSame params s@(T_Pipeline _ _ list) =
                 && not (isOutput t && isOutput u)
                 && not (special t)
                 && not (any isHarmlessCommand [t,u])
-                && not (any containsAssignment [u]) = do
+                && not (containsAssignment u) = do
             addComment $ note newId
             addComment $ note exceptId
     checkOccurrences _ _ = return ()
