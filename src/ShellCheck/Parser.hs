@@ -3354,7 +3354,7 @@ readScriptFile sourced = do
             annotationId <- endSpan annotationStart
             let shellAnnotationSpecified =
                     any (\x -> case x of ShellOverride {} -> True; _ -> False) annotations
-            shellFlagSpecified <- isJust <$> Mr.asks shellTypeOverride
+            shellFlagSpecified <- Mr.asks (isJust . shellTypeOverride)
             let ignoreShebang = shellAnnotationSpecified || shellFlagSpecified
 
             unless ignoreShebang $
