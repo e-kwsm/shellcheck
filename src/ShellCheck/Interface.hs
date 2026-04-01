@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.Interface
     (
     SystemInterface(..)
@@ -71,7 +72,7 @@ import Data.Monoid
 import Data.Ord
 import Data.Semigroup
 import GHC.Generics (Generic)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 
 
 data SystemInterface m = SystemInterface {

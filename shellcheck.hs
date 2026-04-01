@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-
     Copyright 2012-2019 Vidar Holen
 
@@ -17,45 +18,45 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-import qualified ShellCheck.Analyzer
-import           ShellCheck.AST (ExtendedAnalysisMode(..))
-import           ShellCheck.Checker
-import           ShellCheck.Data
-import           ShellCheck.EditorConfig
-import           ShellCheck.Interface
-import           ShellCheck.Regex
+import ShellCheck.Analyzer qualified
+import ShellCheck.AST (ExtendedAnalysisMode(..))
+import ShellCheck.Checker
+import ShellCheck.Data
+import ShellCheck.EditorConfig
+import ShellCheck.Interface
+import ShellCheck.Regex
 
-import qualified ShellCheck.Formatter.CheckStyle
-import           ShellCheck.Formatter.Format
-import qualified ShellCheck.Formatter.Diff
-import qualified ShellCheck.Formatter.GCC
-import qualified ShellCheck.Formatter.JSON
-import qualified ShellCheck.Formatter.JSON1
-import qualified ShellCheck.Formatter.TTY
-import qualified ShellCheck.Formatter.Quiet
+import ShellCheck.Formatter.CheckStyle qualified
+import ShellCheck.Formatter.Format
+import ShellCheck.Formatter.Diff qualified
+import ShellCheck.Formatter.GCC qualified
+import ShellCheck.Formatter.JSON qualified
+import ShellCheck.Formatter.JSON1 qualified
+import ShellCheck.Formatter.TTY qualified
+import ShellCheck.Formatter.Quiet qualified
 
-import           Control.Exception
-import           Control.Monad
-import           Control.Monad.IO.Class
-import           Control.Monad.Trans.Class
-import           Control.Monad.Except
-import           Data.Bits
-import           Data.Char
-import           Data.Either
-import           Data.Functor
-import           Data.IORef
-import           Data.List
-import qualified Data.Map                        as Map
-import           Data.Maybe
-import           Data.Monoid
-import           Data.Semigroup                  (Semigroup (..))
-import           Prelude                         hiding (catch)
-import           System.Console.GetOpt
-import           System.Directory
-import           System.Environment
-import           System.Exit
-import           System.FilePath
-import           System.IO
+import Control.Exception
+import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
+import Control.Monad.Except
+import Data.Bits
+import Data.Char
+import Data.Either
+import Data.Functor
+import Data.IORef
+import Data.List
+import Data.Map qualified              as Map
+import Data.Maybe
+import Data.Monoid
+import Data.Semigroup                  (Semigroup (..))
+import Prelude                         hiding (catch)
+import System.Console.GetOpt
+import System.Directory
+import System.Environment
+import System.Exit
+import System.FilePath
+import System.IO
 
 data Flag = Flag String String
 data Status =

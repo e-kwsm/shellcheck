@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 
@@ -76,9 +77,9 @@ import Data.Maybe
 import Data.STRef
 import Debug.Trace -- STRIP
 import GHC.Generics (Generic)
-import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified ShellCheck.Data as Data
+import Data.Map qualified as M
+import Data.Set qualified as S
+import ShellCheck.Data qualified as Data
 import ShellCheck.AST
 import ShellCheck.CFG
 import ShellCheck.Prelude

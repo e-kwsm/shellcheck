@@ -1,21 +1,22 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 module Main where
 
 import Control.Monad
 import System.Exit
-import qualified ShellCheck.Analytics
-import qualified ShellCheck.AnalyzerLib
-import qualified ShellCheck.ASTLib
-import qualified ShellCheck.CFG
-import qualified ShellCheck.CFGAnalysis
-import qualified ShellCheck.Checker
-import qualified ShellCheck.Checks.Commands
-import qualified ShellCheck.Checks.ControlFlow
-import qualified ShellCheck.Checks.Custom
-import qualified ShellCheck.Checks.ShellSupport
-import qualified ShellCheck.EditorConfig
-import qualified ShellCheck.Fixer
-import qualified ShellCheck.Formatter.Diff
-import qualified ShellCheck.Parser
+import ShellCheck.Analytics qualified
+import ShellCheck.AnalyzerLib qualified
+import ShellCheck.ASTLib qualified
+import ShellCheck.CFG qualified
+import ShellCheck.CFGAnalysis qualified
+import ShellCheck.Checker qualified
+import ShellCheck.Checks.Commands qualified
+import ShellCheck.Checks.ControlFlow qualified
+import ShellCheck.Checks.Custom qualified
+import ShellCheck.Checks.ShellSupport qualified
+import ShellCheck.EditorConfig qualified
+import ShellCheck.Fixer qualified
+import ShellCheck.Formatter.Diff qualified
+import ShellCheck.Parser qualified
 
 main = do
     putStrLn "Running ShellCheck tests..."

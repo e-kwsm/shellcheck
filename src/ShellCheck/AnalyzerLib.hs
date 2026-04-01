@@ -18,12 +18,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TemplateHaskell  #-}
 module ShellCheck.AnalyzerLib where
 
 import ShellCheck.AST
 import ShellCheck.ASTLib
-import qualified ShellCheck.CFGAnalysis as CF
+import ShellCheck.CFGAnalysis qualified as CF
 import ShellCheck.Data
 import ShellCheck.Interface
 import ShellCheck.Parser
@@ -41,8 +42,8 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Semigroup
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as Map
+import Data.List.NonEmpty qualified as NE
+import Data.Map qualified as Map
 
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (maxSuccess, quickCheckWithResult, stdArgs)

@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.Formatter.TTY (format, wikiLink) where
 
 import ShellCheck.Fixer
@@ -33,7 +34,7 @@ import Data.List
 import Data.Maybe
 import System.IO
 import System.Info
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 
 wikiLink = "https://www.shellcheck.net/wiki/"
 

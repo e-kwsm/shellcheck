@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.Formatter.CheckStyle (format) where
 
 import ShellCheck.Interface
@@ -25,7 +26,7 @@ import ShellCheck.Formatter.Format
 import Data.Char
 import Data.List
 import System.IO
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 
 format :: IO Formatter
 format = return Formatter {

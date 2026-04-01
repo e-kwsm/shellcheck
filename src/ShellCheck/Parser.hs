@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
@@ -45,10 +46,10 @@ import System.IO
 import Text.Parsec hiding (runParser, (<?>))
 import Text.Parsec.Error
 import Text.Parsec.Pos
-import qualified Control.Monad.Reader as Mr
-import qualified Control.Monad.State as Ms
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map.Strict as Map
+import Control.Monad.Reader qualified as Mr
+import Control.Monad.State qualified as Ms
+import Data.List.NonEmpty qualified as NE
+import Data.Map.Strict qualified as Map
 import Debug.Trace
 
 import Test.QuickCheck.All (quickCheckAll)

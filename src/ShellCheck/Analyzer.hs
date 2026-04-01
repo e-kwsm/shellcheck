@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.Analyzer (analyzeScript, ShellCheck.Analyzer.optionalChecks) where
 
 import ShellCheck.Analytics
@@ -24,10 +25,10 @@ import ShellCheck.AnalyzerLib
 import ShellCheck.Interface
 import Data.List
 import Data.Monoid
-import qualified ShellCheck.Checks.Commands
-import qualified ShellCheck.Checks.ControlFlow
-import qualified ShellCheck.Checks.Custom
-import qualified ShellCheck.Checks.ShellSupport
+import ShellCheck.Checks.Commands qualified
+import ShellCheck.Checks.ControlFlow qualified
+import ShellCheck.Checks.Custom qualified
+import ShellCheck.Checks.ShellSupport qualified
 
 
 -- TODO: Clean up the cruft this is layered on

@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 
 -- Checks that run on the Control Flow Graph (as opposed to the AST)
 -- This is scaffolding for a work in progress.
@@ -35,8 +36,8 @@ import ShellCheck.Interface
 import Control.Monad
 import Control.Monad.Reader
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as M
-import qualified Data.Set as S
+import Data.Map qualified as M
+import Data.Set qualified as S
 import Data.List
 import Data.Maybe
 

@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.Formatter.Diff (format, ShellCheck.Formatter.Diff.runTests) where
 
 import ShellCheck.Interface
@@ -29,9 +30,9 @@ import Data.Algorithm.Diff
 import Data.Array
 import Data.IORef
 import Data.List
-import qualified Data.Monoid as Monoid
+import Data.Monoid qualified as Monoid
 import Data.Maybe
-import qualified Data.Map as M
+import Data.Map qualified as M
 import GHC.Exts (sortWith)
 import System.IO
 import System.FilePath

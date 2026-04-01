@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.Checker (checkScript, ShellCheck.Checker.runTests) where
 
 import ShellCheck.Analyzer
@@ -34,8 +35,8 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 import Control.Monad.Identity
-import qualified Data.Map as Map
-import qualified System.IO
+import Data.Map qualified as Map
+import System.IO qualified
 import Prelude hiding (readFile)
 import Control.Monad
 

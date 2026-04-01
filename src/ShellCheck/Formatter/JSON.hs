@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
     Copyright 2012-2019 Vidar Holen
@@ -29,7 +30,7 @@ import Data.IORef
 import Data.Monoid
 import GHC.Exts
 import System.IO
-import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.ByteString.Lazy.Char8 qualified as BL
 
 format :: IO Formatter
 format = do

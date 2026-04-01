@@ -73,6 +73,7 @@ Afterwards, you can run the ShellCheck tool, as if from the shell, with:
     ghci> runMain ["-x", "file.sh"]
 
 -}
+{-# LANGUAGE ImportQualifiedPost #-}
 
 module ShellCheck.Debug where
 
@@ -92,8 +93,8 @@ import Control.Monad.Writer
 import Data.Graph.Inductive.Graph as G
 import Data.List
 import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
+import Data.Map qualified as M
+import Data.Set qualified as S
 
 
 -- Run all of ShellCheck (minus output formatters)

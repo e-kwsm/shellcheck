@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE PatternGuards #-}
@@ -29,7 +30,7 @@ import ShellCheck.AST
 import ShellCheck.ASTLib
 import ShellCheck.AnalyzerLib
 import ShellCheck.CFG
-import qualified ShellCheck.CFGAnalysis as CF
+import ShellCheck.CFGAnalysis qualified as CF
 import ShellCheck.Data
 import ShellCheck.Interface
 import ShellCheck.Parser
@@ -40,12 +41,12 @@ import Control.Monad
 import Control.Monad.RWS
 import Data.Char
 import Data.Functor.Identity
-import qualified Data.Graph.Inductive.Graph as G
+import Data.Graph.Inductive.Graph qualified as G
 import Data.List
 import Data.Maybe
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.List.NonEmpty qualified as NE
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
 

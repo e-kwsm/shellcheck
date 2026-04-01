@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE NondecreasingIndentation #-}
@@ -27,7 +28,7 @@ import ShellCheck.AST
 import ShellCheck.ASTLib
 import ShellCheck.AnalyzerLib hiding (producesComments)
 import ShellCheck.CFG
-import qualified ShellCheck.CFGAnalysis as CF
+import ShellCheck.CFGAnalysis qualified as CF
 import ShellCheck.Data
 import ShellCheck.Fixer (applyFix)
 import ShellCheck.Parser
@@ -50,9 +51,9 @@ import Data.Maybe
 import Data.Ord
 import Data.Semigroup
 import Debug.Trace -- STRIP
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as S
+import Data.List.NonEmpty qualified as NE
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as S
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
 

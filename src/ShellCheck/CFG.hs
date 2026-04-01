@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 
 -- Constructs a Control Flow Graph from an AST
@@ -51,10 +52,10 @@ import Control.Monad.Identity
 import Data.Array.Unboxed
 import Data.Array.ST
 import Data.List hiding (map)
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
+import Data.Map qualified as M
+import Data.Set qualified as S
 import Control.Monad.RWS.Lazy
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Query.DFS

@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 module ShellCheck.ASTLib where
 
 import ShellCheck.AST
@@ -31,8 +32,8 @@ import Data.Functor
 import Data.Functor.Identity
 import Data.List
 import Data.Maybe
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as Map
+import Data.List.NonEmpty qualified as NE
+import Data.Map qualified as Map
 import Numeric (readHex, readOct, showHex)
 
 import Test.QuickCheck

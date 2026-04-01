@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
     Copyright 2012-2019 Vidar Holen
@@ -28,8 +29,8 @@ import Data.Aeson
 import Data.IORef
 import Data.Monoid
 import System.IO
-import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.List.NonEmpty as NE
+import Data.ByteString.Lazy.Char8 qualified as BL
+import Data.List.NonEmpty qualified as NE
 
 format :: IO Formatter
 format = do
