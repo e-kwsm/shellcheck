@@ -2216,7 +2216,7 @@ readSource t@(T_Redirecting _ _ (T_SimpleCommand cmdId _ (cmd:args'))) = do
         -- Hack to avoid 'source ~/foo' trying to read from literal tilde
         guard . not $ "~/" `isPrefixOf` name
         return name
-    let fileId = fromMaybe (getId cmd) (getId <$> file)
+    let fileId = maybe (getId cmd) getId file
     case literalFile of
         Nothing -> do
             parseNoteAtId fileId WarningC 1090
