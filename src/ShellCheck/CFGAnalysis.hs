@@ -19,7 +19,7 @@
 -}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass, DeriveGeneric, DerivingStrategies #-}
 
 {-
     Data Flow Analysis on a Control Flow Graph.
@@ -108,7 +108,7 @@ data CFGAnalysis = CFGAnalysis {
     tokenToNodes :: M.Map Id (S.Set Node),
     postDominators :: Array Node [Node],
     nodeToData :: M.Map Node (ProgramState, ProgramState)
-} deriving (Show)
+} deriving stock (Show)
 
 -- The program state we expose externally
 data ProgramState = ProgramState {
@@ -116,7 +116,7 @@ data ProgramState = ProgramState {
     variablesInScope :: M.Map String VariableState,
     exitCodes :: S.Set Id,
     stateIsReachable :: Bool
-} deriving (Show, Eq, Generic, NFData)
+} deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
 
 internalToExternal :: InternalState -> ProgramState
 internalToExternal s =
@@ -189,7 +189,7 @@ data InternalState = InternalState {
     sFunctionTargets :: VersionedMap String FunctionValue,
     sExitCodes :: Maybe (S.Set Id),
     sIsReachable :: Maybe Bool
-} deriving (Show, Generic, NFData)
+} deriving stock (Show, Generic) deriving anyclass (NFData)
 
 newInternalState = InternalState {
     sVersion = 0,
@@ -278,11 +278,11 @@ data StateDependency =
     | DepIsRecursive Node Bool
     -- The set of commands that could have provided the exit code $?
     | DepExitCodes (S.Set Id)
-    deriving (Show, Eq, Ord, Generic, NFData)
+    deriving stock (Show, Eq, Ord, Generic) deriving anyclass (NFData)
 
 -- A function definition, or lack thereof
 data FunctionDefinition = FunctionUnknown | FunctionDefinition String Node Node
-    deriving (Show, Eq, Ord, Generic, NFData)
+    deriving stock (Show, Eq, Ord, Generic) deriving anyclass (NFData)
 
 -- The Set of places a command name can point (it's a Set to handle conditionally defined functions)
 type FunctionValue = S.Set FunctionDefinition
@@ -323,19 +323,19 @@ data VariableValue = VariableValue {
     spaceStatus :: SpaceStatus,
     numericalStatus :: NumericalStatus
 }
-    deriving (Show, Eq, Ord, Generic, NFData)
+    deriving stock (Show, Eq, Ord, Generic) deriving anyclass (NFData)
 
 data VariableState = VariableState {
     variableValue :: VariableValue,
     variableProperties :: VariableProperties
 }
-    deriving (Show, Eq, Ord, Generic, NFData)
+    deriving stock (Show, Eq, Ord, Generic) deriving anyclass (NFData)
 
 -- Whether or not the value needs quoting (has spaces/globs), or we don't know
-data SpaceStatus = SpaceStatusEmpty | SpaceStatusClean | SpaceStatusDirty deriving (Show, Eq, Ord, Generic, NFData)
+data SpaceStatus = SpaceStatusEmpty | SpaceStatusClean | SpaceStatusDirty deriving stock (Show, Eq, Ord, Generic) deriving anyclass (NFData)
 --
 -- Whether or not the value needs quoting (has spaces/globs), or we don't know
-data NumericalStatus = NumericalStatusUnknown | NumericalStatusEmpty | NumericalStatusMaybe | NumericalStatusDefinitely deriving (Show, Eq, Ord, Generic, NFData)
+data NumericalStatus = NumericalStatusUnknown | NumericalStatusEmpty | NumericalStatusMaybe | NumericalStatusDefinitely deriving stock (Show, Eq, Ord, Generic) deriving anyclass (NFData)
 
 -- The set of possible sets of properties for this variable
 type VariableProperties = S.Set (S.Set CFVariableProp)
@@ -400,7 +400,7 @@ data VersionedMap k v = VersionedMap {
     mapVersion :: Integer,
     mapStorage :: M.Map k v
 }
-    deriving (Generic, NFData)
+    deriving stock (Generic) deriving anyclass (NFData)
 
 -- This makes states more readable but inhibits copy-paste
 instance (Show k, Show v) => Show (VersionedMap k v) where
@@ -456,7 +456,7 @@ data StackEntry s = StackEntry {
     -- The original input state for this stack entry
     stackState :: InternalState
 }
-    deriving (Eq, Generic, NFData)
+    deriving stock (Eq, Generic) deriving anyclass (NFData)
 
 -- Overwrite a base state with the contents of a diff state
 -- This is unrelated to join/merge.
