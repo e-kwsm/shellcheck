@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
@@ -153,16 +154,16 @@ almostSpace = do
         return ' '
 
 --------- Message/position annotation on top of user state
-data ParseNote = ParseNote SourcePos SourcePos Severity Code String deriving (Show, Eq)
+data ParseNote = ParseNote SourcePos SourcePos Severity Code String deriving stock (Show, Eq)
 data Context =
         ContextName SourcePos String
         | ContextAnnotation [Annotation]
         | ContextSource String
-    deriving (Show)
+    deriving stock (Show)
 
 data HereDocContext =
         HereDocPending Id Dashed Quoted String [Context] -- on linefeed, read this T_HereDoc
-    deriving (Show)
+    deriving stock (Show)
 
 data UserState = UserState {
     lastId :: Id,
