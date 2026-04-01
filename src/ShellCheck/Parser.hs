@@ -20,6 +20,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NondecreasingIndentation #-}
 module ShellCheck.Parser (parseScript, runTests) where
@@ -3413,7 +3414,7 @@ readScriptFile sourced = do
             let annotations = fileAnnotations ++ rcAnnotations
             annotationId <- endSpan annotationStart
             let shellAnnotationSpecified =
-                    any (\x -> case x of ShellOverride {} -> True; _ -> False) annotations
+                    any (\case ShellOverride {} -> True; _ -> False) annotations
             shellOverride <- Mr.asks shellTypeOverride
             let ignoreShebang = shellAnnotationSpecified || isJust shellOverride
             let executable = executableFromShebang shebangString
