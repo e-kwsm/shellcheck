@@ -19,6 +19,7 @@
 -}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE NondecreasingIndentation #-}
 module ShellCheck.Analytics (checker, optionalChecks, ShellCheck.Analytics.runTests) where
@@ -847,8 +848,8 @@ checkRedirectToSame params s@(T_Pipeline _ _ list) =
             addComment $ note newId
             addComment $ note exceptId
     checkOccurrences _ _ = return ()
-    getAllRedirs = concatMap (\t ->
-        case t of
+    getAllRedirs = concatMap (
+        \case
             T_Redirecting _ ls _ -> concatMap getRedirs ls
             _ -> [])
     getRedirs (T_FdRedirect _ _ (T_IoFile _ op file)) =
@@ -2930,7 +2931,7 @@ checkUnpassedInFunctions params root =
             _ -> False
 
     isDirectChildOf child parent = fromMaybe False $ do
-        function <- find (\x -> case x of
+        function <- find (\case
             T_Function {} -> True
             T_Script {} -> True  -- for sourced files
             _ -> False) $
