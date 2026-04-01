@@ -1131,7 +1131,7 @@ handleCommand cmd vars args literalCmd = do
             return (getId arg, name)
 
         getFromFallback =
-            listToMaybe $ mapMaybe getIfVar $ reverse args
+            listToMaybe $ reverse (mapMaybe getIfVar args)
         getIfVar c = do
             name <- getLiteralString c
             guard $ isVariableName name
@@ -1162,7 +1162,7 @@ handleCommand cmd vars args literalCmd = do
             let
                 names = reverse $ map fromJust $ takeWhile isJust $ map (\c -> sequence (getId c, getLiteralString c)) $ reverse args
                 namesOrDefault = if null names then [(getId cmd, "REPLY")] else names
-                hasDashA = any (== "a") $ map fst $ getGenericOpts args
+                hasDashA = any ((== "a") . fst) (getGenericOpts args)
                 value = if hasDashA then CFValueArray else CFValueString
             in
                 map (\(id, name) -> IdTagged id $ CFWriteVariable name value) namesOrDefault
