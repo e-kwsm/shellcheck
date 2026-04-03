@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE DerivingStrategies #-}
 import qualified ShellCheck.Analyzer
 import           ShellCheck.Checker
 import           ShellCheck.Data
@@ -62,7 +63,7 @@ data Status =
     | SupportFailure
     | SyntaxFailure
     | RuntimeException
-  deriving (Ord, Eq, Show)
+  deriving stock (Ord, Eq, Show)
 
 instance Semigroup Status where
     (<>) = max
