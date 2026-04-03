@@ -97,7 +97,7 @@ data CFNode =
     | CFUnreachable
     -- Assignment of $!
     | CFSetBackgroundPid Id
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 -- Edge labels in a Control Flow Graph
 data CFEdge =
@@ -108,7 +108,7 @@ data CFEdge =
     | CFEFalseFlow
     -- An edge followed on exit
     | CFEExit
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 -- Actions we track
 data CFEffect =
@@ -128,10 +128,10 @@ data CFEffect =
     | CFHintArray String
     -- Operation implies that the variable will be defined (e.g. [ -z "$var" ])
     | CFHintDefined String
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 data IdTagged a = IdTagged Id a
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 -- Where a variable's value comes from
 data CFValue =
@@ -145,7 +145,7 @@ data CFValue =
     | CFValueInteger
     -- Token 'Id' concatenates and assigns the given parts
     | CFValueComputed Id [CFStringPart]
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 -- Simplified computed strings
 data CFStringPart =
@@ -157,11 +157,11 @@ data CFStringPart =
     | CFStringInteger
     -- An unknown string value, for things we can't handle
     | CFStringUnknown
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 -- The properties of a variable
 data CFVariableProp = CFVPExport | CFVPArray | CFVPAssociative | CFVPInteger
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 -- Options when generating CFG
 data CFGParameters = CFGParameters {
@@ -1205,7 +1205,7 @@ handleCommand cmd vars args literalCmd = do
 none = newStructuralNode
 
 data Scope = GlobalScope | LocalScope | PrefixScope
-  deriving stock (Eq, Ord, Show, Generic) deriving anyclass NFData
+  deriving stock (Eq, Ord, Show, Generic) deriving anyclass (NFData)
 
 buildAssignment scope t = do
     op <- case t of
