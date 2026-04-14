@@ -510,7 +510,7 @@ checkInjectableFindSh = CommandCheck (Basename "find") (check . arguments)
   where
     check args = do
         let idStrings = map (\x -> (getId x, onlyLiteralString x)) args
-        match pattern idStrings
+        match pattern' idStrings
 
     match _ [] = return ()
     match [] (next:_) = action next
@@ -518,7 +518,7 @@ checkInjectableFindSh = CommandCheck (Basename "find") (check . arguments)
         when (p arg) $ match tests args
         match (p:tests) args
 
-    pattern = [
+    pattern' = [
         (`elem` ["-exec", "-execdir", "-ok", "-okdir"]),
         (`elem` ["sh", "bash", "dash", "ksh"]),
         (== "-c")
@@ -533,11 +533,11 @@ prop_checkFindActionPrecedence2 = verifyNot checkFindActionPrecedence "find . -n
 prop_checkFindActionPrecedence3 = verifyNot checkFindActionPrecedence "find . -name '*.wav' -o -name '*.au'"
 checkFindActionPrecedence = CommandCheck (Basename "find") (f . arguments)
   where
-    pattern = [isMatch, const True, isParam ["-o", "-or"], isMatch, const True, isAction]
-    f list | length list < length pattern = return ()
+    pattern' = [isMatch, const True, isParam ["-o", "-or"], isMatch, const True, isAction]
+    f list | length list < length pattern' = return ()
     f list@(_:rest) =
-        if and (zipWith ($) pattern list)
-        then warnFor (list !! (length pattern - 1))
+        if and (zipWith ($) pattern' list)
+        then warnFor (list !! (length pattern' - 1))
         else f rest
     isMatch = isParam [ "-name", "-regex", "-iname", "-iregex", "-wholename", "-iwholename" ]
     isAction = isParam [ "-exec", "-execdir", "-delete", "-print", "-print0", "-fls", "-fprint", "-fprint0", "-fprintf", "-ls", "-ok", "-okdir", "-printf" ]
