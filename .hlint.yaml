@@ -35,6 +35,7 @@
 - ignore: {name: "Use isNothing"} # 1 hint
 - ignore: {name: "Use lambda-case"} # 3 hints
 - ignore: {name: "Use list comprehension"} # 3 hints
+- ignore: {name: "Use map once"} # 1 hint
 - ignore: {name: "Use map with tuple-section"} # 1 hint
 - suggest: {name: "Use mapM_"} # 1 hint
 - ignore: {name: "Use mapMaybe"} # 1 hint
