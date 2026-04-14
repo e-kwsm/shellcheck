@@ -1456,7 +1456,7 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
     findReferences cfga list = do
         let graph = CF.graph cfga
         let nodesMap = CF.tokenToNodes cfga
-        let nodes = S.unions $ map (\id -> M.findWithDefault S.empty id nodesMap) $ map getId $ list
+        let nodes = S.unions $ map ((\id -> M.findWithDefault S.empty id nodesMap) . getId) list
         let labels = mapMaybe (G.lab graph) $ S.toList nodes
         let references = M.fromList $ concatMap refFromLabel labels
         return references
