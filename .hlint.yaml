@@ -12,7 +12,6 @@
 - ignore: {name: "Eta reduce"} # 2 hints
 - ignore: {name: "Move reverse out"} # 3 hints
 - ignore: {name: "Redundant $"} # 1 hint
-- ignore: {name: "Redundant <$>"} # 1 hint
 - ignore: {name: "Redundant bracket"} # 7 hints
 - ignore: {name: "Redundant map"} # 1 hint
 - ignore: {name: "Use <$>"} # 1 hint
@@ -22,7 +21,6 @@
 - ignore: {name: "Use for_"} # 4 hints
 - ignore: {name: "Use null"} # 9 hints
 - ignore: {name: "Use second"} # 1 hint
-- ignore: {name: "Use section"} # 2 hints
 - ignore: {name: "Use tuple-section"} # 1 hint
 
 
