@@ -7,46 +7,8 @@
 
 
 # Warnings currently triggered by your code
-- suggest: {name: "Avoid lambda"} # 4 hints
-- suggest: {name: "Avoid lambda using `infix`"} # 11 hints
-- suggest: {name: "Eta reduce"} # 18 hints
-- suggest: {name: "Evaluate"} # 1 hint
-- suggest: {name: "Functor law"} # 1 hint
-- suggest: {name: "Hoist not"} # 4 hints
-- suggest: {name: "Move brackets to avoid $"} # 40 hints
-- suggest: {name: "Redundant $"} # 51 hints
-- suggest: {name: "Redundant <$>"} # 1 hint
-- suggest: {name: "Redundant bracket"} # 72 hints
-- suggest: {name: "Redundant map"} # 1 hint
-- suggest: {name: "Replace case with maybe"} # 1 hint
-- suggest: {name: "Use $>"} # 1 hint
-- suggest: {name: "Use ++"} # 1 hint
-- suggest: {name: "Use :"} # 2 hints
-- suggest: {name: "Use <$>"} # 9 hints
-- suggest: {name: "Use any"} # 1 hint
-- suggest: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
-- suggest: {name: "Use elem"} # 1 hint
-- suggest: {name: "Use first"} # 2 hints
-- suggest: {name: "Use fmap"} # 1 hint
 - ignore: {name: "Use for_"} # 4 hints
-- suggest: {name: "Use fromRight"} # 4 hints
-- suggest: {name: "Use isNothing"} # 1 hint
-- suggest: {name: "Use lambda-case"} # 3 hints
-- suggest: {name: "Use list comprehension"} # 3 hints
-- suggest: {name: "Use map once"} # 1 hint
-- suggest: {name: "Use map with tuple-section"} # 1 hint
-- suggest: {name: "Use mapM_"} # 1 hint
-- suggest: {name: "Use mapMaybe"} # 1 hint
-- suggest: {name: "Use maybe"} # 1 hint
-- suggest: {name: "Use newtype instead of data"} # 3 hints
-- suggest: {name: "Use notElem"} # 2 hints
-- suggest: {name: "Use null"} # 1 hint
-- suggest: {name: "Use record patterns"} # 4 hints
-- suggest: {name: "Use second"} # 4 hints
-- suggest: {name: "Use section"} # 2 hints
-- suggest: {name: "Use tuple-section"} # 10 hints
-- suggest: {name: "Use unless"} # 3 hints
 
 
 # Specify additional command line arguments
