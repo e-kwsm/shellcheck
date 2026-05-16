@@ -62,55 +62,56 @@ verify f s = producesComments (getChecker [f]) s == Just True
 verifyNot f s = producesComments (getChecker [f]) s == Just False
 
 commandChecks :: [CommandCheck]
-commandChecks = [
-    checkTr
-    ,checkFindNameGlob
-    ,checkExpr
-    ,checkGrepRe
-    ,checkTrapQuotes
-    ,checkReturn
-    ,checkExit
-    ,checkFindExecWithSingleArgument
-    ,checkUnusedEchoEscapes
-    ,checkInjectableFindSh
-    ,checkFindActionPrecedence
-    ,checkMkdirDashPM
-    ,checkNonportableSignals
-    ,checkInteractiveSu
-    ,checkSshCommandString
-    ,checkPrintfVar
-    ,checkUuoeCmd
-    ,checkSetAssignment
-    ,checkExportedExpansions
-    ,checkAliasesUsesArgs
-    ,checkAliasesExpandEarly
-    ,checkUnsetGlobs
-    ,checkFindWithoutPath
-    ,checkTimeParameters
-    ,checkTimedCommand
-    ,checkLocalScope
-    ,checkDeprecatedTempfile
-    ,checkDeprecatedEgrep
-    ,checkDeprecatedFgrep
-    ,checkWhileGetoptsCase
-    ,checkCatastrophicRm
-    ,checkLetUsage
-    ,checkMvArguments, checkCpArguments, checkLnArguments
-    ,checkFindRedirections
-    ,checkReadExpansions
-    ,checkSourceArgs
-    ,checkChmodDashr
-    ,checkXargsDashi
-    ,checkUnquotedEchoSpaces
-    ,checkEvalArray
+commandChecks =
+    [ checkTr
+    , checkFindNameGlob
+    , checkExpr
+    , checkGrepRe
+    , checkTrapQuotes
+    , checkReturn
+    , checkExit
+    , checkFindExecWithSingleArgument
+    , checkUnusedEchoEscapes
+    , checkInjectableFindSh
+    , checkFindActionPrecedence
+    , checkMkdirDashPM
+    , checkNonportableSignals
+    , checkInteractiveSu
+    , checkSshCommandString
+    , checkPrintfVar
+    , checkUuoeCmd
+    , checkSetAssignment
+    , checkExportedExpansions
+    , checkAliasesUsesArgs
+    , checkAliasesExpandEarly
+    , checkUnsetGlobs
+    , checkFindWithoutPath
+    , checkTimeParameters
+    , checkTimedCommand
+    , checkLocalScope
+    , checkDeprecatedTempfile
+    , checkDeprecatedEgrep
+    , checkDeprecatedFgrep
+    , checkWhileGetoptsCase
+    , checkCatastrophicRm
+    , checkLetUsage
+    , checkMvArguments
+    , checkCpArguments
+    , checkLnArguments
+    , checkFindRedirections
+    , checkReadExpansions
+    , checkSourceArgs
+    , checkChmodDashr
+    , checkXargsDashi
+    , checkUnquotedEchoSpaces
+    , checkEvalArray
     ]
-    ++ map checkArgComparison ("alias" : declaringCommands)
-    ++ map checkMaskedReturns declaringCommands
-    ++ map checkMultipleDeclaring declaringCommands
-    ++ map checkBackreferencingDeclaration declaringCommands
-    ++ map checkSudoArgs privilegeElevationCommands
-    ++ map checkSudoRedirect privilegeElevationCommands
-
+        ++ map checkArgComparison ("alias" : declaringCommands)
+        ++ map checkMaskedReturns declaringCommands
+        ++ map checkMultipleDeclaring declaringCommands
+        ++ map checkBackreferencingDeclaration declaringCommands
+        ++ map checkSudoArgs privilegeElevationCommands
+        ++ map checkSudoRedirect privilegeElevationCommands
 
 optionalChecks = map fst optionalCommandChecks
 optionalCommandChecks :: [(CheckDescription, CommandCheck)]
@@ -719,11 +720,12 @@ prop_checkPrintfVar21 = verify checkPrintfVar "printf '%d %(%s)T'"
 prop_checkPrintfVar22 = verify checkPrintfVar "printf '%s\n%s' foo"
 prop_checkPrintfVar23 = verifyNot checkPrintfVar "printf -vTODAY '%(%Y)T'"
 
-checkPrintfVar = CommandCheck (Exactly "printf") (f . arguments) where
-    f (doubledash:rest) | getLiteralString doubledash == Just "--" = f rest
-    f (dashv:var:rest) | getLiteralString dashv == Just "-v" = f rest
-    f (dashvVar:rest) | Just ('-':'v':_:_) <- getLiteralString dashvVar = f rest
-    f (format:params) = check format params
+checkPrintfVar = CommandCheck (Exactly "printf") (f . arguments)
+  where
+    f (doubledash : rest) | getLiteralString doubledash == Just "--" = f rest
+    f (dashv : var : rest) | getLiteralString dashv == Just "-v" = f rest
+    f (dashvVar : rest) | Just ('-' : 'v' : _ : _) <- getLiteralString dashvVar = f rest
+    f (format : params) = check format params
     f _ = return ()
 
     check format more = do
@@ -1284,17 +1286,23 @@ checkSudoRedirect cmd = CommandCheck (Basename cmd) f
                 mapM_ warnAbout redirs
     warnAbout (T_FdRedirect _ s (T_IoFile id op file))
         | (null s || s == "&") && not (special file) =
-        case op of
-            T_Less _ ->
-              info (getId op) 2024
-                "sudo/doas/run0 doesn't affect redirects. Use sudo cat file | .."
-            T_Greater _ ->
-              warn (getId op) 2024
-                "sudo/doas/run0 doesn't affect redirects. Use ..| sudo tee file"
-            T_DGREAT _ ->
-              warn (getId op) 2024
-                "sudo/doas/run0 doesn't affect redirects. Use .. | sudo tee -a file"
-            _ -> return ()
+            case op of
+                T_Less _ ->
+                    info
+                        (getId op)
+                        2024
+                        "sudo/doas/run0 doesn't affect redirects. Use sudo cat file | .."
+                T_Greater _ ->
+                    warn
+                        (getId op)
+                        2024
+                        "sudo/doas/run0 doesn't affect redirects. Use ..| sudo tee file"
+                T_DGREAT _ ->
+                    warn
+                        (getId op)
+                        2024
+                        "sudo/doas/run0 doesn't affect redirects. Use .. | sudo tee -a file"
+                _ -> return ()
     warnAbout _ = return ()
     special file = concat (oversimplify file) == "/dev/null"
 
@@ -1313,7 +1321,7 @@ checkSudoArgs cmd = CommandCheck (Basename cmd) f
         command <- getLiteralString commandArg
         guard $ command `elem` builtins
         return $ warn (getId t) 2232 $ "Can't use sudo/doas/run0 with builtins like " ++ command ++ ". Did you want sudo/doas/run0 sh -c .. instead?"
-    builtins = [ "cd", "command", "declare", "eval", "exec", "exit", "export", "hash", "history", "local", "popd", "pushd", "read", "readonly", "return", "set", "source", "trap", "type", "typeset", "ulimit", "umask", "unset", "wait" ]
+    builtins = ["cd", "command", "declare", "eval", "exec", "exit", "export", "hash", "history", "local", "popd", "pushd", "read", "readonly", "return", "set", "source", "trap", "type", "typeset", "ulimit", "umask", "unset", "wait"]
     -- This mess is why ShellCheck prefers not to know.
     parseOpts = getBsdOpts "vAknSbEHPa:g:h:p:u:c:T:r:"
 

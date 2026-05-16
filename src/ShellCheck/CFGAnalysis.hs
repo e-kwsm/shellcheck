@@ -72,6 +72,7 @@ import Data.Char
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Query.DFS
 import Data.List hiding (map)
+
 -- STRIP
 
 import qualified Data.Map as M

@@ -45,6 +45,7 @@ import Data.Char
 import Data.Function (on)
 import Data.Functor
 import Data.List
+
 -- STRIP
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
@@ -3434,9 +3435,9 @@ checkUncheckedCdPushdPopd params root =
     isLastCommandInFunction t =
         go $ NE.tail $ getPath (parentMap params) t
       where
-        go (child:T_BraceGroup _ commands:T_Function {}:_) =
+        go (child : T_BraceGroup _ commands : T_Function{} : _) =
             not (null commands) && getId (last commands) == getId child
-        go (_:rest) = go rest
+        go (_ : rest) = go rest
         go [] = False
     isSafeDir t = case oversimplify t of
         [_, str] -> str `matches` regex
