@@ -1132,7 +1132,7 @@ handleCommand cmd vars args literalCmd = do
             return (getId arg, name)
 
         getFromFallback =
-            listToMaybe $ reverse (mapMaybe getIfVar args)
+            listToMaybe $ reverse $ mapMaybe getIfVar args
         getIfVar c = do
             name <- getLiteralString c
             guard $ isVariableName name
