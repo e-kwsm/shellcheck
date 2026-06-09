@@ -7,7 +7,6 @@
 
 
 # Warnings currently triggered by your code
-- ignore: {name: "Move reverse out"} # 3 hints
 - ignore: {name: "Redundant $"} # 1 hint
 - ignore: {name: "Redundant bracket"} # 7 hints
 - ignore: {name: "Redundant map"} # 1 hint
