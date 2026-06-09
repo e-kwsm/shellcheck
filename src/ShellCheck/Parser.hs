@@ -3492,7 +3492,7 @@ makeErrorFor parsecError =
       pos = errorPos parsecError
 
 getStringFromParsec errors =
-        headOrDefault "" (reverse (mapMaybe f errors))  ++
+        headOrDefault "" (reverse $ mapMaybe f errors)  ++
             " Fix any mentioned problems and try again."
     where
         f err =
