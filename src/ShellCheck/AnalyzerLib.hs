@@ -752,7 +752,7 @@ getModifiedVariableCommand base@(T_SimpleCommand id cmdPrefix (T_NormalWord _ (T
         -- If arg parsing fails (due to bad or new flags), get the last variable name
         fallback :: Maybe (Token, Token, String, DataType)
         fallback = do
-            (name, token) <- listToMaybe . mapMaybe f $ reverse rest
+            (name, token) <- listToMaybe (reverse (mapMaybe f rest))
             return (base, token, name, DataArray SourceExternal)
         f arg = do
             name <- getLiteralString arg
