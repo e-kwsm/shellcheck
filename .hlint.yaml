@@ -7,6 +7,9 @@
 
 
 # Warnings currently triggered by your code
+- suggest: {name: "Move brackets to avoid $"} # 9 hints
+- suggest: {name: "Redundant bracket"} # 3 hints
+- suggest: {name: "Use <$>"} # 1 hint
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use for_"} # 4 hints
 
