@@ -2247,7 +2247,7 @@ checkSpacefulnessCfg' dirtyPass params token@(T_DollarBraced id _ list) =
         return $ isCleanState value
 
     isCleanState state =
-        (all (S.member CFVPInteger) $ CF.variableProperties state)
+        all (S.member CFVPInteger) (CF.variableProperties state)
         || CF.spaceStatus (CF.variableValue state) == CF.SpaceStatusClean
 
     isDefaultAssignment parents token =
@@ -2638,7 +2638,7 @@ prop_checkGlobsAsOptions6 = verifyNot checkGlobsAsOptions "printf '%s\\n' *"
 prop_checkGlobsAsOptions7 = verifyNot checkGlobsAsOptions "set -f; ls *"
 prop_checkGlobsAsOptions8 = verifyNot checkGlobsAsOptions "set -o noglob\nrm *"
 checkGlobsAsOptions params cmd@(T_SimpleCommand _ _ args) =
-    unless (((fromMaybe "" $ getCommandBasename cmd) `elem` ["echo", "printf"]) || hasNoglob params) $
+    unless ((fromMaybe "" (getCommandBasename cmd) `elem` ["echo", "printf"]) || hasNoglob params) $
         mapM_ check $ takeWhile (not . isEndOfArgs) (drop 1 args)
   where
     check v@(T_NormalWord _ (T_Glob id s:_)) | s == "*" || s == "?" =
@@ -3967,7 +3967,7 @@ checkSubshelledTests params t =
                     style id 2233 "Remove superfluous (..) around condition to avoid subshell overhead."
 
                 -- Special case for ([ x ]), except for func() ( [ x ] )
-                _ | isSingleTest list && (not $ isFunctionBody (getPath (parentMap params) t)) ->
+                _ | isSingleTest list && not (isFunctionBody (getPath (parentMap params) t)) ->
                     style id 2234 "Remove superfluous (..) around test command to avoid subshell overhead."
 
                 -- General case for ([ x ] || [ y ] && etc)
@@ -4318,7 +4318,7 @@ groupByLink f list =
     c next rest current span =
         if f current next
         then rest next (current:span)
-        else (reverse $ current:span) : rest next []
+        else reverse (current:span) : rest next []
     n current span = [reverse (current:span)]
 
 
@@ -4628,7 +4628,7 @@ checkEqualsInCommand params originalToken =
                 leadingNumberMsg (getId cmd)
 
             -- var${foo}x=42
-            (_:_) | mayBeVariableName leading && (all isVariableChar $ takeWhile (/= '=') s) ->
+            (_:_) | mayBeVariableName leading && all isVariableChar (takeWhile (/= '=') s) ->
                 indirectionMsg (getId cmd)
 
             _ -> genericMsg (getId cmd)
@@ -5024,7 +5024,7 @@ checkExtraMaskedReturns params t =
             return $
                 case basename of
                     -- local -r x=$(false) is intentionally ignored for SC2155
-                    "local" | "r" `elem` (map snd $ getAllFlags cmd) -> False
+                    "local" | "r" `elem` map snd (getAllFlags cmd) -> False
                     _ -> basename `elem` declaringCommands
 
     isHarmlessCommand t = fromMaybe False $ do
@@ -5098,7 +5098,7 @@ checkCommandIsUnreachable params t =
         T_Function id _ _ _ _ ->
             when (isUnreachableFunction t
                     && (not . any isUnreachableFunction . NE.drop 1 $ getPath (parentMap params) t)
-                    && (not $ isSourced params t)) $
+                    && not (isSourced params t)) $
                 info id 2329 "This function is never invoked. Check usage (or ignored if invoked indirectly)."
         _ -> return ()
   where
