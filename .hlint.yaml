@@ -11,19 +11,19 @@
 - ignore: {name: "Avoid lambda using `infix`"} # 10 hints
 - ignore: {name: "Eta reduce"} # 18 hints
 - ignore: {name: "Evaluate"} # 1 hint
-- ignore: {name: "Functor law"} # 1 hint
 - ignore: {name: "Hoist not"} # 2 hints
 - ignore: {name: "Move brackets to avoid $"} # 39 hints
+- ignore: {name: "Move reverse out"} # 3 hints
 - ignore: {name: "Parse error: on input `pattern'"} # 1 hint
 - ignore: {name: "Redundant $"} # 44 hints
-- ignore: {name: "Redundant <$>"} # 1 hint
-- ignore: {name: "Redundant bracket"} # 72 hints
+- ignore: {name: "Redundant <$>"} # 2 hints
+- ignore: {name: "Redundant bracket"} # 68 hints
 - ignore: {name: "Redundant map"} # 1 hint
 - ignore: {name: "Replace case with maybe"} # 1 hint
 - ignore: {name: "Use $>"} # 1 hint
 - ignore: {name: "Use ++"} # 1 hint
 - ignore: {name: "Use :"} # 2 hints
-- suggest: {name: "Use <$>"} # 9 hints
+- suggest: {name: "Use <$>"} # 10 hints
 - ignore: {name: "Use any"} # 1 hint
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
@@ -35,7 +35,6 @@
 - ignore: {name: "Use isNothing"} # 1 hint
 - ignore: {name: "Use lambda-case"} # 3 hints
 - ignore: {name: "Use list comprehension"} # 3 hints
-- ignore: {name: "Use map once"} # 1 hint
 - ignore: {name: "Use map with tuple-section"} # 1 hint
 - ignore: {name: "Use mapM_"} # 1 hint
 - ignore: {name: "Use mapMaybe"} # 1 hint
