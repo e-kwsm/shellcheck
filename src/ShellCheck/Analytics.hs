@@ -787,7 +787,7 @@ checkFindExec _ cmd@(T_SimpleCommand _ _ t@(h:r)) | cmd `isCommand` "find" = do
         _ -> False
 
     warnFor x =
-        when(shouldWarn x) $
+        when (shouldWarn x) $
             info (getId x) 2014 "This will expand once before find runs, not per file found."
 
     fromWord (T_NormalWord _ l) = l
