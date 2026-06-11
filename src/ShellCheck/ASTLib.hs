@@ -135,7 +135,7 @@ getFlagsUntil stopCondition (T_SimpleCommand _ _ (_:args)) =
     let tokenAndText = map (\x -> (x, concat $ oversimplify x)) args
         (flagArgs, rest) = break (stopCondition . snd) tokenAndText
     in
-        concatMap flag flagArgs ++ map (\(t, _) -> (t, "")) rest
+        (concatMap flag flagArgs <> map (\(t, _) -> (t, "")) rest)
   where
     flag (x, '-':'-':arg) = [ (x, takeWhile (/= '=') arg) ]
     flag (x, '-':args) = map (\v -> (x, [v])) args
@@ -269,13 +269,12 @@ getGenericOpts = process
                 in
                     case rest of
                         next:_ | "-" `isPrefixOf` getLiteralStringDef "\0" next  ->
-                            map (\c -> ([c], (token, token))) opts ++ process rest
+                            map (\c -> ([c], (token, token))) opts <> process rest
                         next:remainder ->
                             case reverse opts of
                                 last:initial ->
-                                    map (\c -> ([c], (token, token))) (reverse initial)
-                                        ++ [([last], (token, next))]
-                                        ++ process remainder
+                                    map (\c -> ([c], (token, token))) (reverse initial) <> ([([last], (token, next))]
+                                        ++ process remainder)
                                 [] -> process remainder
                         [] -> map (\c -> ([c], (token, token))) opts
             _ -> ("", (token, token)) : process rest
@@ -360,10 +359,10 @@ getTrailingUnquotedLiteral t =
 getLeadingUnquotedString :: Token -> Maybe String
 getLeadingUnquotedString t =
     case t of
-        T_NormalWord _ ((T_Literal _ s) : rest) -> return $ s ++ from rest
+        T_NormalWord _ ((T_Literal _ s) : rest) -> return $ (s <> from rest)
         _ -> Nothing
   where
-    from ((T_Literal _ s):rest) = s ++ from rest
+    from ((T_Literal _ s):rest) = s <> from rest
     from _ = ""
 
 -- Maybe get the literal string of this token and any globs in it.
@@ -431,19 +430,19 @@ getLiteralStringExt more = g
             '?' -> '?' : rest
             'x' ->
                 case readHex (take 2 cs) of
-                    [(n, s)] -> chr n : s ++ decodeEscapes (drop 2 cs)
+                    [(n, s)] -> chr n : (s <> decodeEscapes (drop 2 cs))
                     _ -> '\\' : 'x' : rest
             'u' ->
                 case readHex (take 4 cs) of
-                    [(n, s)] -> chr n : s ++ decodeEscapes (drop 4 cs)
+                    [(n, s)] -> chr n : (s <> decodeEscapes (drop 4 cs))
                     _ -> '\\' : 'x' : rest
             'U' ->
                 case readHex (take 8 cs) of
-                    [(n, s)] -> chr n : s ++ decodeEscapes (drop 8 cs)
+                    [(n, s)] -> chr n : (s <> decodeEscapes (drop 8 cs))
                     _ -> '\\' : 'x' : rest
             _ ->
                 case readOct (c:take 2 cs) of
-                    [(n, s)] -> chr (n `mod` 256) : s ++ decodeEscapes (drop 2 cs)
+                    [(n, s)] -> chr (n `mod` 256) : (s <> decodeEscapes (drop 2 cs))
                     _ -> '\\' : c : rest
       where
         rest = decodeEscapes cs
@@ -474,8 +473,8 @@ escapeForMessage str = concatMap f str
         if shouldEscape c
         then
             if ord c < 256
-            then "\\x" ++ (pad0 2 $ toHex c)
-            else "\\U" ++ (pad0 4 $ toHex c)
+            then "\\x" <> (pad0 2 $ toHex c)
+            else "\\U" <> (pad0 4 $ toHex c)
         else [c]
 
     shouldEscape c =
@@ -486,7 +485,7 @@ escapeForMessage str = concatMap f str
     pad0 n s =
         let l = length s in
             if l < n
-            then (replicate (n-l) '0') ++ s
+            then replicate (n-l) '0' <> s
             else s
     toHex :: Char -> String
     toHex c = map toUpper $ showHex (ord c) ""
@@ -619,7 +618,7 @@ getCommandSequences t =
         T_UntilExpression _ cond cmds -> [cond, cmds]
         T_ForIn _ _ _ cmds -> [cmds]
         T_ForArithmetic _ _ _ _ cmds -> [cmds]
-        T_IfExpression _ thens elses -> (concatMap (\(a,b) -> [a,b]) thens) ++ [elses]
+        T_IfExpression _ thens elses -> concatMap (\(a,b) -> [a,b]) thens <> [elses]
         T_Annotation _ _ t -> getCommandSequences t
 
         T_DollarExpansion _ cmds -> [cmds]
@@ -675,7 +674,7 @@ wordToPseudoGlob' exact word =
                 guard $ not exact
                 let this = (PGMany : (map PGChar $ dropWhile (/= '/') str))
                 tail <- concat <$> (mapM f $ concatMap getWordParts rest)
-                return $ this ++ tail
+                return $ (this <> tail)
             _ -> concat <$> (mapM f $ getWordParts word)
 
     f x = case x of
@@ -696,10 +695,10 @@ simplifyPseudoGlob = f
     f (x@(PGChar _) : rest ) = x : f rest
     f list =
         let (anys, rest) = span (\x -> x == PGMany || x == PGAny) list in
-            order anys ++ f rest
+            (order anys <> f rest)
 
     order s = let (any, many) = partition (== PGAny) s in
-        any ++ take 1 many
+        (any <> take 1 many)
 
 -- Check whether the two patterns can ever overlap.
 pseudoGlobsCanOverlap :: [PseudoGlob] -> [PseudoGlob] -> Bool
