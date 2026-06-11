@@ -226,7 +226,7 @@ process flags files = do
     options <- foldM (flip parseOption) defaultOptions flags
 
     let filesFrom = getOptions flags "files-from"
-    extra <- fmap concat $ mapM readFilesFrom filesFrom
+    extra <- concat <$> mapM readFilesFrom filesFrom
     let allFiles = extra ++ files
 
     -- It shouldn't be an error to do --files-from=/dev/null
