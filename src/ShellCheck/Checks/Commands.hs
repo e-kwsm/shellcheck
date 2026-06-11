@@ -124,7 +124,7 @@ optionalCommandChecks = [
         cdNegative = "command -v javac"
     }, checkWhich)
     ]
-optionalCheckMap = M.fromList $ map (Data.Bifunctor.first cdName) optionalCommandChecks
+optionalCheckMap = M.fromList $ map (\(desc, check) -> (cdName desc, check)) optionalCommandChecks
 
 prop_verifyOptionalExamples = all check optionalCommandChecks
   where
