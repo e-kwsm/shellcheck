@@ -131,7 +131,7 @@ removeTabStops range ls =
     -- hit this case at the end of line, and if we don't hit the target
     -- return real + (target - v)
     real [] r v target = r + (target - v)
-    real ('\t':rest) r v target = real rest (r+1) (v + 8 - (v `mod` 8)) target
+    real ('\t':rest) r v target = real rest (r+1) (v + 8 - v `mod` 8) target
     real (_:rest) r v target = real rest (r+1) (v+1) target
     lineNo = posLine . start
     endLineNo = posLine . end

@@ -650,7 +650,7 @@ decodeString = decode
     construct x n (c:rest) =
         let num = (fromIntegral $ ord c) :: Int in
             if num >= 0x80 && num <= 0xBF
-            then construct ((x `shiftL` 6) .|. (num .&. 0x3f)) (n-1) rest
+            then construct (x `shiftL` 6 .|. num .&. 0x3f) (n-1) rest
             else Nothing
     construct _ _ _ = Nothing
 

@@ -152,7 +152,7 @@ doesPostDominate :: CFGAnalysis -> Id -> Id -> Bool
 doesPostDominate analysis target base = fromMaybe False $ do
     (_, baseEnd) <- M.lookup base $ tokenToRange analysis
     (targetStart, _) <- M.lookup target $ tokenToRange analysis
-    return $ targetStart `elem` (postDominators analysis ! baseEnd)
+    return $ targetStart `elem` postDominators analysis ! baseEnd
 
 -- See if any execution path results in the variable containing a state
 variableMayHaveState :: ProgramState -> String -> CFVariableProp -> Maybe Bool

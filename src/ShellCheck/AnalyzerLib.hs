@@ -294,7 +294,7 @@ containsShopt shopt root =
             case t of
                 T_SimpleCommand {}  ->
                     t `isUnqualifiedCommand` "shopt" &&
-                        (shopt `elem` oversimplify t)
+                        shopt `elem` oversimplify t
                 _ -> False
 
 -- Does this script mention 'shopt -s $opt' or 'set -o $opt' anywhere?

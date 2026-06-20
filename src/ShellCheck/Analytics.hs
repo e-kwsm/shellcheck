@@ -2128,7 +2128,7 @@ doVariableFlowAnalysis readFunc writeFunc empty flow = evalState (
 quotesMayConflictWithSC2281 params t =
     case getPath (parentMap params) t of
         _ NE.:| T_NormalWord parentId (me:T_Literal _ ('=':_):_) : T_SimpleCommand _ _ (cmd:_) : _ ->
-            (getId t) == (getId me) && (parentId == getId cmd)
+            (getId t) == (getId me) && parentId == getId cmd
         _ -> False
 
 addDoubleQuotesAround params token = (surroundWith (getId token) params "\"")
@@ -2206,7 +2206,7 @@ checkVerboseSpacefulnessCfg = checkSpacefulnessCfg' False
 
 checkSpacefulnessCfg' :: Bool -> (Parameters -> Token -> Writer [TokenComment] ())
 checkSpacefulnessCfg' dirtyPass params token@(T_DollarBraced id _ list) =
-    when (needsQuoting && (dirtyPass == not isClean)) $
+    when (needsQuoting && dirtyPass == not isClean) $
         unless (name `elem` specialVariablesWithoutSpaces || quotesMayConflictWithSC2281 params token) $
             if dirtyPass
             then
@@ -2630,7 +2630,7 @@ prop_checkGlobsAsOptions6 = verifyNot checkGlobsAsOptions "printf '%s\\n' *"
 prop_checkGlobsAsOptions7 = verifyNot checkGlobsAsOptions "set -f; ls *"
 prop_checkGlobsAsOptions8 = verifyNot checkGlobsAsOptions "set -o noglob\nrm *"
 checkGlobsAsOptions params cmd@(T_SimpleCommand _ _ args) =
-    unless (((fromMaybe "" $ getCommandBasename cmd) `elem` ["echo", "printf"]) || hasNoglob params) $
+    unless ((fromMaybe "" $ getCommandBasename cmd) `elem` ["echo", "printf"] || hasNoglob params) $
         mapM_ check $ takeWhile (not . isEndOfArgs) (drop 1 args)
   where
     check v@(T_NormalWord _ (T_Glob id s:_)) | s == "*" || s == "?" =
@@ -2684,7 +2684,7 @@ checkWhileReadPitfalls params (T_WhileExpression id [command] contents)
     isStdinReadCommand (T_Pipeline _ _ [T_Redirecting id redirs cmd]) =
         let plaintext = oversimplify cmd
         in headOrDefault "" plaintext == "read"
-            && ("-u" `notElem` plaintext)
+            && "-u" `notElem` plaintext
             && not (any stdinRedirect redirs)
     isStdinReadCommand _ = False
 
@@ -2748,7 +2748,7 @@ checkPrefixAssignmentReference params t@(T_DollarBraced id _ value) =
             T_SimpleCommand _ vars (_:_) -> mapM_ checkVar vars
             _ -> check rest
     checkVar (T_Assignment aId mode aName [] value) |
-            aName == name && (aId `notElem` idPath) = do
+            aName == name && aId `notElem` idPath = do
         warn aId 2097 "This assignment is only seen by the forked process."
         warn id 2098 "This expansion will not see the mentioned assignment."
     checkVar _ = return ()
@@ -2953,7 +2953,7 @@ checkUnpassedInFunctions params root =
     checkCommand _ = Nothing
 
     isPositional str = str == "*" || str == "@" || str == "#"
-        || (all isDigit str && str /= "0" && str /= "")
+        || all isDigit str && str /= "0" && str /= ""
 
     -- True if t is a variable that specifies a default value,
     -- such as ${1-x} or ${1:-x}.
@@ -3036,7 +3036,7 @@ prop_checkUnsupported4 = verify checkUnsupported "#!/bin/ksh\ncase foo in bar) b
 prop_checkUnsupported5 = verifyNot checkUnsupported "#!/bin/bash\necho \"${ ls; }\""
 prop_checkUnsupported6 = verify checkUnsupported "#!/bin/ash\necho \"${ ls; }\""
 checkUnsupported params t =
-    unless (null support || (shellType params `elem` support)) $
+    unless (null support || shellType params `elem` support) $
         report name
  where
     (name, support) = shellSupport t
@@ -3308,7 +3308,7 @@ checkUncheckedCdPushdPopd params root =
     checkElement t@T_SimpleCommand {}
         | name `elem` ["cd", "pushd", "popd"]
             && not (isSafeDir t)
-            && not (name `elem` ["pushd", "popd"] && ("n" `elem` map snd (getAllFlags t)))
+            && not (name `elem` ["pushd", "popd"] && "n" `elem` map snd (getAllFlags t))
             && not (isLastCommandInFunction t)
             && not (isCondition $ getPath (parentMap params) t) =
                 warnWithFix (getId t) 2164

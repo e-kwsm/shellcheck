@@ -445,7 +445,7 @@ acceptButWarn parser level code note =
 
 parsecBracket before after op = do
     val <- before
-    op val `thenSkip` after val <|> (after val *> fail "")
+    op val `thenSkip` after val <|> after val *> fail ""
 
 swapContext contexts p =
     parsecBracket (getCurrentContexts <* setCurrentContexts contexts)
@@ -1205,7 +1205,7 @@ readDollarBracedPart = readSingleQuoted <|> readDoubleQuoted <|>
 
 readDollarBracedLiteral = do
     start <- startSpan
-    vars <- (readBraceEscaped <|> ((\x -> [x]) <$> anyChar)) `reluctantlyTill1` bracedQuotable
+    vars <- (readBraceEscaped <|> (\x -> [x]) <$> anyChar) `reluctantlyTill1` bracedQuotable
     id <- endSpan start
     return $ T_Literal id $ concat vars
 
@@ -1567,7 +1567,7 @@ readGenericLiteral endChars = do
     return $ concat strings
 
 readGenericLiteral1 endExp = do
-    strings <- (readGenericEscaped <|> ((\x -> [x]) <$> anyChar)) `reluctantlyTill1` endExp
+    strings <- (readGenericEscaped <|> (\x -> [x]) <$> anyChar) `reluctantlyTill1` endExp
     return $ concat strings
 
 readGenericEscaped = do
@@ -1767,7 +1767,7 @@ readDollarVariable = do
             lookAhead $ char '['
             parseNoteAt pos ErrorC 1087 "Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet)."
 
-    try $ char '$' >> (positional <|> special <|> regular)
+    try $ char '$' >> positional <|> special <|> regular
 
   where
     wrapString p = do
@@ -2454,7 +2454,7 @@ readIfClause = called "if expression" $ do
 verifyNotEmptyIf s =
     optional (do
                 emptyPos <- getPosition
-                try . lookAhead $ (g_Fi <|> g_Elif <|> g_Else)
+                try . lookAhead $ g_Fi <|> g_Elif <|> g_Else
                 parseProblemAt emptyPos ErrorC 1048 $ "Can't have empty " ++ s ++ " clauses (use 'true' as a no-op).")
 readIfPart = do
     pos <- getPosition
@@ -3015,7 +3015,7 @@ readAssignmentWordExt lenient = called "variable assignment" $ do
     rightPosStart <- getPosition
     hasRightSpace <- fmap (not . null) spacing
     rightPosEnd <- getPosition
-    isEndOfCommand <- fmap isJust $ optionMaybe (try . lookAhead $ (void (oneOf "\r\n;&|)") <|> eof))
+    isEndOfCommand <- fmap isJust $ optionMaybe (try . lookAhead $ void (oneOf "\r\n;&|)") <|> eof)
 
     if hasRightSpace || isEndOfCommand
       then do

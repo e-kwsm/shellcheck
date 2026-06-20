@@ -97,7 +97,7 @@ checkScript sys spec = do
                         $ prRoot result
         let translator = tokenToPosition tokenPositions
         return . nub . sortMessages . filter shouldInclude $
-            (parseMessages ++ map translator analysisMessages)
+            parseMessages ++ map translator analysisMessages
 
     shouldInclude pc =
             severity <= csMinSeverity spec &&
