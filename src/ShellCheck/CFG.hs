@@ -659,9 +659,9 @@ build t = do
             -- Find a *) if any
 
             hasCatchAll (_,cond,_) = any isCatchAll cond
-            isCatchAll c = fromMaybe False $ do
+            isCatchAll c = Just True == (do
                 pg <- wordToExactPseudoGlob c
-                return $ pg `pseudoGlobIsSuperSetof` [PGMany]
+                return $ pg `pseudoGlobIsSuperSetof` [PGMany])
 
         T_Condition id _ op -> do
             cond <- build op
