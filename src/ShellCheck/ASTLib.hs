@@ -480,7 +480,7 @@ escapeForMessage str = concatMap f str
 
     shouldEscape c =
         (not $ isPrint c)
-        || (not (isAscii c) && not (isLetter c))
+        || not (isAscii c) && not (isLetter c)
 
     pad0 :: Int -> String -> String
     pad0 n s =
