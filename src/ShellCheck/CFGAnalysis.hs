@@ -124,7 +124,7 @@ internalToExternal s =
         variablesInScope = M.map censor flatVars,
         -- internalState = s, -- For debugging
         exitCodes = fromMaybe S.empty $ sExitCodes s,
-        stateIsReachable = fromMaybe True $ sIsReachable s
+        stateIsReachable = Just False /= sIsReachable s
     }
   where
     censor s = s {
@@ -149,10 +149,10 @@ getOutgoingState analysis id = do
 -- Conveniently determine whether one node postdominates another,
 -- i.e. whether 'target' always unconditionally runs after 'base'.
 doesPostDominate :: CFGAnalysis -> Id -> Id -> Bool
-doesPostDominate analysis target base = fromMaybe False $ do
+doesPostDominate analysis target base = Just True == (do
     (_, baseEnd) <- M.lookup base $ tokenToRange analysis
     (targetStart, _) <- M.lookup target $ tokenToRange analysis
-    return $ targetStart `elem` (postDominators analysis ! baseEnd)
+    return $ targetStart `elem` (postDominators analysis ! baseEnd))
 
 -- See if any execution path results in the variable containing a state
 variableMayHaveState :: ProgramState -> String -> CFVariableProp -> Maybe Bool

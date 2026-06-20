@@ -873,13 +873,13 @@ checkRedirectToSame params s@(T_Pipeline _ _ list) =
                     T_DGREAT _ -> True
                     _ -> False
             _ -> False
-    isHarmlessCommand arg = fromMaybe False $ do
+    isHarmlessCommand arg = Just True == (do
         cmd <- getClosestCommand (parentMap params) arg
         name <- getCommandBasename cmd
-        return $ name `elem` ["echo", "mapfile", "printf", "sponge"]
-    containsAssignment arg = fromMaybe False $ do
+        return $ name `elem` ["echo", "mapfile", "printf", "sponge"])
+    containsAssignment arg = Just True == (do
         cmd <- getClosestCommand (parentMap params) arg
-        return $ isAssignment cmd
+        return $ isAssignment cmd)
 
 checkRedirectToSame _ _ = return ()
 
@@ -899,9 +899,9 @@ checkShorthandIf params x@(T_OrIf _ (T_AndIf id _ b) (T_Pipeline _ _ t))
         | not (isOk t || inCondition) && not (isTestCommand b) =
     info id 2015 "Note that A && B || C is not if-then-else. C may run when A is true."
   where
-    isOk [t] = isAssignment t || fromMaybe False (do
+    isOk [t] = isAssignment t || (Just True == (do
         name <- getCommandBasename t
-        return $ name `elem` ["echo", "exit", "return", "printf", "true", ":"])
+        return $ name `elem` ["echo", "exit", "return", "printf", "true", ":"]))
     isOk _ = False
     inCondition = isCondition $ getPath (parentMap params) x
 checkShorthandIf _ _ = return ()
@@ -1283,11 +1283,11 @@ checkNumberComparisons params (TC_Binary id typ op lhs rhs) = do
                 let
                     str = concat $ oversimplify c
                     var = getBracedReference str
-                in fromMaybe False $ do
+                in (Just True == (do
                     cfga <- cfgAnalysis params
                     state <- CF.getIncomingState cfga id
                     value <- Map.lookup var $ CF.variablesInScope state
-                    return $ CF.numericalStatus (CF.variableValue value) >= CF.NumericalStatusMaybe
+                    return $ CF.numericalStatus (CF.variableValue value) >= CF.NumericalStatusMaybe))
             _ ->
                 case oversimplify t of
                     [v] -> all isDigit v
@@ -1375,9 +1375,9 @@ checkQuotedCondRegex _ (TC_Binary _ _ "=~" _ rhs) =
                 "Remove quotes from right-hand side of =~ to match as a regex rather than literally."
     re = mkRegex "[][*.+()|]"
     hasMetachars s = s `matches` re
-    isConstantNonRe t = fromMaybe False $ do
+    isConstantNonRe t = Just True == (do
         s <- getLiteralString t
-        return . not $ hasMetachars s
+        return . not $ hasMetachars s)
 checkQuotedCondRegex _ _ = return ()
 
 prop_checkGlobbedRegex1 = verify checkGlobbedRegex "[[ $foo =~ *foo* ]]"
@@ -2232,11 +2232,11 @@ checkSpacefulnessCfg' dirtyPass params token@(T_DollarBraced id _ list) =
               && not (isQuotedAlternativeReference token)
               && not (usedAsCommandName parents token)
 
-    isClean = fromMaybe False $ do
+    isClean = Just True == (do
         cfga <- cfgAnalysis params
         state <- CF.getIncomingState cfga id
         value <- Map.lookup name $ CF.variablesInScope state
-        return $ isCleanState value
+        return $ isCleanState value)
 
     isCleanState state =
         (all (S.member CFVPInteger) $ CF.variableProperties state)
@@ -2783,9 +2783,9 @@ checkCharRangeGlob p t@(T_Glob id str) |
             '^':rest -> rest
             x -> x
 
-    isIgnoredCommand = fromMaybe False $ do
+    isIgnoredCommand = Just True == (do
         cmd <- getClosestCommand (parentMap p) t
-        return $ isCommandMatch cmd (`elem` ["tr", "read"])
+        return $ isCommandMatch cmd (`elem` ["tr", "read"]))
 
     -- Check if this is a dereferencing context like [[ -v array[operandhere] ]]
     isDereferenced = fromMaybe False . msum . NE.map isDereferencingOp . getPath (parentMap p)
@@ -2933,13 +2933,13 @@ checkUnpassedInFunctions params root =
             Reference (_, t, str) -> isPositional str && t `isDirectChildOf` function && not (hasDefaultValue t)
             _ -> False
 
-    isDirectChildOf child parent = fromMaybe False $ do
+    isDirectChildOf child parent = Just True == (do
         function <- find (\x -> case x of
             T_Function {} -> True
             T_Script {} -> True  -- for sourced files
             _ -> False) $
                 getPath (parentMap params) child
-        return $ getId parent == getId function
+        return $ getId parent == getId function)
 
     referenceList :: [(String, Bool, Token)]
     referenceList = execWriter $
@@ -3447,11 +3447,11 @@ checkReturnAgainstZero params token =
             T_Redirecting _ _ (T_IfExpression _ (((x:_),_):_) _) -> f x
             x -> x
 
-    isFirstCommandInFunction = fromMaybe False $ do
+    isFirstCommandInFunction = Just True == (do
         let path = getPath (parentMap params) token
         func <- find isFunction path
         cmd <- getClosestCommand (parentMap params) token
-        return $ getId cmd == getId (getFirstCommandInFunction func)
+        return $ getId cmd == getId (getFirstCommandInFunction func))
 
     -- Is "$? op 0" trying to check if the command succeeded?
     checksSuccessLhs op = not $ op `elem` ["-gt", "-ne", "!=", "!"]
@@ -3878,9 +3878,9 @@ checkPipeToNowhere params t =
             _ -> Nothing
 
     redirectsStdin t =
-        fromMaybe False $ do
+        Just True == (do
             fds <- getRedirectionFds t
-            return $ 0 `elem` fds
+            return $ 0 `elem` fds)
 
     pipeType t =
         case t of
@@ -4152,9 +4152,9 @@ checkDefaultCase _ t =
   where
     canMatchAny (_, list, _) = any canMatchAny' list
     -- hlint objects to 'pattern' as a variable name
-    canMatchAny' pat = fromMaybe False $ do
+    canMatchAny' pat = Just True == (do
         pg <- wordToExactPseudoGlob pat
-        return $ pseudoGlobIsSuperSetof pg [PGMany]
+        return $ pseudoGlobIsSuperSetof pg [PGMany])
 
 prop_checkUselessBang1 = verify checkUselessBang "set -e; ! true; rest"
 prop_checkUselessBang2 = verifyNot checkUselessBang "! true; rest"
@@ -4261,10 +4261,10 @@ checkAliasUsedInSameParsingUnit params root =
             (start, end) <- Map.lookup t m
             return $ (posLine start, posLine end)
 
-    followsOnLine a b = fromMaybe False $ do
+    followsOnLine a b = Just True == (do
         (_, end) <- lineSpan (getId a)
         (start, _) <- lineSpan (getId b)
-        return $ end == start
+        return $ end == start)
 
     checkUnit :: [Token] -> Writer [TokenComment] ()
     checkUnit unit = evalStateT (mapM_ (doAnalysis findCommands) unit) (Map.empty)
@@ -4529,17 +4529,17 @@ checkEqualsInCommand params originalToken =
             T_Arithmetic {} -> True
             _ -> isQuoteableExpansion t
 
-    isConflictMarker cmd = fromMaybe False $ do
+    isConflictMarker cmd = Just True == (do
         str <- getUnquotedLiteral cmd
         guard $ all (== '=') str
         guard $ length str >= 4 && length str <= 12 -- Git uses 7 but who knows
-        return True
+        return True)
 
-    mayBeVariableName l = fromMaybe False $ do
+    mayBeVariableName l = Just True == (do
         guard . not $ any isQuotes l
         guard . not $ any willBecomeMultipleArgs l
         str <- getLiteralStringExt (\_ -> Just "x") (T_NormalWord (Id 0) l)
-        return $ isVariableName str
+        return $ isVariableName str)
 
     isLeadingNumberVar s =
         case takeWhile (/= '=') s of
@@ -4994,16 +4994,16 @@ checkExtraMaskedReturns params t =
 
     isCheckedElsewhere t = any isDeclaringCommand $ NE.tail $ parents params t
       where
-        isDeclaringCommand t = fromMaybe False $ do
+        isDeclaringCommand t = Just True == (do
             cmd <- getCommand t
             basename <- getCommandBasename cmd
             return $
                 case basename of
                     -- local -r x=$(false) is intentionally ignored for SC2155
                     "local" | "r" `elem` (map snd $ getAllFlags cmd) -> False
-                    _ -> basename `elem` declaringCommands
+                    _ -> basename `elem` declaringCommands)
 
-    isHarmlessCommand t = fromMaybe False $ do
+    isHarmlessCommand t = Just True == (do
         basename <- getCommandBasename t
         return $ basename `elem` [
             "echo"
@@ -5012,7 +5012,7 @@ checkExtraMaskedReturns params t =
             ,"printf"
             ,"set"
             ,"shopt"
-            ]
+            ])
 
     isTransparentCommand t = getCommandBasename t == Just "time"
 
@@ -5083,10 +5083,10 @@ checkCommandIsUnreachable params t =
         case f of
             T_Function id _ _ _ t -> isUnreachable t
             _ -> False
-    isUnreachable t = fromMaybe False $ do
+    isUnreachable t = Just True == (do
         cfga <- cfgAnalysis params
         state <- CF.getIncomingState cfga (getId t)
-        return . not $ CF.stateIsReachable state
+        return . not $ CF.stateIsReachable state)
 
 
 prop_checkOverwrittenExitCode1 = verify checkOverwrittenExitCode "x; [ $? -eq 1 ] || [ $? -eq 2 ]"
@@ -5198,7 +5198,7 @@ checkPlusEqualsNumber params t =
             cfga <- cfgAnalysis params
             state <- CF.getIncomingState cfga id
             guard $ isNumber state word
-            guard . not $ fromMaybe False $ CF.variableMayBeDeclaredInteger state var
+            guard . not $ (Just True == CF.variableMayBeDeclaredInteger state var)
             -- Recommend "typeset" because ksh does not have "declare".
             return $ warn id 2324 "var+=1 will append, not increment. Use (( var += 1 )), typeset -i var, or quote number to silence."
         _ -> return ()
@@ -5209,14 +5209,14 @@ checkPlusEqualsNumber params t =
             unquotedLiteral = getUnquotedLiteral word
             isEmpty = unquotedLiteral == Just ""
             isUnquotedNumber = not isEmpty && maybe False (all isDigit) unquotedLiteral
-            isNumericalVariableName = fromMaybe False $ do
+            isNumericalVariableName = (Just True == (do
                 str <- unquotedLiteral
-                CF.variableMayBeAssignedInteger state str
+                CF.variableMayBeAssignedInteger state str))
             isNumericalVariableExpansion =
                 case word of
-                    T_NormalWord _ [part] -> fromMaybe False $ do
+                    T_NormalWord _ [part] -> Just True == (do
                         str <- getUnmodifiedParameterExpansion part
-                        CF.variableMayBeAssignedInteger state str
+                        CF.variableMayBeAssignedInteger state str)
                     _ -> False
         in
             isUnquotedNumber || isNumericalVariableName || isNumericalVariableExpansion

@@ -204,7 +204,7 @@ makeCommentWithFix severity id code str fix =
 -- makeParameters :: CheckSpec -> Parameters
 makeParameters spec = params
   where
-    extendedAnalysis = fromMaybe True $ msum [asExtendedAnalysis spec, getExtendedAnalysisDirective root]
+    extendedAnalysis = Just False /= msum [asExtendedAnalysis spec, getExtendedAnalysisDirective root]
     params = Parameters {
         rootNode = root,
         shellType = fromMaybe (determineShell (asFallbackShell spec) root) $ asShellType spec,
@@ -361,7 +361,7 @@ isQuoteFree = isQuoteFreeNode False
 
 isQuoteFreeNode strict shell tree t =
     isQuoteFreeElement t ||
-        (fromMaybe False $ msum $ map isQuoteFreeContext $ NE.tail $ getPath tree t)
+        (Just True == (msum $ map isQuoteFreeContext $ NE.tail $ getPath tree t))
   where
     -- Is this node self-quoting in itself?
     isQuoteFreeElement t =
