@@ -958,7 +958,8 @@ readCondition = called "test expression" $ do
     pos <- getPosition
     space <- allspacing
     when (null space) $
-        parseProblemAtWithEnd opos pos ErrorC 1035 $ ("You need a space after the " <> (if single
+        parseProblemAtWithEnd opos pos ErrorC 1035 $ ("You need a space after the " <> (
+            if single
                 then "[ and before the ]."
                 else "[[ and before the ]]."))
     when (single && '\n' `elem` space) $
@@ -1458,7 +1459,11 @@ readNormalLiteralPart customEnd =
     readNormalEscaped <|>
         many1 (noneOf (customEnd <> standardEnd))
   where
-    standardEnd = "[{}" <> (quotableChars <> (extglobStartChars <> (unicodeDoubleQuotes <> unicodeSingleQuotes)))
+    standardEnd = "[{}"
+        <> (quotableChars
+        <> (extglobStartChars
+        <> (unicodeDoubleQuotes
+        <> unicodeSingleQuotes)))
 
 readNormalEscaped = called "escaped char" $ do
     pos <- getPosition
@@ -3492,7 +3497,8 @@ makeErrorFor parsecError =
       pos = errorPos parsecError
 
 getStringFromParsec errors =
-        headOrDefault "" (mapMaybe f $ reverse errors) <> " Fix any mentioned problems and try again."
+        headOrDefault "" (mapMaybe f $ reverse errors) <>
+            " Fix any mentioned problems and try again."
     where
         f err =
             case err of

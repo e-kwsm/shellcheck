@@ -273,7 +273,9 @@ getGenericOpts = process
                         next:remainder ->
                             case reverse opts of
                                 last:initial ->
-                                    map (\c -> ([c], (token, token))) (reverse initial) <> ([([last], (token, next))] <> process remainder)
+                                    map (\c -> ([c], (token, token))) (reverse initial)
+                                        <> ([([last], (token, next))]
+                                        <> process remainder)
                                 [] -> process remainder
                         [] -> map (\c -> ([c], (token, token))) opts
             _ -> ("", (token, token)) : process rest
