@@ -258,7 +258,7 @@ process flags files = do
         result <- liftIO (try (readFile path) :: IO (Either IOException String))
         case result of
             Left e -> do
-                printErr $ ("Could not read file list: " <> (path <> (": " ++ show e)))
+                printErr $ ("Could not read file list: " <> (path <> (": " <> show e)))
                 throwError RuntimeException
             Right contents ->
                 return (parseFileListLines contents)
@@ -313,8 +313,8 @@ parseEnum name value list =
     case lookup value list of
         Just value -> return value
         Nothing -> do
-            printErr $ ("Unknown value for --" <> (name <> (". " ++
-                       "Valid options are: " ++ (intercalate ", " $ map fst list))))
+            printErr $ ("Unknown value for --" <> (name <> (". " <>
+                       ("Valid options are: " <> (intercalate ", " $ map fst list)))))
             throwError SupportFailure
 
 parseColorOption value =
