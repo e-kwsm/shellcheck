@@ -673,7 +673,7 @@ wordToPseudoGlob' exact word =
         case word of
             T_NormalWord _ (T_Literal _ ('~':str):rest) -> do
                 guard $ not exact
-                let this = (PGMany : map PGChar (dropWhile (/= '/') str))
+                let this = PGMany : map PGChar (dropWhile (/= '/') str)
                 tail <- concat <$> mapM f (concatMap getWordParts rest)
                 return $ this ++ tail
             _ -> concat <$> mapM f (getWordParts word)
