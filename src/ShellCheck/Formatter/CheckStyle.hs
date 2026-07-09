@@ -19,75 +19,84 @@
 -}
 module ShellCheck.Formatter.CheckStyle (format) where
 
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
-
 import Data.Char
 import Data.List
-import System.IO
 import qualified Data.List.NonEmpty as NE
+import ShellCheck.Formatter.Format
+import ShellCheck.Interface
+import System.IO
 
 format :: IO Formatter
-format = return Formatter {
-    header = do
-        putStrLn "<?xml version='1.0' encoding='UTF-8'?>"
-        putStrLn "<checkstyle version='4.3'>",
-
-    onFailure = outputError,
-    onResult = outputResults,
-
-    footer = putStrLn "</checkstyle>"
-}
+format =
+  return
+    Formatter
+      { header = do
+          putStrLn "<?xml version='1.0' encoding='UTF-8'?>"
+          putStrLn "<checkstyle version='4.3'>",
+        onFailure = outputError,
+        onResult = outputResults,
+        footer = putStrLn "</checkstyle>"
+      }
 
 outputResults cr sys =
-    if null comments
+  if null comments
     then outputFile (crFilename cr) "" []
     else mapM_ outputGroup fileGroups
   where
     comments = crComments cr
     fileGroups = NE.groupWith sourceFile comments
     outputGroup group = do
-        let filename = sourceFile (NE.head group)
-        result <- siReadFile sys (Just True) filename
-        let contents = either (const "") id result
-        outputFile filename contents (NE.toList group)
+      let filename = sourceFile (NE.head group)
+      result <- siReadFile sys (Just True) filename
+      let contents = either (const "") id result
+      outputFile filename contents (NE.toList group)
 
 outputFile filename contents warnings = do
-    let comments = makeNonVirtual warnings contents
-    putStrLn . formatFile filename $ comments
+  let comments = makeNonVirtual warnings contents
+  putStrLn . formatFile filename $ comments
 
-formatFile name comments = concat [
-    "<file ", attr "name" name, ">\n",
-        concatMap formatComment comments,
-    "</file>"
+formatFile name comments =
+  concat
+    [ "<file ",
+      attr "name" name,
+      ">\n",
+      concatMap formatComment comments,
+      "</file>"
     ]
 
-formatComment c = concat [
-    "<error ",
-    attr "line" $ show . lineNo $ c,
-    attr "column" $ show . colNo $ c,
-    attr "severity" . severity $ severityText c,
-    attr "message" $ messageText c,
-    attr "source" $ "ShellCheck.SC" ++ show (codeNo c),
-    "/>\n"
+formatComment c =
+  concat
+    [ "<error ",
+      attr "line" $ show . lineNo $ c,
+      attr "column" $ show . colNo $ c,
+      attr "severity" . severity $ severityText c,
+      attr "message" $ messageText c,
+      attr "source" $ "ShellCheck.SC" ++ show (codeNo c),
+      "/>\n"
     ]
 
-outputError file error = putStrLn $ concat [
-    "<file ", attr "name" file, ">\n",
-    "<error ",
+outputError file error =
+  putStrLn $
+    concat
+      [ "<file ",
+        attr "name" file,
+        ">\n",
+        "<error ",
         attr "line" "1",
         attr "column" "1",
         attr "severity" "error",
         attr "message" error,
         attr "source" "ShellCheck",
-    "/>\n",
-    "</file>"
-    ]
+        "/>\n",
+        "</file>"
+      ]
 
+attr s v = concat [s, "='", escape v, "' "]
 
-attr s v = concat [ s, "='", escape v, "' " ]
 escape = concatMap escape'
+
 escape' c = if isOk c then [c] else "&#" ++ show (ord c) ++ ";"
+
 isOk x = any ($ x) [isAsciiUpper, isAsciiLower, isDigit, (`elem` " ./")]
 
 severity "error" = "error"
