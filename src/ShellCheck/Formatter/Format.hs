@@ -19,64 +19,70 @@
 -}
 module ShellCheck.Formatter.Format where
 
-import ShellCheck.Data
-import ShellCheck.Interface
-import ShellCheck.Fixer
-
 import Control.Monad
 import Data.Array
 import Data.List
+import ShellCheck.Data
+import ShellCheck.Fixer
+import ShellCheck.Interface
+import System.Environment
 import System.IO
 import System.Info
-import System.Environment
 
 -- A formatter that carries along an arbitrary piece of data
-data Formatter = Formatter {
-    header ::  IO (),
+data Formatter = Formatter
+  { header :: IO (),
     onResult :: CheckResult -> SystemInterface IO -> IO (),
     onFailure :: FilePath -> ErrorMessage -> IO (),
     footer :: IO ()
-}
+  }
 
 sourceFile = posFile . pcStartPos
+
 lineNo = posLine . pcStartPos
+
 endLineNo = posLine . pcEndPos
-colNo  = posColumn . pcStartPos
+
+colNo = posColumn . pcStartPos
+
 endColNo = posColumn . pcEndPos
+
 codeNo = cCode . pcComment
+
 messageText = cMessage . pcComment
 
 severityText :: PositionedComment -> String
 severityText pc =
-    case cSeverity (pcComment pc) of
-        ErrorC   -> "error"
-        WarningC -> "warning"
-        InfoC    -> "info"
-        StyleC   -> "style"
+  case cSeverity (pcComment pc) of
+    ErrorC -> "error"
+    WarningC -> "warning"
+    InfoC -> "info"
+    StyleC -> "style"
 
 -- Realign comments from a tabstop of 8 to 1
 makeNonVirtual comments contents =
-    map fix comments
+  map fix comments
   where
     list = lines contents
     arr = listArray (1, length list) list
-    untabbedFix f = newFix {
-      fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)
-    }
-    fix c = (removeTabStops c arr) {
-      pcFix = fmap untabbedFix (pcFix c)
-    }
-
+    untabbedFix f =
+      newFix
+        { fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)
+        }
+    fix c =
+      (removeTabStops c arr)
+        { pcFix = fmap untabbedFix (pcFix c)
+        }
 
 shouldOutputColor :: ColorOption -> IO Bool
 shouldOutputColor colorOption =
-    case colorOption of
-        ColorAlways -> return True
-        ColorNever -> return False
-        ColorAuto -> do
-            isTerminal <- hIsTerminalDevice stdout
-            term <- lookupEnv "TERM"
-            let windows = "mingw" `isPrefixOf` os
-            let dumbTerm = term `elem` [Just "dumb", Just "", Nothing]
-            let isUsableTty = isTerminal && not windows && not dumbTerm
-            return isUsableTty
+  case colorOption of
+    ColorAlways -> return True
+    ColorNever -> return False
+    ColorAuto -> do
+      isTerminal <- hIsTerminalDevice stdout
+      term <- lookupEnv "TERM"
+      let windows = "mingw" `isPrefixOf` os
+      let dumbTerm = term `elem` [Just "dumb", Just "", Nothing]
+      let isUsableTty = isTerminal && not windows && not dumbTerm
+      return isUsableTty
