@@ -19,20 +19,21 @@
 -}
 module ShellCheck.Formatter.GCC (format) where
 
-import ShellCheck.Interface
-import ShellCheck.Formatter.Format
-
 import Data.List
-import System.IO
 import qualified Data.List.NonEmpty as NE
+import ShellCheck.Formatter.Format
+import ShellCheck.Interface
+import System.IO
 
 format :: IO Formatter
-format = return Formatter {
-    header = return (),
-    footer = return (),
-    onFailure = outputError,
-    onResult = outputAll
-}
+format =
+  return
+    Formatter
+      { header = return (),
+        footer = return (),
+        onFailure = outputError,
+        onResult = outputAll
+      }
 
 outputError file error = hPutStrLn stderr $ file ++ ": " ++ error
 
@@ -42,24 +43,30 @@ outputAll cr sys = mapM_ f groups
     groups = NE.groupWith sourceFile comments
     f :: NE.NonEmpty PositionedComment -> IO ()
     f group = do
-        let filename = sourceFile (NE.head group)
-        result <- siReadFile sys (Just True) filename
-        let contents = either (const "") id result
-        outputResult filename contents (NE.toList group)
+      let filename = sourceFile (NE.head group)
+      result <- siReadFile sys (Just True) filename
+      let contents = either (const "") id result
+      outputResult filename contents (NE.toList group)
 
 outputResult filename contents warnings = do
-    let comments = makeNonVirtual warnings contents
-    mapM_ (putStrLn . formatComment filename) comments
+  let comments = makeNonVirtual warnings contents
+  mapM_ (putStrLn . formatComment filename) comments
 
-formatComment filename c = concat [
-    filename, ":",
-    show $ lineNo c, ":",
-    show $ colNo c, ": ",
-    case severityText c of
+formatComment filename c =
+  concat
+    [ filename,
+      ":",
+      show $ lineNo c,
+      ":",
+      show $ colNo c,
+      ": ",
+      case severityText c of
         "error" -> "error"
         "warning" -> "warning"
         _ -> "note",
-    ": ",
-    concat . lines $ messageText c,
-    " [SC", show $ codeNo c, "]"
-  ]
+      ": ",
+      concat . lines $ messageText c,
+      " [SC",
+      show $ codeNo c,
+      "]"
+    ]
