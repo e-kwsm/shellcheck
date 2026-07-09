@@ -21,16 +21,17 @@
 -- shellcheck-dev is primarily meant for the potential benefits of AI.
 -- It can be run with `cabal run -fdev-mode shellcheck-dev -- ast 'myshellcommand'`
 
+import Data.List
+import qualified Data.Map as Map
 import ShellCheck.Debug
 import System.Environment
 import System.Exit
 import System.IO
-import Data.List
-import qualified Data.Map as Map
 
 commands :: Map.Map String (String -> String)
-commands = Map.fromList [
-    ("ast", show . stringToAst)
+commands =
+  Map.fromList
+    [ ("ast", show . stringToAst)
     ]
 
 validCommands :: String
@@ -39,14 +40,14 @@ validCommands = intercalate ", " $ Map.keys commands
 putStrLnErr = hPutStrLn stderr
 
 main = do
-    args <- getArgs
-    case args of
-        [cmd, arg] ->
-            case Map.lookup cmd commands of
-                Just f -> putStrLn $ f arg
-                Nothing -> do
-                    putStrLnErr $ "Unknown command. Try one of: " ++ validCommands
-                    exitFailure
-        _ -> do
-            putStrLnErr $ "Usage: shellcheck-dev command argument, where command is: " ++ validCommands
-            exitFailure
+  args <- getArgs
+  case args of
+    [cmd, arg] ->
+      case Map.lookup cmd commands of
+        Just f -> putStrLn $ f arg
+        Nothing -> do
+          putStrLnErr $ "Unknown command. Try one of: " ++ validCommands
+          exitFailure
+    _ -> do
+      putStrLnErr $ "Usage: shellcheck-dev command argument, where command is: " ++ validCommands
+      exitFailure
