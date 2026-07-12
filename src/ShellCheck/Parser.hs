@@ -3403,18 +3403,31 @@ readScriptFile sourced = do
         "bash",
         "bats",
         "ksh",
+        "mksh",
         "oksh"
         ]
     badShells = [
         "awk",
+        "brush",
         "csh",
+        "elvish",
         "expect",
         "fish",
+        "nix-shell",
+        "node",
+        "nu", -- nushell
+        "osh",
         "perl",
         "python",
         "python3",
+        "rbash", -- restrictied bash is not fully supported
         "ruby",
         "tcsh",
+        "sed",
+        "shed",
+        "xonsh",
+        "yash",
+        "ysh",
         "zsh"
         ]
 
