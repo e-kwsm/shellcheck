@@ -5018,19 +5018,19 @@ checkExtraMaskedReturns params t =
 
 
 -- hard error on negated command that is not last
-prop_checkBatsTestDoesNotUseNegation1 = verify checkBatsTestDoesNotUseNegation "#!/usr/bin/env/bats\n@test \"name\" { ! true;  false; }"
-prop_checkBatsTestDoesNotUseNegation2 = verify checkBatsTestDoesNotUseNegation "#!/usr/bin/env/bats\n@test \"name\" { ! [[ -e test ]]; false; }"
-prop_checkBatsTestDoesNotUseNegation3 = verify checkBatsTestDoesNotUseNegation "#!/usr/bin/env/bats\n@test \"name\" { ! [ -e test ]; false; }"
+prop_checkBatsTestDoesNotUseNegation1 = verify checkBatsTestDoesNotUseNegation "#!/usr/bin/env bats\n@test \"name\" { ! true;  false; }"
+prop_checkBatsTestDoesNotUseNegation2 = verify checkBatsTestDoesNotUseNegation "#!/usr/bin/env bats\n@test \"name\" { ! [[ -e test ]]; false; }"
+prop_checkBatsTestDoesNotUseNegation3 = verify checkBatsTestDoesNotUseNegation "#!/usr/bin/env bats\n@test \"name\" { ! [ -e test ]; false; }"
 -- acceptable formats:
 --     using run
-prop_checkBatsTestDoesNotUseNegation4 = verifyNot checkBatsTestDoesNotUseNegation "#!/usr/bin/env/bats\n@test \"name\" { run ! true; }"
+prop_checkBatsTestDoesNotUseNegation4 = verifyNot checkBatsTestDoesNotUseNegation "#!/usr/bin/env bats\n@test \"name\" { run ! true; }"
 --     using || false
-prop_checkBatsTestDoesNotUseNegation5 = verifyNot checkBatsTestDoesNotUseNegation "#!/usr/bin/env/bats\n@test \"name\" { ! [[ -e test ]] || false; }"
-prop_checkBatsTestDoesNotUseNegation6 = verifyNot checkBatsTestDoesNotUseNegation "#!/usr/bin/env/bats\n@test \"name\" { ! [ -e test ] || false; }"
+prop_checkBatsTestDoesNotUseNegation5 = verifyNot checkBatsTestDoesNotUseNegation "#!/usr/bin/env bats\n@test \"name\" { ! [[ -e test ]] || false; }"
+prop_checkBatsTestDoesNotUseNegation6 = verifyNot checkBatsTestDoesNotUseNegation "#!/usr/bin/env bats\n@test \"name\" { ! [ -e test ] || false; }"
 -- only style warning when last command
-prop_checkBatsTestDoesNotUseNegation7 = verifyCodes checkBatsTestDoesNotUseNegation [2314] "#!/usr/bin/env/bats\n@test \"name\" { ! true; }"
-prop_checkBatsTestDoesNotUseNegation8 = verifyCodes checkBatsTestDoesNotUseNegation [2315] "#!/usr/bin/env/bats\n@test \"name\" { ! [[ -e test ]]; }"
-prop_checkBatsTestDoesNotUseNegation9 = verifyCodes checkBatsTestDoesNotUseNegation [2315] "#!/usr/bin/env/bats\n@test \"name\" { ! [ -e test ]; }"
+prop_checkBatsTestDoesNotUseNegation7 = verifyCodes checkBatsTestDoesNotUseNegation [2314] "#!/usr/bin/env bats\n@test \"name\" { ! true; }"
+prop_checkBatsTestDoesNotUseNegation8 = verifyCodes checkBatsTestDoesNotUseNegation [2315] "#!/usr/bin/env bats\n@test \"name\" { ! [[ -e test ]]; }"
+prop_checkBatsTestDoesNotUseNegation9 = verifyCodes checkBatsTestDoesNotUseNegation [2315] "#!/usr/bin/env bats\n@test \"name\" { ! [ -e test ]; }"
 
 checkBatsTestDoesNotUseNegation params t =
     case t of
