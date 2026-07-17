@@ -8,7 +8,7 @@
 
 # Warnings currently triggered by your code
 - ignore: {name: "Redundant $"} # 1 hint
-- ignore: {name: "Redundant bracket"} # 5 hints
+- ignore: {name: "Redundant bracket"} # 1 hint
 - ignore: {name: "Redundant map"} # 1 hint
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use elem"} # 1 hint
