@@ -89,6 +89,8 @@ data Parameters = Parameters {
     hasInheritErrexit  :: Bool,
     -- Whether this script has 'set -e' or 'set -o errexit' anywhere.
     hasErrexit         :: Bool,
+    -- Whether this script has 'set -C' or 'set -o noclobber' anywhere.
+    hasNoclobber       :: Bool,
     -- Whether this script has 'set -f' or 'set -o noglob' anywhere.
     hasNoglob          :: Bool,
     -- Whether this script has 'set -o pipefail' anywhere.
@@ -212,6 +214,7 @@ makeParameters spec = params
         shellType = fromMaybe (determineShell (asFallbackShell spec) root) $ asShellType spec,
         hasAllexport = containsAllexport root,
         hasErrexit = containsErrexit root,
+        hasNoclobber = containsNoclobber root,
         hasNoglob = containsNoglob root,
         hasLastpipe =
             case shellType params of
@@ -272,6 +275,7 @@ containsAllexport = isOptionSet' "allexport" 'a'
 -- Does this script mention 'set -e' anywhere?
 -- Used as a hack to disable certain warnings.
 containsErrexit = isOptionSet' "errexit" 'e'
+containsNoclobber = isOptionSet' "noclobber" 'C'
 containsNoglob = isOptionSet' "noglob" 'f'
 
 containsSetOption opt root = isNothing $ doAnalysis (guard . not . isPipefail) root
