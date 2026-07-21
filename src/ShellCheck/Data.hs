@@ -25,9 +25,11 @@ Use:
 -}
 
 import Paths_ShellCheck (version)
+shellcheckVersion :: String
 shellcheckVersion = showVersion version  -- VERSIONSTRING
 
 
+internalVariables :: [String]
 internalVariables = [
     -- Generic
     "", "_", "rest", "REST",
@@ -70,12 +72,15 @@ internalVariables = [
     "flags_error", "flags_return"
   ]
 
+specialIntegerVariables :: [String]
 specialIntegerVariables = [
     "$", "?", "!", "#"
   ]
 
+specialVariablesWithoutSpaces :: [String]
 specialVariablesWithoutSpaces = "-" : specialIntegerVariables
 
+variablesWithoutSpaces :: [String]
 variablesWithoutSpaces = specialVariablesWithoutSpaces ++ [
     "BASHPID", "BASH_ARGC", "BASH_LINENO", "BASH_SUBSHELL", "EUID",
     "EPOCHREALTIME", "EPOCHSECONDS", "LINENO", "OPTIND", "PPID", "RANDOM",
@@ -87,18 +92,22 @@ variablesWithoutSpaces = specialVariablesWithoutSpaces ++ [
     , "FLAGS_ERROR", "FLAGS_FALSE", "FLAGS_TRUE"
   ]
 
+specialVariables :: [String]
 specialVariables = specialVariablesWithoutSpaces ++ ["@", "*"]
 
+unbracedVariables :: [String]
 unbracedVariables = specialVariables ++ [
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
   ]
 
+arrayVariables :: [String]
 arrayVariables = [
     "BASH_ALIASES", "BASH_ARGC", "BASH_ARGV", "BASH_CMDS", "BASH_LINENO",
     "BASH_REMATCH", "BASH_SOURCE", "BASH_VERSINFO", "COMP_WORDS", "COPROC",
     "DIRSTACK", "FUNCNAME", "GROUPS", "MAPFILE", "PIPESTATUS", "COMPREPLY"
   ]
 
+commonCommands :: [String]
 commonCommands = [
     "admin", "alias", "ar", "asa", "at", "awk", "basename", "batch",
     "bc", "bg", "break", "c99", "cal", "cat", "cd", "cflow", "chgrp",
@@ -124,6 +133,7 @@ commonCommands = [
     "xargs", "xgettext", "yacc", "zcat"
   ]
 
+nonReadingCommands :: [String]
 nonReadingCommands = [
     "alias", "basename", "bg", "cal", "cd", "chgrp", "chmod", "chown",
     "cp", "du", "echo", "export", "fg", "fuser", "getconf",
@@ -133,6 +143,7 @@ nonReadingCommands = [
     "unalias", "uname"
     ]
 
+sampleWords :: [String]
 sampleWords = [
     "alpha", "bravo", "charlie", "delta", "echo", "foxtrot",
     "golf", "hotel", "india", "juliett", "kilo", "lima", "mike",
@@ -141,21 +152,25 @@ sampleWords = [
     "zulu"
   ]
 
+binaryTestOps :: [String]
 binaryTestOps = [
     "-nt", "-ot", "-ef", "==", "!=", "<=", ">=", "-eq", "-ne", "-lt", "-le",
     "-gt", "-ge", "=~", ">", "<", "=", "\\<", "\\>", "\\<=", "\\>="
   ]
 
+arithmeticBinaryTestOps :: [String]
 arithmeticBinaryTestOps = [
     "-eq", "-ne", "-lt", "-le", "-gt", "-ge"
   ]
 
+unaryTestOps :: [String]
 unaryTestOps = [
     "!", "-a", "-b", "-c", "-d", "-e", "-f", "-g", "-h", "-L", "-k", "-p",
     "-r", "-s", "-S", "-t", "-u", "-w", "-x", "-O", "-G", "-N", "-z", "-n",
     "-o", "-v", "-R"
   ]
 
+supportedShellDialects :: [String]
 supportedShellDialects = [
     "sh", "bash", "dash", "ksh", "busybox"
   ]
@@ -194,9 +209,13 @@ shellFromFilename filename = listToMaybe candidates
     candidates =
         [sh | (ext,sh) <- shellExtensions, ext `isSuffixOf` filename]
 
+flagsForRead :: String
 flagsForRead = "sreu:n:N:i:p:a:t:"
+flagsForMapfile :: String
 flagsForMapfile = "d:n:O:s:u:C:c:t"
 
+declaringCommands :: [String]
 declaringCommands = ["local", "declare", "export", "readonly", "typeset", "let"]
 
+privilegeElevationCommands :: [String]
 privilegeElevationCommands = ["sudo", "doas", "run0"]

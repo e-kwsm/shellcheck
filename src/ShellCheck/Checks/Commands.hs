@@ -116,6 +116,7 @@ commandChecks = [
     ++ map checkSudoRedirect privilegeElevationCommands
 
 
+optionalChecks :: [CheckDescription]
 optionalChecks = map fst optionalCommandChecks
 optionalCommandChecks :: [(CheckDescription, CommandCheck)]
 optionalCommandChecks = [
@@ -1615,4 +1616,6 @@ checkBackreferencingDeclaration cmd = CommandCheck (Exactly cmd) check
 
 
 return []
+
+runTests :: IO Bool
 runTests =  $( [| $(forAllProperties) (quickCheckWithResult (stdArgs { maxSuccess = 1 }) ) |])

@@ -37,9 +37,11 @@ import Numeric (readHex, readOct, showHex)
 
 import Test.QuickCheck
 
+arguments :: Token -> [Token]
 arguments (T_SimpleCommand _ _ (cmd:args)) = args
 
 -- Is this a type of loop?
+isLoop :: Token -> Bool
 isLoop t = case t of
         T_WhileExpression {} -> True
         T_UntilExpression {} -> True
@@ -49,6 +51,7 @@ isLoop t = case t of
         _ -> False
 
 -- Will this split into multiple words when used as an argument?
+willSplit :: Token -> Bool
 willSplit x =
   case x of
     T_DollarBraced {} -> True
@@ -817,20 +820,35 @@ isVariableName _     = False
 
 
 -- Get the variable name from an expansion like ${var:-foo}
+prop_getBracedReference1 :: Bool
 prop_getBracedReference1 = getBracedReference "foo" == "foo"
+prop_getBracedReference2 :: Bool
 prop_getBracedReference2 = getBracedReference "#foo" == "foo"
+prop_getBracedReference3 :: Bool
 prop_getBracedReference3 = getBracedReference "#" == "#"
+prop_getBracedReference4 :: Bool
 prop_getBracedReference4 = getBracedReference "##" == "#"
+prop_getBracedReference5 :: Bool
 prop_getBracedReference5 = getBracedReference "#!" == "!"
+prop_getBracedReference6 :: Bool
 prop_getBracedReference6 = getBracedReference "!#" == "#"
+prop_getBracedReference7 :: Bool
 prop_getBracedReference7 = getBracedReference "!foo#?" == "foo"
+prop_getBracedReference8 :: Bool
 prop_getBracedReference8 = getBracedReference "foo-bar" == "foo"
+prop_getBracedReference9 :: Bool
 prop_getBracedReference9 = getBracedReference "foo:-bar" == "foo"
+prop_getBracedReference10 :: Bool
 prop_getBracedReference10 = getBracedReference "foo: -1" == "foo"
+prop_getBracedReference11 :: Bool
 prop_getBracedReference11 = getBracedReference "!os*" == ""
+prop_getBracedReference11b :: Bool
 prop_getBracedReference11b = getBracedReference "!os@" == ""
+prop_getBracedReference12 :: Bool
 prop_getBracedReference12 = getBracedReference "!os?bar**" == ""
+prop_getBracedReference13 :: Bool
 prop_getBracedReference13 = getBracedReference "foo[bar]" == "foo"
+getBracedReference :: String -> String
 getBracedReference s = fromMaybe s $
     nameExpansion s `mplus` takeName noPrefix `mplus` getSpecial noPrefix `mplus` getSpecial s
   where
@@ -852,11 +870,17 @@ getBracedReference s = fromMaybe s $
     nameExpansion _ = Nothing
 
 -- Get the variable modifier like /a/b in ${var/a/b}
+prop_getBracedModifier1 :: Bool
 prop_getBracedModifier1 = getBracedModifier "foo:bar:baz" == ":bar:baz"
+prop_getBracedModifier2 :: Bool
 prop_getBracedModifier2 = getBracedModifier "!var:-foo" == ":-foo"
+prop_getBracedModifier3 :: Bool
 prop_getBracedModifier3 = getBracedModifier "foo[bar]" == "[bar]"
+prop_getBracedModifier4 :: Bool
 prop_getBracedModifier4 = getBracedModifier "foo[@]@Q" == "[@]@Q"
+prop_getBracedModifier5 :: Bool
 prop_getBracedModifier5 = getBracedModifier "@@Q" == "@Q"
+getBracedModifier :: String -> String
 getBracedModifier s = headOrDefault "" $ do
     let var = getBracedReference s
     a <- dropModifier s
@@ -870,17 +894,24 @@ getBracedModifier s = headOrDefault "" $ do
     dropModifier x        = [x]
 
 -- Get the variables from indices like ["x", "y"] in ${var[x+y+1]}
+prop_getIndexReferences1 :: Bool
 prop_getIndexReferences1 = getIndexReferences "var[x+y+1]" == ["x", "y"]
+getIndexReferences :: String -> [String]
 getIndexReferences s = fromMaybe [] $ do
     index:_ <- matchRegex re s
     return $ matchAllStrings variableNameRegex index
   where
     re = mkRegex "(\\[.*\\])"
 
+prop_getOffsetReferences1 :: Bool
 prop_getOffsetReferences1 = getOffsetReferences ":bar" == ["bar"]
+prop_getOffsetReferences2 :: Bool
 prop_getOffsetReferences2 = getOffsetReferences ":bar:baz" == ["bar", "baz"]
+prop_getOffsetReferences3 :: Bool
 prop_getOffsetReferences3 = getOffsetReferences "[foo]:bar" == ["bar"]
+prop_getOffsetReferences4 :: Bool
 prop_getOffsetReferences4 = getOffsetReferences "[foo]:bar:baz" == ["bar", "baz"]
+getOffsetReferences :: String -> [String]
 getOffsetReferences mods = fromMaybe [] $ do
 -- if mods start with [, then drop until ]
     _:offsets:_ <- matchRegex re mods
@@ -892,6 +923,7 @@ getOffsetReferences mods = fromMaybe [] $ do
 -- Returns whether a token is a parameter expansion without any modifiers.
 -- True for $var ${var} $1 $#
 -- False for ${#var} ${var[x]} ${var:-0}
+isUnmodifiedParameterExpansion :: Token -> Bool
 isUnmodifiedParameterExpansion t =
     case t of
         T_DollarBraced _ False _ -> True
@@ -901,6 +933,7 @@ isUnmodifiedParameterExpansion t =
         _ -> False
 
 -- Return the referenced variable if (and only if) it's an unmodified parameter expansion.
+getUnmodifiedParameterExpansion :: Token -> Maybe String
 getUnmodifiedParameterExpansion t =
     case t of
         T_DollarBraced _ _ list -> do
@@ -910,14 +943,17 @@ getUnmodifiedParameterExpansion t =
         _ -> Nothing
 
 --- A list of the element and all its parents up to the root node.
+getPath :: Map.Map Id Token -> Token -> NE.NonEmpty Token
 getPath tree = NE.unfoldr $ \t -> (t, Map.lookup (getId t) tree)
 
+isClosingFileOp :: Token -> Bool
 isClosingFileOp op =
     case op of
         T_IoDuplicate _ (T_GREATAND _) "-" -> True
         T_IoDuplicate _ (T_LESSAND  _) "-" -> True
         _                                  -> False
 
+getEnableDirectives :: Token -> [String]
 getEnableDirectives root =
     case root of
         T_Annotation _ list _ -> [s | EnableComment s <- list]
@@ -930,4 +966,6 @@ getExtendedAnalysisDirective root =
         _ -> Nothing
 
 return []
+
+runTests :: IO Bool
 runTests = $quickCheckAll

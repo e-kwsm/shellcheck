@@ -48,6 +48,7 @@ checkers spec params = mconcat $ map ($ params) [
     ShellCheck.Checks.ShellSupport.checker
     ]
 
+optionalChecks :: [CheckDescription]
 optionalChecks = mconcat $ [
     ShellCheck.Analytics.optionalChecks,
     ShellCheck.Checks.Commands.optionalChecks,

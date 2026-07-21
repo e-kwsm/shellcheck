@@ -3729,4 +3729,6 @@ tryWithErrors parser = do
         return (result, endPos, endInput, endState)
 
 return []
+
+runTests :: IO Bool
 runTests = $quickCheckAll

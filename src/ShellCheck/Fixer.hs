@@ -409,4 +409,6 @@ prop_composeFixes5 = testFixes "\"$(x)\"" "`x`" [
 
 
 return []
+
+runTests :: IO Bool
 runTests = $quickCheckAll

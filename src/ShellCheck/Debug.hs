@@ -269,7 +269,9 @@ cfgToGraphVizWith nodeLabel graph = concat [
     edgeStyle CFEExit = "bold"
     edgeStyle CFEFalseFlow = "dotted"
 
+quoteViz :: [Char] -> [Char]
 quoteViz str = "\"" ++ escapeViz str ++ "\""
+escapeViz :: [Char] -> [Char]
 escapeViz [] = []
 escapeViz (c:rest) =
     case c of

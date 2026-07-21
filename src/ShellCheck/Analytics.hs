@@ -76,6 +76,7 @@ treeChecks = [
     ,checkArrayValueUsedAsIndex
     ]
 
+checker :: AnalysisSpec -> Parameters -> Checker
 checker spec params = mkChecker spec params treeChecks
 
 mkChecker spec params checks =
@@ -210,6 +211,7 @@ nodeChecks = [
     ,checkUnaryTestA
     ]
 
+optionalChecks :: [CheckDescription]
 optionalChecks = map fst optionalTreeChecks
 
 
@@ -5496,4 +5498,6 @@ checkUnaryTestA params t =
         _ -> return ()
 
 return []
+
+runTests :: IO Bool
 runTests =  $( [| $(forAllProperties) (quickCheckWithResult (stdArgs { maxSuccess = 1 }) ) |])

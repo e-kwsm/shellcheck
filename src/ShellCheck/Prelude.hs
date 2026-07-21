@@ -25,14 +25,17 @@ import Data.Semigroup
 
 
 -- Get element 0 or a default. Like `head` but safe.
+headOrDefault :: a -> [a] -> a
 headOrDefault _ (a:_) = a
 headOrDefault def _   = def
 
 -- Get the last element or a default. Like `last` but safe.
+lastOrDefault :: a -> [a] -> a
 lastOrDefault def [] = def
 lastOrDefault _ list = last list
 
 --- Get element n of a list, or Nothing. Like `!!` but safe.
+(!!!) :: [a] -> Int -> Maybe a
 (!!!) list i =
     case drop i list of
         []    -> Nothing
@@ -44,8 +47,10 @@ sconcat1 :: (Semigroup t) => [t] -> t
 sconcat1 [x] = x
 sconcat1 (x:xs) = x <> sconcat1 xs
 
+sconcatOrDefault :: Semigroup t => t -> [t] -> t
 sconcatOrDefault def [] = def
 sconcatOrDefault _ list = sconcat1 list
 
 -- For more actionable "impossible" errors
+pleaseReport :: String -> String
 pleaseReport str = "ShellCheck internal error, please report: " ++ str

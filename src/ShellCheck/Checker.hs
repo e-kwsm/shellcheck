@@ -697,4 +697,6 @@ prop_flagWinsWhenSuppressingDfa2 = null result
     }
 
 return []
+
+runTests :: IO Bool
 runTests = $quickCheckAll
