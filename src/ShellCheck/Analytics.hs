@@ -3468,8 +3468,12 @@ checkReturnAgainstZero params token =
             [T_DollarBraced _ _ l] -> concat (oversimplify l) == "?"
             _ -> False
 
-    message forSuccess id = when (isOnlyTestInCommand token && not isFirstCommandInFunction) $ style id 2181 $
-        "Check exit code directly with e.g. 'if " ++ (if forSuccess then "" else "! ") ++ "mycmd;', not indirectly with $?."
+    message forSuccess id = when (isOnlyTestInCommand token && not isFirstCommandInFunction) $
+        if hasSetE params
+        then
+            warn id 2181 $ "Check exit code directly with e.g. 'if " ++ (if forSuccess then "" else "! ") ++ "mycmd;', not indirectly with $?; otherwise script exits immediately due to errexit."
+        else
+            style id 2181 $ "Check exit code directly with e.g. 'if " ++ (if forSuccess then "" else "! ") ++ "mycmd;', not indirectly with $?."
 
 
 prop_checkRedirectedNowhere1 = verify checkRedirectedNowhere "> file"
