@@ -3410,6 +3410,7 @@ readScriptFile sourced = do
     badShells = [
         "awk",
         "brush",
+        "cabal",
         "csh",
         "elvish",
         "expect",
@@ -3422,6 +3423,7 @@ readScriptFile sourced = do
         "python",
         "python3",
         "ruby",
+        "stack",
         "tcsh",
         "sed",
         "shed",
