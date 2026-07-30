@@ -170,6 +170,7 @@ shellForExecutable name =
         "loksh" -> return Ksh
         "mksh"  -> return Ksh
         "oksh"  -> return Ksh
+        "posh"  -> return Dash
         _ -> Nothing
 
 flagsForRead = "sreu:n:N:i:p:a:t:"
