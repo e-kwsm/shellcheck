@@ -3405,7 +3405,8 @@ readScriptFile sourced = do
         "bats",
         "ksh",
         "mksh",
-        "oksh"
+        "oksh",
+        "posh"
         ]
     badShells = [
         "awk",
