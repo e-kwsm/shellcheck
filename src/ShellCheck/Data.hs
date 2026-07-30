@@ -178,6 +178,7 @@ shellForExecutable name =
         "loksh" -> return Ksh
         "mksh"  -> return Ksh
         "oksh"  -> return Ksh
+        "posh"  -> return Dash
         _ -> Nothing
 
 shellFromAnnotations :: [Annotation] -> String -> Maybe Shell
