@@ -3401,6 +3401,7 @@ readScriptFile sourced = do
         "dash",
         "busybox sh",
         "bash",
+        "rbash", -- XXX:restrictied bash is not fully supported
         "bats",
         "ksh",
         "mksh",
@@ -3420,7 +3421,6 @@ readScriptFile sourced = do
         "perl",
         "python",
         "python3",
-        "rbash", -- restrictied bash is not fully supported
         "ruby",
         "tcsh",
         "sed",

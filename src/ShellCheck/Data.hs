@@ -157,6 +157,7 @@ shellForExecutable name =
     case name of
         "sh"    -> return Sh
         "bash"  -> return Bash
+        "rbash" -> return Bash
         "bats"  -> return Bash
         "busybox"  -> return BusyboxSh -- Used for directives and --shell=busybox
         "busybox sh"  -> return BusyboxSh
