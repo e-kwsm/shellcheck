@@ -697,6 +697,7 @@ prop_checkShebang15 = verifyNotTree checkShebang "#!/bin/busybox sh\n# shellchec
 prop_checkShebang16 = verifyNotTree checkShebang "#!/bin/busybox ash"
 prop_checkShebang17 = verifyNotTree checkShebang "#!/bin/busybox ash\n# shellcheck shell=dash\n"
 prop_checkShebang18 = verifyNotTree checkShebang "#!/bin/busybox ash\n# shellcheck shell=sh\n"
+prop_checkShebang19 = verifyTree checkShebang "#!/bin/rbash"
 checkShebang params (T_Annotation _ list t) =
     if any isOverride list then [] else checkShebang params t
   where
