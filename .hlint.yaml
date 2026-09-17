@@ -11,9 +11,9 @@
 - ignore: {name: "Avoid lambda using `infix`"} # 10 hints
 - ignore: {name: "Eta reduce"} # 18 hints
 - ignore: {name: "Evaluate"} # 1 hint
-- ignore: {name: "Functor law"} # 1 hint
 - ignore: {name: "Hoist not"} # 2 hints
 - ignore: {name: "Move brackets to avoid $"} # 39 hints
+- ignore: {name: "Move reverse out"} # 3 hints
 - ignore: {name: "Parse error: on input `pattern'"} # 1 hint
 - ignore: {name: "Redundant $"} # 44 hints
 - ignore: {name: "Redundant <$>"} # 1 hint
