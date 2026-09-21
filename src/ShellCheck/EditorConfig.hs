@@ -242,16 +242,16 @@ trim = dropWhileEnd isSpace . dropWhile isSpace
 
 -- Does the (relative path of the) file match the given EditorConfig glob?
 matchesGlob :: String -> FilePath -> Bool
-matchesGlob pattern name =
-    name `matches` mkRegex (globToRegexString pattern)
+matchesGlob pattern' name =
+    name `matches` mkRegex (globToRegexString pattern')
 
 -- Translate an EditorConfig glob pattern into an anchored regex string.
 -- Per the spec, patterns without a path separator are matched against
 -- the file at any depth (as if prefixed with "**/").
 globToRegexString :: String -> String
-globToRegexString pattern = "^" ++ prefix ++ go pattern ++ "$"
+globToRegexString pattern' = "^" ++ prefix ++ go pattern' ++ "$"
   where
-    prefix = if '/' `elem` pattern then "" else "(.*/)?"
+    prefix = if '/' `elem` pattern' then "" else "(.*/)?"
 
     go [] = ""
     go ('*':'*':rest) = ".*" ++ go rest
