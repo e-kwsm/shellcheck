@@ -626,7 +626,7 @@ ioInterface options files = do
             return $ maybeToList current ++ rest
 
         readGlobalEditorConfig = do
-            path <- (getXdgDirectory XdgConfig "editorconfig.ini")
+            path <- getXdgDirectory XdgConfig "editorconfig.ini"
                         `catch` ((const $ return "") :: IOException -> IO FilePath)
             if null path
               then return []

@@ -456,8 +456,7 @@ checkGrepSendsPipefailImpl cmd = do
     longOptionsConsumingParameter =
         ["regexp", "file", "max-count", "after-context", "before-context",
             "context", "directories", "devices"]
-    warnMsg = unwords $
-      [
+    warnMsg = unwords [
         "In pipefail mode, flags like -q, -m, or -L can cause grep to exit early, aborting the pipeline with SIGPIPE.",
         "Use a non-pipe input like '< <(cmd)' or '<<<' instead."
       ]
