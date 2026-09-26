@@ -8,17 +8,16 @@
 
 # Warnings currently triggered by your code
 - ignore: {name: "Avoid lambda"} # 4 hints
-- ignore: {name: "Avoid lambda using `infix`"} # 10 hints
+- ignore: {name: "Avoid lambda using `infix`"} # 11 hints
 - ignore: {name: "Eta reduce"} # 18 hints
 - ignore: {name: "Evaluate"} # 1 hint
-- suggest: {name: "Hoist not"} # 2 hints
-- ignore: {name: "Move brackets to avoid $"} # 39 hints
+- suggest: {name: "Hoist not"} # 4 hints
+- ignore: {name: "Move brackets to avoid $"} # 40 hints
 - ignore: {name: "Move reverse out"} # 3 hints
-- ignore: {name: "Parse error: on input `pattern'"} # 1 hint
-- ignore: {name: "Redundant $"} # 44 hints
+- ignore: {name: "Redundant $"} # 51 hints
 - ignore: {name: "Redundant <$>"} # 2 hints
-- ignore: {name: "Redundant bracket"} # 68 hints
-- ignore: {name: "Redundant map"} # 1 hint
+- ignore: {name: "Redundant bracket"} # 73 hints
+- ignore: {name: "Redundant map"} # 2 hints
 - ignore: {name: "Replace case with maybe"} # 1 hint
 - ignore: {name: "Use $>"} # 1 hint
 - ignore: {name: "Use ++"} # 1 hint
@@ -27,8 +26,8 @@
 - ignore: {name: "Use any"} # 1 hint
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
-- ignore: {name: "Use elem"} # 1 hint
-- ignore: {name: "Use first"} # 1 hint
+- ignore: {name: "Use elem"} # 2 hints
+- ignore: {name: "Use first"} # 2 hints
 - ignore: {name: "Use fmap"} # 1 hint
 - ignore: {name: "Use for_"} # 4 hints
 - ignore: {name: "Use fromRight"} # 4 hints
@@ -41,11 +40,11 @@
 - ignore: {name: "Use maybe"} # 1 hint
 - ignore: {name: "Use newtype instead of data"} # 3 hints
 - ignore: {name: "Use notElem"} # 2 hints
-- ignore: {name: "Use null"} # 1 hint
+- ignore: {name: "Use null"} # 10 hints
 - ignore: {name: "Use record patterns"} # 4 hints
 - ignore: {name: "Use second"} # 4 hints
 - ignore: {name: "Use section"} # 2 hints
-- ignore: {name: "Use tuple-section"} # 10 hints
+- ignore: {name: "Use tuple-section"} # 11 hints
 - ignore: {name: "Use unless"} # 3 hints
 
 
