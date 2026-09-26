@@ -16,7 +16,7 @@
 - ignore: {name: "Move reverse out"} # 3 hints
 - ignore: {name: "Redundant $"} # 51 hints
 - ignore: {name: "Redundant <$>"} # 2 hints
-- ignore: {name: "Redundant bracket"} # 83 hints
+- ignore: {name: "Redundant bracket"} # 73 hints
 - ignore: {name: "Redundant map"} # 2 hints
 - ignore: {name: "Replace case with maybe"} # 1 hint
 - ignore: {name: "Use $>"} # 1 hint
@@ -44,7 +44,7 @@
 - ignore: {name: "Use record patterns"} # 4 hints
 - ignore: {name: "Use second"} # 4 hints
 - ignore: {name: "Use section"} # 2 hints
-- suggest: {name: "Use tuple-section"} # 1 hint
+- suggest: {name: "Use tuple-section"} # 11 hints
 - ignore: {name: "Use unless"} # 3 hints
 
 
