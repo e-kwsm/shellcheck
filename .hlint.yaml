@@ -11,7 +11,6 @@
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use elem"} # 1 hint
 - ignore: {name: "Use for_"} # 4 hints
-- ignore: {name: "Use null"} # 9 hints
 - ignore: {name: "Use tuple-section"} # 1 hint
 
 
