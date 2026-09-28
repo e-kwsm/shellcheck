@@ -348,24 +348,13 @@ runAndGetComments f s = do
 -- Copied from https://wiki.haskell.org/Edit_distance
 dist :: Eq a => [a] -> [a] -> Int
 dist a b
-    = last (if lab == 0 then mainDiag
-            else if lab > 0 then lowers !! (lab - 1)
-                 else{- < 0 -}   uppers !! (-1 - lab))
-    where mainDiag = oneDiag a b (head uppers) (-1 : head lowers)
-          uppers = eachDiag a b (mainDiag : uppers) -- upper diagonals
-          lowers = eachDiag b a (mainDiag : lowers) -- lower diagonals
-          eachDiag a [] diags = []
-          eachDiag a (bch:bs) (lastDiag:diags) = oneDiag a bs nextDiag lastDiag : eachDiag a bs diags
-              where nextDiag = head (drop 1 diags)
-          oneDiag a b diagAbove diagBelow = thisdiag
-              where doDiag [] b nw n w = []
-                    doDiag a [] nw n w = []
-                    doDiag (ach:as) (bch:bs) nw n w = me : doDiag as bs me (drop 1 n) (drop 1 w)
-                        where me = if ach == bch then nw else 1 + min3 (head w) nw (head n)
-                    firstelt = 1 + head diagBelow
-                    thisdiag = firstelt : doDiag a b firstelt diagAbove (drop 1 diagBelow)
-          lab = length a - length b
-          min3 x y z = if x < y then x else min y z
+    = last $ foldl nextRow [0 .. length b] (zip [1..] a)
+    where
+      nextRow previous (row, charA) =
+          scanl update row $ zip3 (drop 1 previous) previous (zip [1..] b)
+        where
+          update left (above, diagonal, (column, charB)) =
+              minimum [above + 1, left + 1, diagonal + if charA == charB then 0 else 1]
 
 hasFloatingPoint params = shellType params == Ksh
 
@@ -684,8 +673,11 @@ checkShebang params (T_Script _ (T_Literal id sb) _) = execWriter $ do
     unless (null sb) $ do
         unless ("/" `isPrefixOf` sb) $
             err id 2239 "Ensure the shebang uses an absolute path to the interpreter."
-        when ("/" `isSuffixOf` head (words sb)) $
-            err id 2246 "This shebang specifies a directory. Ensure the interpreter is a file."
+        case words sb of
+            interpreter:_ ->
+                when ("/" `isSuffixOf` interpreter) $
+                    err id 2246 "This shebang specifies a directory. Ensure the interpreter is a file."
+            [] -> return ()
 
 
 prop_checkForInQuoted = verify checkForInQuoted "for f in \"$(ls)\"; do echo foo; done"
