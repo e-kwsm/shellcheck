@@ -300,7 +300,7 @@ astToGraphViz token = concat [
         tell $ show n ++ " [label=" ++ quoteViz (show n ++ ": " ++ take 32 (show inner)) ++ "]\n"
 
     pop :: Token -> RWS () String [Int] ()
-    pop _ = modify tail
+    pop _ = modify $ drop 1
 
 
 -- For each entry point, set the rank so that they'll align in the graph
