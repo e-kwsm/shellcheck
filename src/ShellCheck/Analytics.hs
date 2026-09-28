@@ -21,6 +21,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE NondecreasingIndentation #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 module ShellCheck.Analytics (checker, optionalChecks, ShellCheck.Analytics.runTests) where
 
 import ShellCheck.AST
@@ -43,6 +44,7 @@ import Control.Monad.Reader
 import Data.Char
 import Data.Functor
 import Data.Function (on)
+import Data.Kind (Type)
 import Data.List
 import Data.Maybe
 import Data.Ord
@@ -3734,6 +3736,7 @@ prop_checkPipeToNowhere20 = verifyNot checkPipeToNowhere "find . | du --exclude-
 prop_checkPipeToNowhere21 = verifyNot checkPipeToNowhere "yes | cp -ri foo/* bar"
 prop_checkPipeToNowhere22 = verifyNot checkPipeToNowhere "yes | rm --interactive *"
 
+type PipeType :: Type
 data PipeType = StdoutPipe | StdoutStderrPipe | NoPipe deriving (Eq)
 checkPipeToNowhere :: Parameters -> Token -> WriterT [TokenComment] Identity ()
 checkPipeToNowhere params t =

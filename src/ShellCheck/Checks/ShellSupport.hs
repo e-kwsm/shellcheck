@@ -20,6 +20,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 module ShellCheck.Checks.ShellSupport (checker , ShellCheck.Checks.ShellSupport.runTests) where
 
 import ShellCheck.AST
@@ -33,6 +34,7 @@ import Control.Monad
 import Control.Monad.RWS
 import Data.Char
 import Data.Functor.Identity
+import Data.Kind (Type)
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
@@ -40,6 +42,7 @@ import qualified Data.Set as Set
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
 
+type ForShell :: Type
 data ForShell = ForShell [Shell] (Token -> Analysis)
 
 getChecker params list = Checker {

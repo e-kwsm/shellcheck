@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
@@ -36,6 +37,7 @@ import Control.Monad.Identity
 import Control.Monad.Trans
 import Data.Char
 import Data.Functor
+import Data.Kind (Type)
 import Data.List (isPrefixOf, isInfixOf, isSuffixOf, partition, sortBy, intercalate, nub, find)
 import Data.Maybe
 import Data.Monoid
@@ -53,7 +55,9 @@ import Debug.Trace
 
 import Test.QuickCheck.All (quickCheckAll)
 
+type SCBase :: (Type -> Type) -> Type -> Type
 type SCBase m = Mr.ReaderT (Environment m) (Ms.StateT SystemState m)
+type SCParser :: (Type -> Type) -> Type -> Type
 type SCParser m v = ParsecT String UserState (SCBase m) v
 
 backslash :: Monad m => SCParser m Char
@@ -153,17 +157,21 @@ almostSpace = do
         return ' '
 
 --------- Message/position annotation on top of user state
+type ParseNote :: Type
 data ParseNote = ParseNote SourcePos SourcePos Severity Code String deriving (Show, Eq)
+type Context :: Type
 data Context =
         ContextName SourcePos String
         | ContextAnnotation [Annotation]
         | ContextSource String
     deriving (Show)
 
+type HereDocContext :: Type
 data HereDocContext =
         HereDocPending Id Dashed Quoted String [Context] -- on linefeed, read this T_HereDoc
     deriving (Show)
 
+type UserState :: Type
 data UserState = UserState {
     lastId :: Id,
     positionMap :: Map.Map Id (SourcePos, SourcePos),
@@ -218,6 +226,7 @@ getSpanForId id =
 getNewIdFor :: Monad m => Id -> SCParser m Id
 getNewIdFor id = getSpanForId id >>= uncurry getNextIdBetween
 
+type IncompleteInterval :: Type
 data IncompleteInterval = IncompleteInterval SourcePos
 
 startSpan = IncompleteInterval <$> getPosition
@@ -329,6 +338,7 @@ getSourceOverride = do
 
 -- Store potential parse problems outside of parsec
 
+type SystemState :: Type
 data SystemState = SystemState {
     contextStack :: [Context],
     parseProblems :: [ParseNote]
@@ -338,6 +348,7 @@ initialSystemState = SystemState {
     parseProblems = []
 }
 
+type Environment :: (Type -> Type) -> Type
 data Environment m = Environment {
     systemInterface :: SystemInterface m,
     checkSourced :: Bool,

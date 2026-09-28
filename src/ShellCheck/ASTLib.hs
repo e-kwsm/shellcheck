@@ -17,7 +17,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.ASTLib where
 
 import ShellCheck.AST
@@ -29,6 +33,7 @@ import Control.Monad
 import Data.Char
 import Data.Functor
 import Data.Functor.Identity
+import Data.Kind (Type)
 import Data.List
 import Data.Maybe
 import qualified Data.List.NonEmpty as NE
@@ -651,6 +656,7 @@ getAssociativeArrays t =
 -- A Pseudoglob is a wildcard pattern used for checking if a match can succeed.
 -- For example, [[ $(cmd).jpg == [a-z] ]] will give the patterns *.jpg and ?, which
 -- can be proven never to match.
+type PseudoGlob :: Type
 data PseudoGlob = PGAny | PGMany | PGChar Char
     deriving (Eq, Show)
 
