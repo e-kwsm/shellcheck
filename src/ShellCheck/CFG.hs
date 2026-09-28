@@ -1069,7 +1069,7 @@ handleCommand cmd vars args literalCmd = do
                 pre = [t]
                 literal = getLiteralStringDef "\0" t
                 isKnown = '\0' `notElem` literal
-                match = listToMaybe $ variableAssignRegex `matchRegex` literal
+                match = variableAssignRegex `matchRegex` literal >>= listToMaybe
                 name = fromMaybe literal match
 
                 asLiteral =
