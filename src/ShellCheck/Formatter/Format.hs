@@ -17,6 +17,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Formatter.Format where
 
 import ShellCheck.Data
@@ -25,12 +29,14 @@ import ShellCheck.Fixer
 
 import Control.Monad
 import Data.Array
+import Data.Kind (Type)
 import Data.List
 import System.IO
 import System.Info
 import System.Environment
 
 -- A formatter that carries along an arbitrary piece of data
+type Formatter :: Type
 data Formatter = Formatter {
     header ::  IO (),
     onResult :: CheckResult -> SystemInterface IO -> IO (),

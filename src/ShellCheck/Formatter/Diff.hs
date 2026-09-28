@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 module ShellCheck.Formatter.Diff (format, ShellCheck.Formatter.Diff.runTests) where
 
@@ -28,6 +29,7 @@ import Control.Monad
 import Data.Algorithm.Diff
 import Data.Array
 import Data.IORef
+import Data.Kind (Type)
 import Data.List
 import qualified Data.Monoid as Monoid
 import Data.Maybe
@@ -73,7 +75,9 @@ checkFooter foundIssues reportedIssues color = do
     when (found && not output) $
             printErr color "Issues were detected, but none were auto-fixable. Use another format to see them."
 
+type ColorFunc :: Type
 type ColorFunc = (Int -> String -> String)
+type LFStatus :: Type
 data LFStatus = LinefeedMissing | LinefeedOk
 data DiffDoc a = DiffDoc String LFStatus [DiffRegion a]
 data DiffRegion a = DiffRegion (Int, Int) (Int, Int) [Diff a]
