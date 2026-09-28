@@ -18,6 +18,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Interface
     (
     SystemInterface(..)
@@ -65,6 +69,7 @@ import ShellCheck.AST
 
 import Control.DeepSeq
 import Control.Monad.Identity
+import Data.Kind (Type)
 import Data.List
 import Data.Monoid
 import Data.Ord
@@ -72,6 +77,30 @@ import Data.Semigroup
 import GHC.Generics (Generic)
 import qualified Data.Map as Map
 
+#if __GLASGOW_HASKELL__ >= 810
+type SystemInterface :: (Type -> Type) -> Type
+type CheckSpec :: Type
+type CheckResult :: Type
+type ParseSpec :: Type
+type ParseResult :: Type
+type AnalysisSpec :: Type
+type AnalysisResult :: Type
+type FormatterOptions :: Type
+type CheckDescription :: Type
+type Shell :: Type
+type ExecutionMode :: Type
+type ErrorMessage :: Type
+type Code :: Type
+type Severity :: Type
+type Position :: Type
+type Comment :: Type
+type Replacement :: Type
+type InsertionPoint :: Type
+type Fix :: Type
+type PositionedComment :: Type
+type TokenComment :: Type
+type ColorOption :: Type
+#endif
 
 data SystemInterface m = SystemInterface {
     -- | Given:

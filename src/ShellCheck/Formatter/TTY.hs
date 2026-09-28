@@ -17,6 +17,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Formatter.TTY (format, wikiLink) where
 
 import ShellCheck.Fixer
@@ -27,6 +31,7 @@ import Control.DeepSeq
 import Control.Monad
 import Data.Array
 import Data.Foldable
+import Data.Kind (Type)
 import Data.Ord
 import Data.IORef
 import Data.List
@@ -34,6 +39,11 @@ import Data.Maybe
 import System.IO
 import System.Info
 import qualified Data.List.NonEmpty as NE
+
+#if __GLASGOW_HASKELL__ >= 810
+type Ranking :: Type
+type ColorFunc :: Type
+#endif
 
 wikiLink = "https://www.shellcheck.net/wiki/"
 

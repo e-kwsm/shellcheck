@@ -17,6 +17,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 import qualified ShellCheck.Analyzer
 import           ShellCheck.Checker
 import           ShellCheck.Data
@@ -43,6 +47,7 @@ import           Data.Char
 import           Data.Either
 import           Data.Functor
 import           Data.IORef
+import           Data.Kind                       (Type)
 import           Data.List
 import qualified Data.Map                        as Map
 import           Data.Maybe
@@ -56,7 +61,9 @@ import           System.Exit
 import           System.FilePath
 import           System.IO
 
+type Flag :: Type
 data Flag = Flag String String
+type Status :: Type
 data Status =
     NoProblems
     | SomeProblems
@@ -72,6 +79,7 @@ instance Monoid Status where
     mempty = NoProblems
     mappend = (Data.Semigroup.<>)
 
+type Options :: Type
 data Options = Options {
     checkSpec        :: CheckSpec,
     externalSources  :: Bool,

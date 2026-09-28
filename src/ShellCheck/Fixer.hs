@@ -18,7 +18,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Fixer (applyFix, removeTabStops, mapPositions, Ranged(..), runTests) where
 
 import ShellCheck.Interface
@@ -26,10 +30,17 @@ import ShellCheck.Prelude
 import Control.Monad
 import Control.Monad.State
 import Data.Array
+import Data.Kind (Constraint, Type)
 import Data.List
 import Data.Semigroup
 import GHC.Exts (sortWith)
 import Test.QuickCheck
+
+#if __GLASGOW_HASKELL__ >= 810
+type Ranged :: Type -> Constraint
+type Fixer :: Type -> Type
+type PSTree :: Type -> Type
+#endif
 
 -- The Ranged class is used for types that has a start and end position.
 class Ranged a where
