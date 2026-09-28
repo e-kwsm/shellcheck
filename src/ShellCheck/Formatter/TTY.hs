@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE StandaloneKindSignatures #-}
 module ShellCheck.Formatter.TTY (format, wikiLink) where
 
 import ShellCheck.Fixer
@@ -27,6 +28,7 @@ import Control.DeepSeq
 import Control.Monad
 import Data.Array
 import Data.Foldable
+import Data.Kind (Type)
 import Data.Ord
 import Data.IORef
 import Data.List
@@ -38,8 +40,10 @@ import qualified Data.List.NonEmpty as NE
 wikiLink = "https://www.shellcheck.net/wiki/"
 
 -- An arbitrary Ord thing to order warnings
+type Ranking :: Type
 type Ranking = (Char, Severity, Integer)
 -- Ansi coloring function
+type ColorFunc :: Type
 type ColorFunc = (String -> String -> String)
 
 format :: FormatterOptions -> IO Formatter

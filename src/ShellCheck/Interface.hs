@@ -18,6 +18,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Interface
     (
     SystemInterface(..)
@@ -65,6 +69,7 @@ import ShellCheck.AST
 
 import Control.DeepSeq
 import Control.Monad.Identity
+import Data.Kind (Type)
 import Data.List
 import Data.Monoid
 import Data.Ord
@@ -73,6 +78,7 @@ import GHC.Generics (Generic)
 import qualified Data.Map as Map
 
 
+type SystemInterface :: (Type -> Type) -> Type
 data SystemInterface m = SystemInterface {
     -- | Given:
     --   What annotations say about including external files (if anything)
@@ -91,6 +97,7 @@ data SystemInterface m = SystemInterface {
 }
 
 -- ShellCheck input and output
+type CheckSpec :: Type
 data CheckSpec = CheckSpec {
     csFilename :: String,
     csScript :: String,
@@ -104,6 +111,7 @@ data CheckSpec = CheckSpec {
     csOptionalChecks :: [String]
 } deriving (Show, Eq)
 
+type CheckResult :: Type
 data CheckResult = CheckResult {
     crFilename :: String,
     crComments :: [PositionedComment]
@@ -147,6 +155,7 @@ newSystemInterface =
     }
 
 -- Parser input and output
+type ParseSpec :: Type
 data ParseSpec = ParseSpec {
     psFilename :: String,
     psScript :: String,
@@ -155,6 +164,7 @@ data ParseSpec = ParseSpec {
     psShellTypeOverride :: Maybe Shell
 } deriving (Show, Eq)
 
+type ParseResult :: Type
 data ParseResult = ParseResult {
     prComments :: [PositionedComment],
     prTokenPositions :: Map.Map Id (Position, Position),
@@ -169,6 +179,7 @@ newParseResult = ParseResult {
 }
 
 -- Analyzer input and output
+type AnalysisSpec :: Type
 data AnalysisSpec = AnalysisSpec {
     asScript :: Token,
     asShellType :: Maybe Shell,
@@ -191,6 +202,7 @@ newAnalysisSpec token = AnalysisSpec {
     asTokenPositions = Map.empty
 }
 
+type AnalysisResult :: Type
 newtype AnalysisResult = AnalysisResult {
     arComments :: [TokenComment]
 }
@@ -200,6 +212,7 @@ newAnalysisResult = AnalysisResult {
 }
 
 -- Formatter options
+type FormatterOptions :: Type
 data FormatterOptions = FormatterOptions {
     foColorOption :: ColorOption,
     foWikiLinkCount :: Integer
@@ -210,6 +223,7 @@ newFormatterOptions = FormatterOptions {
     foWikiLinkCount = 3
 }
 
+type CheckDescription :: Type
 data CheckDescription = CheckDescription {
     cdName :: String,
     cdId :: [Integer],
@@ -227,14 +241,20 @@ newCheckDescription = CheckDescription {
     }
 
 -- Supporting data types
+type Shell :: Type
 data Shell = Ksh | Sh | Bash | Dash | BusyboxSh deriving (Show, Eq)
+type ExecutionMode :: Type
 data ExecutionMode = Executed | Sourced deriving (Show, Eq)
 
+type ErrorMessage :: Type
 type ErrorMessage = String
+type Code :: Type
 type Code = Integer
 
+type Severity :: Type
 data Severity = ErrorC | WarningC | InfoC | StyleC
     deriving (Show, Eq, Ord, Generic, NFData)
+type Position :: Type
 data Position = Position {
     posFile :: String,    -- Filename
     posLine :: Integer,   -- 1 based source line
@@ -248,6 +268,7 @@ newPosition = Position {
     posColumn = 1
 }
 
+type Comment :: Type
 data Comment = Comment {
     cSeverity :: Severity,
     cCode     :: Code,
@@ -262,6 +283,7 @@ newComment = Comment {
 }
 
 -- only support single line for now
+type Replacement :: Type
 data Replacement = Replacement {
     repStartPos :: Position,
     repEndPos :: Position,
@@ -272,6 +294,7 @@ data Replacement = Replacement {
     repInsertionPoint :: InsertionPoint
 } deriving (Show, Eq, Generic, NFData)
 
+type InsertionPoint :: Type
 data InsertionPoint = InsertBefore | InsertAfter
     deriving (Show, Eq, Generic, NFData)
 
@@ -283,6 +306,7 @@ newReplacement = Replacement {
     repInsertionPoint = InsertAfter
 }
 
+type Fix :: Type
 data Fix = Fix {
     fixReplacements :: [Replacement]
 } deriving (Show, Eq, Generic, NFData)
@@ -291,6 +315,7 @@ newFix = Fix {
     fixReplacements = []
 }
 
+type PositionedComment :: Type
 data PositionedComment = PositionedComment {
     pcStartPos :: Position,
     pcEndPos   :: Position,
@@ -306,6 +331,7 @@ newPositionedComment = PositionedComment {
     pcFix      = Nothing
 }
 
+type TokenComment :: Type
 data TokenComment = TokenComment {
     tcId :: Id,
     tcComment :: Comment,
@@ -318,6 +344,7 @@ newTokenComment = TokenComment {
     tcFix = Nothing
 }
 
+type ColorOption :: Type
 data ColorOption =
     ColorAuto
     | ColorAlways
