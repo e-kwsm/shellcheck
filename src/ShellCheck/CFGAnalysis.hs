@@ -20,6 +20,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 
 {-
     Data Flow Analysis on a Control Flow Graph.
@@ -70,6 +71,7 @@ import Data.Array.Unboxed
 import Data.Char
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Query.DFS
+import Data.Kind (Type)
 import Data.List hiding (map)
 import Data.Maybe
 import Data.STRef
@@ -101,6 +103,7 @@ logInfo log = do
     return ()
 
 -- The result of the data flow analysis
+type CFGAnalysis :: Type
 data CFGAnalysis = CFGAnalysis {
     graph :: CFGraph,
     tokenToRange :: M.Map Id (Node, Node),
@@ -110,6 +113,7 @@ data CFGAnalysis = CFGAnalysis {
 } deriving (Show)
 
 -- The program state we expose externally
+type ProgramState :: Type
 data ProgramState = ProgramState {
     -- internalState :: InternalState, -- For debugging
     variablesInScope :: M.Map String VariableState,
@@ -171,6 +175,7 @@ variableMayBeAssignedInteger state var = do
 getDataForNode analysis node = M.lookup node $ nodeToData analysis
 
 -- The current state of data flow at a point in the program, potentially as a diff
+type InternalState :: Type
 data InternalState = InternalState {
     sVersion :: Integer,
     sGlobalValues :: VersionedMap String VariableState,
@@ -257,6 +262,7 @@ setExitCodes set state = modified state {
 -- Dependencies on values, e.g. "if there is a global variable named 'foo' without spaces"
 -- This is used to see if the DFA of a function would result in the same state, so anything
 -- that affects DFA must be tracked.
+type StateDependency :: Type
 data StateDependency =
     -- Complete variable state
     DepState Scope String VariableState
@@ -271,10 +277,12 @@ data StateDependency =
     deriving (Show, Eq, Ord, Generic, NFData)
 
 -- A function definition, or lack thereof
+type FunctionDefinition :: Type
 data FunctionDefinition = FunctionUnknown | FunctionDefinition String Node Node
     deriving (Show, Eq, Ord, Generic, NFData)
 
 -- The Set of places a command name can point (it's a Set to handle conditionally defined functions)
+type FunctionValue :: Type
 type FunctionValue = S.Set FunctionDefinition
 
 -- Create an InternalState that fulfills the given dependencies
@@ -308,6 +316,7 @@ depsToState set = foldl insert newInternalState $ S.toList set
 unknownFunctionValue = S.singleton FunctionUnknown
 
 -- The information about the value of a single variable
+type VariableValue :: Type
 data VariableValue = VariableValue {
     literalValue :: Maybe String, -- TODO: For debugging. Remove me.
     spaceStatus :: SpaceStatus,
@@ -315,6 +324,7 @@ data VariableValue = VariableValue {
 }
     deriving (Show, Eq, Ord, Generic, NFData)
 
+type VariableState :: Type
 data VariableState = VariableState {
     variableValue :: VariableValue,
     variableProperties :: VariableProperties
@@ -322,12 +332,15 @@ data VariableState = VariableState {
     deriving (Show, Eq, Ord, Generic, NFData)
 
 -- Whether or not the value needs quoting (has spaces/globs), or we don't know
+type SpaceStatus :: Type
 data SpaceStatus = SpaceStatusEmpty | SpaceStatusClean | SpaceStatusDirty deriving (Show, Eq, Ord, Generic, NFData)
 --
 -- Whether or not the value needs quoting (has spaces/globs), or we don't know
+type NumericalStatus :: Type
 data NumericalStatus = NumericalStatusUnknown | NumericalStatusEmpty | NumericalStatusMaybe | NumericalStatusDefinitely deriving (Show, Eq, Ord, Generic, NFData)
 
 -- The set of possible sets of properties for this variable
+type VariableProperties :: Type
 type VariableProperties = S.Set (S.Set CFVariableProp)
 
 defaultProperties = S.singleton S.empty
@@ -386,6 +399,7 @@ mergeNumericalStatus a b =
 -- * Version -1 means it's unknown (possibly and presumably changed)
 -- * Version 0 means it's empty
 -- * Version N means it's equal to any other map with Version N (this is required but not enforced)
+type VersionedMap :: Type -> Type -> Type
 data VersionedMap k v = VersionedMap {
     mapVersion :: Integer,
     mapStorage :: M.Map k v
@@ -411,6 +425,7 @@ instance (Ord k, Ord v) => Ord (VersionedMap k v) where
 
 -- A context with STRefs manually passed around to function.
 -- This is done because it was dramatically much faster than any RWS type stack
+type Ctx :: Type -> Type
 data Ctx s = Ctx {
     -- The current node
     cNode :: STRef s Node,
@@ -434,6 +449,7 @@ data Ctx s = Ctx {
 }
 
 -- Whenever a function (or subshell) is invoked, a value like this is pushed onto the stack
+type StackEntry :: Type -> Type
 data StackEntry s = StackEntry {
     -- The entry point of this stack entry for the purpose of detecting recursion
     entryPoint :: Node,
@@ -1249,6 +1265,7 @@ literalToNumericalStatus str =
   where
     isNumeric = all isDigit
 
+type StateMap :: Type
 type StateMap = M.Map Node (InternalState, InternalState)
 
 -- Classic, iterative Data Flow Analysis. See Wikipedia for a description of the process.
