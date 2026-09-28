@@ -17,15 +17,36 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveTraversable, PatternSynonyms #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.AST where
 
 import GHC.Generics (Generic)
 import Control.Monad.Identity
 import Control.DeepSeq
+import Data.Kind (Type)
 import Text.Parsec
 import qualified ShellCheck.Regex as Re
 import Prelude hiding (id)
+
+#if __GLASGOW_HASKELL__ >= 810
+type Id :: Type
+type Quoted :: Type
+type Dashed :: Type
+type Piped :: Type
+type AssignmentMode :: Type
+type FunctionKeyword :: Type
+type FunctionParentheses :: Type
+type CaseType :: Type
+type Root :: Type
+type Token :: Type
+type InnerToken :: Type -> Type
+type Annotation :: Type
+type ConditionType :: Type
+#endif
 
 newtype Id = Id Int deriving (Show, Eq, Ord, Generic, NFData)
 
