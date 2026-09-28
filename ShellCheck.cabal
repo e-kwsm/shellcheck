@@ -41,6 +41,9 @@ extra-source-files:
 common warnings
     ghc-options: -Wall
 
+common hoge
+    default-language: Haskell2010
+
 source-repository head
     type: git
     location: https://github.com/koalaman/shellcheck.git
@@ -50,7 +53,7 @@ flag dev-mode
     default: False
 
 library
-    import:           warnings
+    import:           warnings, hoge
     exposed-modules:
       ShellCheck.AST
       ShellCheck.ASTLib
@@ -111,10 +114,9 @@ library
         directory            >= 1.2.3 && < 1.4
 
     hs-source-dirs:   src
-    default-language: Haskell2010
 
 executable shellcheck
-    import:           warnings
+    import:           warnings, hoge
     main-is:          shellcheck.hs
     if impl(ghc < 8.0)
       build-depends:
@@ -136,10 +138,9 @@ executable shellcheck
       regex-tdfa,
       transformers,
       ShellCheck
-    default-language: Haskell2010
 
 executable shellcheck-dev
-    import: warnings
+    import: warnings, hoge
     if flag(dev-mode)
       buildable: True
     else
@@ -148,12 +149,10 @@ executable shellcheck-dev
       base,
       containers,
       ShellCheck
-    default-language: Haskell2010
     main-is: shellcheck-dev.hs
 
 test-suite test-shellcheck
-    import:           warnings
-    default-language: Haskell2010
+    import:           warnings, hoge
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          shellcheck.hs
