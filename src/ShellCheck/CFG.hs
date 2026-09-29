@@ -1069,7 +1069,9 @@ handleCommand cmd vars args literalCmd = do
                 pre = [t]
                 literal = getLiteralStringDef "\0" t
                 isKnown = '\0' `notElem` literal
-                match = fmap head $ variableAssignRegex `matchRegex` literal
+                match = do
+                    groups <- variableAssignRegex `matchRegex` literal
+                    NE.head <$> NE.nonEmpty groups
                 name = fromMaybe literal match
 
                 asLiteral =
