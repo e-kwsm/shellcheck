@@ -17,7 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass, DerivingStrategies #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 module ShellCheck.Interface
     (
     SystemInterface(..)
@@ -103,12 +103,12 @@ data CheckSpec = CheckSpec {
     csMinSeverity :: Severity,
     csExtendedAnalysis :: Maybe ExtendedAnalysisMode,
     csOptionalChecks :: [String]
-} deriving stock (Show, Eq)
+} deriving (Show, Eq)
 
 data CheckResult = CheckResult {
     crFilename :: String,
     crComments :: [PositionedComment]
-} deriving stock (Show, Eq)
+} deriving (Show, Eq)
 
 emptyCheckResult :: CheckResult
 emptyCheckResult = CheckResult {
@@ -154,13 +154,13 @@ data ParseSpec = ParseSpec {
     psCheckSourced :: Bool,
     psIgnoreRC :: Bool,
     psShellTypeOverride :: Maybe Shell
-} deriving stock (Show, Eq)
+} deriving (Show, Eq)
 
 data ParseResult = ParseResult {
     prComments :: [PositionedComment],
     prTokenPositions :: Map.Map Id (Position, Position),
     prRoot :: Maybe Token
-} deriving stock (Show, Eq)
+} deriving (Show, Eq)
 
 newParseResult :: ParseResult
 newParseResult = ParseResult {
@@ -228,20 +228,19 @@ newCheckDescription = CheckDescription {
     }
 
 -- Supporting data types
-data Shell = Ksh | Sh | Bash | Dash | BusyboxSh deriving stock (Show, Eq)
-data ExecutionMode = Executed | Sourced deriving stock (Show, Eq)
+data Shell = Ksh | Sh | Bash | Dash | BusyboxSh deriving (Show, Eq)
+data ExecutionMode = Executed | Sourced deriving (Show, Eq)
 
 type ErrorMessage = String
 type Code = Integer
 
 data Severity = ErrorC | WarningC | InfoC | StyleC
-    deriving stock (Show, Eq, Ord, Generic)
-    deriving anyclass (NFData)
+    deriving (Show, Eq, Ord, Generic, NFData)
 data Position = Position {
     posFile :: String,    -- Filename
     posLine :: Integer,   -- 1 based source line
     posColumn :: Integer  -- 1 based source column, where tabs are 8
-} deriving stock (Show, Eq, Generic, Ord) deriving anyclass (NFData)
+} deriving (Show, Eq, Generic, NFData, Ord)
 
 newPosition :: Position
 newPosition = Position {
@@ -254,7 +253,7 @@ data Comment = Comment {
     cSeverity :: Severity,
     cCode     :: Code,
     cMessage  :: String
-} deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
+} deriving (Show, Eq, Generic, NFData)
 
 newComment :: Comment
 newComment = Comment {
@@ -272,10 +271,10 @@ data Replacement = Replacement {
     repPrecedence :: Int,
     -- Whether to insert immediately before or immediately after the specified region.
     repInsertionPoint :: InsertionPoint
-} deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
+} deriving (Show, Eq, Generic, NFData)
 
 data InsertionPoint = InsertBefore | InsertAfter
-    deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
+    deriving (Show, Eq, Generic, NFData)
 
 newReplacement = Replacement {
     repStartPos = newPosition,
@@ -287,7 +286,7 @@ newReplacement = Replacement {
 
 data Fix = Fix {
     fixReplacements :: [Replacement]
-} deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
+} deriving (Show, Eq, Generic, NFData)
 
 newFix = Fix {
     fixReplacements = []
@@ -298,7 +297,7 @@ data PositionedComment = PositionedComment {
     pcEndPos   :: Position,
     pcComment  :: Comment,
     pcFix      :: Maybe Fix
-} deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
+} deriving (Show, Eq, Generic, NFData)
 
 newPositionedComment :: PositionedComment
 newPositionedComment = PositionedComment {
@@ -312,7 +311,7 @@ data TokenComment = TokenComment {
     tcId :: Id,
     tcComment :: Comment,
     tcFix :: Maybe Fix
-} deriving stock (Show, Eq, Generic) deriving anyclass (NFData)
+} deriving (Show, Eq, Generic, NFData)
 
 newTokenComment = TokenComment {
     tcId = Id 0,
@@ -324,7 +323,7 @@ data ColorOption =
     ColorAuto
     | ColorAlways
     | ColorNever
-  deriving stock (Ord, Eq, Show)
+  deriving (Ord, Eq, Show)
 
 -- The scope of the data-flow ("extended") analysis
 data ExtendedAnalysisMode =

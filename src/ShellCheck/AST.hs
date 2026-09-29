@@ -18,10 +18,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveTraversable, PatternSynonyms #-}
-{-# LANGUAGE CPP #-}
-#if __GLASGOW_HASKELL__ >= 802
-{-# LANGUAGE DerivingStrategies #-}
-#endif
 module ShellCheck.AST where
 
 import GHC.Generics (Generic)
@@ -31,24 +27,18 @@ import Text.Parsec
 import qualified ShellCheck.Regex as Re
 import Prelude hiding (id)
 
-#if __GLASGOW_HASKELL__ < 802
 newtype Id = Id Int deriving (Show, Eq, Ord, Generic, NFData)
-#else
-newtype Id = Id Int
-    deriving stock (Show, Eq, Ord, Generic)
-    deriving anyclass (NFData)
-#endif
 
-data Quoted = Quoted | Unquoted deriving stock (Show, Eq)
-data Dashed = Dashed | Undashed deriving stock (Show, Eq)
-data Piped = Piped | Unpiped deriving stock (Show, Eq)
-data AssignmentMode = Assign | Append deriving stock (Show, Eq)
-newtype FunctionKeyword = FunctionKeyword Bool deriving stock (Show, Eq)
-newtype FunctionParentheses = FunctionParentheses Bool deriving stock (Show, Eq)
-data CaseType = CaseBreak | CaseFallThrough | CaseContinue deriving stock (Show, Eq)
+data Quoted = Quoted | Unquoted deriving (Show, Eq)
+data Dashed = Dashed | Undashed deriving (Show, Eq)
+data Piped = Piped | Unpiped deriving (Show, Eq)
+data AssignmentMode = Assign | Append deriving (Show, Eq)
+newtype FunctionKeyword = FunctionKeyword Bool deriving (Show, Eq)
+newtype FunctionParentheses = FunctionParentheses Bool deriving (Show, Eq)
+data CaseType = CaseBreak | CaseFallThrough | CaseContinue deriving (Show, Eq)
 
 newtype Root = Root Token
-data Token = OuterToken Id (InnerToken Token) deriving stock (Show)
+data Token = OuterToken Id (InnerToken Token) deriving (Show)
 
 data InnerToken t =
     Inner_TA_Binary String t t
@@ -155,7 +145,7 @@ data InnerToken t =
     | Inner_T_Include t
     | Inner_T_SourceCommand t t
     | Inner_T_BatsTest String t
-    deriving stock (Show, Eq, Functor, Foldable, Traversable)
+    deriving (Show, Eq, Functor, Foldable, Traversable)
 
 data Annotation =
     DisableComment Integer Integer -- [from, to)
@@ -165,7 +155,7 @@ data Annotation =
     | SourcePath String
     | ExternalSources Bool
     | ExtendedAnalysis ExtendedAnalysisAnnotation
-    deriving stock (Show, Eq)
+    deriving (Show, Eq)
 
 -- ShellCheck.Interface has an equivalent one used externally, but it would be a circular dependency
 data ExtendedAnalysisAnnotation = EAANone | EAALocal | EAAFull deriving (Show, Eq)
