@@ -29,6 +29,7 @@ import Data.Algorithm.Diff
 import Data.Array
 import Data.IORef
 import Data.List
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Monoid as Monoid
 import Data.Maybe
 import qualified Data.Map as M
@@ -207,19 +208,16 @@ formatDoc color (DiffDoc name lf regions) =
 
 -- Create a Map from filename to Fix
 buildFixMap :: [Fix] -> M.Map String Fix
-buildFixMap fixes = perFile
-  where
-    splitFixes = splitFixByFile $ mconcat fixes
-    perFile = groupByMap (posFile . repStartPos . head . fixReplacements) splitFixes
+buildFixMap fixes = M.fromListWith Monoid.mappend $ splitFixByFile $ mconcat fixes
 
-splitFixByFile :: Fix -> [Fix]
-splitFixByFile fix = map makeFix $ groupBy sameFile (fixReplacements fix)
+splitFixByFile :: Fix -> [(String, Fix)]
+splitFixByFile fix = maybe [] (map makeFix . NE.groupBy sameFile) $
+    NE.nonEmpty $ fixReplacements fix
   where
     sameFile rep1 rep2 = (posFile $ repStartPos rep1) == (posFile $ repStartPos rep2)
-    makeFix reps = newFix { fixReplacements = reps }
-
-groupByMap :: (Ord k, Monoid v) => (v -> k) -> [v] -> M.Map k v
-groupByMap f = M.fromListWith Monoid.mappend . map (\x -> (f x, x))
+    makeFix reps =
+        (posFile $ repStartPos $ NE.head reps,
+            newFix { fixReplacements = NE.toList reps })
 
 -- For building unit tests
 b n = Both n n
