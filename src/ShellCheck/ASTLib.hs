@@ -18,7 +18,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DerivingStrategies #-}
 module ShellCheck.ASTLib where
 
 import ShellCheck.AST
@@ -653,7 +652,7 @@ getAssociativeArrays t =
 -- For example, [[ $(cmd).jpg == [a-z] ]] will give the patterns *.jpg and ?, which
 -- can be proven never to match.
 data PseudoGlob = PGAny | PGMany | PGChar Char
-    deriving stock (Eq, Show)
+    deriving (Eq, Show)
 
 -- Turn a word into a PG pattern, replacing all unknown/runtime values with
 -- PGMany.

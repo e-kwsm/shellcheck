@@ -18,7 +18,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE PatternGuards #-}
@@ -53,7 +52,7 @@ import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
 import Debug.Trace -- STRIP
 
 data CommandName = Exactly String | Basename String
-    deriving stock (Eq, Ord)
+    deriving (Eq, Ord)
 
 data CommandCheck =
     CommandCheck CommandName (Token -> Analysis)
