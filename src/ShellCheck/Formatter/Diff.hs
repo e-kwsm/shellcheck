@@ -210,10 +210,7 @@ buildFixMap :: [Fix] -> M.Map String Fix
 buildFixMap fixes = perFile
   where
     splitFixes = splitFixByFile $ mconcat fixes
-    perFile = M.fromListWith Monoid.mappend $ mapMaybe fixToFile splitFixes
-    fixToFile fix = do
-        replacement <- listToMaybe $ fixReplacements fix
-        return (posFile $ repStartPos replacement, fix)
+    perFile = groupByMap (posFile . repStartPos . head . fixReplacements) splitFixes
 
 splitFixByFile :: Fix -> [Fix]
 splitFixByFile fix = map makeFix $ groupBy sameFile (fixReplacements fix)
