@@ -114,20 +114,11 @@ executable shellcheck
       build-depends:
         semigroups
     build-depends:
-      aeson,
-      array,
       base,
-      bytestring,
       containers,
-      deepseq,
-      Diff,
       directory,
-      fgl,
       mtl,
       filepath,
-      parsec,
-      QuickCheck,
-      regex-tdfa,
       transformers,
       ShellCheck
     if impl(ghc >= 8.10)
@@ -152,21 +143,7 @@ executable shellcheck-dev
 test-suite test-shellcheck
     type: exitcode-stdio-1.0
     build-depends:
-      aeson,
-      array,
       base,
-      bytestring,
-      containers,
-      deepseq,
-      Diff,
-      directory,
-      fgl,
-      filepath,
-      mtl,
-      parsec,
-      QuickCheck,
-      regex-tdfa,
-      transformers,
       ShellCheck
     if impl(ghc >= 8.10)
       ghc-options: -Werror=unused-packages
