@@ -19,7 +19,10 @@
 -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.AnalyzerLib where
 
 import ShellCheck.AST

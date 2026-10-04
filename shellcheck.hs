@@ -17,7 +17,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 import qualified ShellCheck.Analyzer
 import           ShellCheck.Checker
 import           ShellCheck.Data

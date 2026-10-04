@@ -19,7 +19,10 @@
 -}
 
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Fixer (applyFix, removeTabStops, mapPositions, Ranged(..), runTests) where
 
 import ShellCheck.Interface

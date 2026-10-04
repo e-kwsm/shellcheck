@@ -21,7 +21,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE NondecreasingIndentation #-}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 module ShellCheck.Analytics (checker, optionalChecks, ShellCheck.Analytics.runTests) where
 
 import ShellCheck.AST
