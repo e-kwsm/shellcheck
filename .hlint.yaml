@@ -14,10 +14,10 @@
 - ignore: {name: "Hoist not"} # 2 hints
 - ignore: {name: "Move brackets to avoid $"} # 39 hints
 - ignore: {name: "Move reverse out"} # 3 hints
-- ignore: {name: "Parse error: on input `pattern'"} # 1 hint
+- ignore: {name: "Parse error: on input `pattern'"} # 2 hints
 - ignore: {name: "Redundant $"} # 44 hints
 - ignore: {name: "Redundant <$>"} # 2 hints
-- ignore: {name: "Redundant bracket"} # 68 hints
+- ignore: {name: "Redundant bracket"} # 69 hints
 - ignore: {name: "Redundant map"} # 1 hint
 - ignore: {name: "Replace case with maybe"} # 1 hint
 - ignore: {name: "Use $>"} # 1 hint
