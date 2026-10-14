@@ -266,7 +266,7 @@ isOptionSet' longOpt shortOpt root = isNothing $ doAnalysis (guard . not . isSet
                     (longOpt `elem` oversimplify t ||
                         [shortOpt] `elem` map snd (getAllFlags t))
             _ -> False
-    re = mkRegex $ "[[:space:]]-[^-]*" ++ [shortOpt]
+    re = mkRegex $ ("[[:space:]]-[^-]*" <> [shortOpt])
 
 containsAllexport = isOptionSet' "allexport" 'a'
 -- Does this script mention 'set -e' anywhere?
