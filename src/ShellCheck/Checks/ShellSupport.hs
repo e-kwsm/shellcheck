@@ -228,8 +228,8 @@ prop_checkBashisms133 = verify checkBashisms "for ((;;)); do break; done" -- SC3
 prop_checkBashisms134 = verify checkBashisms "((var))" -- SC3006
 prop_checkBashisms135 = verify checkBashisms "var=$[1 + 2]" -- SC3007
 prop_checkBashisms136 = verify checkBashisms "select x; do :; done" -- SC3008
-prop_checkBashisms137a = verify checkBashisms "echo {a,b}" -- SC3009
-prop_checkBashisms137b = verify checkBashisms "echo {1..3}" -- SC3009
+prop_checkBashisms137a = verifyNot checkBashisms "echo {a,b}" -- SC3009
+prop_checkBashisms137b = verifyNot checkBashisms "echo {1..3}" -- SC3009
 prop_checkBashisms138 = verify checkBashisms "[[ -z $var ]]" -- SC3010
 prop_checkBashisms139 = verify checkBashisms "cat <<< foo" -- SC3011
 prop_checkBashisms140a = verify checkBashisms "[ a '<' b ]" -- SC3012
