@@ -289,7 +289,9 @@ pattern TC_Group :: Id -> ConditionType -> Token -> Token
 pattern TC_Group id typ token = OuterToken id (Inner_TC_Group typ token)
 pattern TC_Nullary :: Id -> ConditionType -> Token -> Token
 pattern TC_Nullary id typ token = OuterToken id (Inner_TC_Nullary typ token)
+pattern T_Condition :: Id -> ConditionType -> ConditionType -> Token -> Token
 pattern T_Condition id typ close token = OuterToken id (Inner_T_Condition typ close token)
+pattern T_CoProcBody :: Id -> Token -> Token
 pattern T_CoProcBody id t = OuterToken id (Inner_T_CoProcBody t)
 pattern T_CoProc :: Id -> Maybe Token -> Token -> Token
 pattern T_CoProc id var body = OuterToken id (Inner_T_CoProc var body)
