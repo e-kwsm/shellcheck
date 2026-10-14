@@ -558,7 +558,7 @@ ioInterface options files onRcReadFailure = do
         ecResult <- getEditorConfig filename
         return $ mergeConfigs filename rcResult ecResult
 
-    mergeConfigs filename rcResult ecResult =
+    mergeConfigs _filename rcResult ecResult =
         case (rcResult, ecResult) of
             (Nothing, Nothing) -> Nothing
             (Just (rcPath, rc), Nothing) -> Just (rcPath, rc)
