@@ -2655,9 +2655,9 @@ checkUnassignedReferences' includeGlobals params t = warnings
     defaultAssigned = Map.fromList $ map (, ()) $ filter (not . null) internalVariables
 
     tally (Assignment (_, _, name, _))  =
-        modify (\(read, written) -> (read, Map.insert name () written))
+        modify (Data.Bifunctor.second (Map.insert name ()))
     tally (Reference (_, place, name)) =
-        modify (\(read, written) -> (Map.insertWith (const id) name place read, written))
+        modify (Data.Bifunctor.first (Map.insertWith (const id) name place))
     tally _ = return ()
 
     unassigned = Map.toList $ Map.difference (Map.difference readMap writeMap) defaultAssigned
@@ -3700,7 +3700,7 @@ checkUnmatchableCases params t =
         warn (getId candidate) 2195
             "This pattern will never match the case statement's word. Double check them."
 
-    tupMap f l = map (\x -> (x, f x)) l
+    tupMap f = map (\x -> (x, f x))
     checkDoms ((glob, Just x), rest) =
         forM_ (find (\(_, p) -> x `pseudoGlobIsSuperSetof` p) rest) $
             \(first,_) -> do
@@ -4047,7 +4047,7 @@ checkUseBeforeDefinition params t = fromMaybe [] $ do
                 -- Is the function definitely being defined later?
                 guard $ any (\c -> CF.doesPostDominate cfga c id) invocations
                 -- Was one already defined, so it's actually a re-definition?
-                guard . not $ any (\c -> CF.doesPostDominate cfga id c) invocations
+                guard . not $ any (CF.doesPostDominate cfga id) invocations
                 return $ err id 2218 "This function is only defined later. Move the definition up."
             _ -> return ()
 
@@ -4875,7 +4875,7 @@ checkRequireDoubleBracket params =
     -- so just handle the simple cases.
     isSimple t = case t of
         T_Condition _ _ _ s -> isSimple s
-        TC_Binary _ _ op _ _ -> not $ any (\x -> x `elem` op) "<>"
+        TC_Binary _ _ op _ _ -> not $ any (`elem` op) "<>"
         TC_Unary {} -> True
         TC_Nullary {} -> True
         _ -> False
@@ -5278,7 +5278,7 @@ checkOverwrittenExitCode params t =
         guard . not $ S.null exitCodeIds
 
         let idToToken = idMap params
-        exitCodeTokens <- traverse (\k -> Map.lookup k idToToken) $ S.toList exitCodeIds
+        exitCodeTokens <- traverse (`Map.lookup` idToToken) $ S.toList exitCodeIds
         return $ do
             when (all isCondition exitCodeTokens && not (usedUnconditionally cfga t exitCodeIds)) $
                 warn id 2319 "This $? refers to a condition, not a command. Assign to a variable to avoid it being overwritten."
@@ -5293,8 +5293,8 @@ checkOverwrittenExitCode params t =
 
     -- If we don't do anything based on the condition, assume we wanted the condition itself
     -- This helps differentiate `x; [ $? -gt 0 ] && exit $?` vs `[ cond ]; exit $?`
-    usedUnconditionally cfga t testIds =
-        all (\c -> CF.doesPostDominate cfga (getId t) c) testIds
+    usedUnconditionally cfga t =
+        all (CF.doesPostDominate cfga (getId t))
 
     isPrinting t =
         case getCommandBasename t of
