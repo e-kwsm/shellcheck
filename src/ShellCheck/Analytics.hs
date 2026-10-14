@@ -5048,9 +5048,7 @@ checkSetESuppressed params t =
                 "This function is invoked in " <> (condType <> (" so set -e " <> ("will be disabled. Invoke separately if failures should " <> "cause the script to exit."))))
         informUninherited t =
             info (getId t) 2311 (
-                "Bash implicitly disabled set -e for this function " ++
-                "invocation because it's inside a command substitution. " ++
-                "Add set -e; before it or enable inherit_errexit.")
+                "Bash implicitly disabled set -e for this function " <> ("invocation because it's inside a command substitution. " <> "Add set -e; before it or enable inherit_errexit."))
         errExitEnabled t = hasInheritErrexit params || containsErrexit t
         isIn t cmds = getId t `elem` map getId cmds
 

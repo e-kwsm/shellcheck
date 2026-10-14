@@ -540,7 +540,7 @@ ioInterface options files = do
             (Just (rcPath, rc), Just (ecPath, ec)) ->
                 if isEditorConfigRejection ec
                     then Just (ecPath, ec)
-                    else Just (rcPath, rc ++ "\n" ++ ec)
+                    else Just (rcPath, rc <> ("\n" <> ec))
 
     isEditorConfigRejection ec =
         all (\l -> null (trim l) || l == "invalid editorconfig value") (lines ec)
@@ -585,7 +585,7 @@ ioInterface options files = do
         let path = dir </> name
         dirConfigs <- collectDirConfigs dir
         globalConfig <- readGlobalEditorConfig
-        let allConfigs = dirConfigs ++ globalConfig
+        let allConfigs = dirConfigs <> globalConfig
             contributions = concatMap (directivesFor path) allConfigs
         return $ case contributions of
             [] -> Nothing
@@ -600,7 +600,7 @@ ioInterface options files = do
             let relative = makeRelativeTo (takeDirectory file) path
             in case invalidRootLines contents of
                 (badLine:_) ->
-                    [(file, replicate (badLine - 1) '\n' ++ "invalid editorconfig value\n")]
+                    [(file, replicate (badLine - 1) '\n' <> "invalid editorconfig value\n")]
                 [] ->
                     case editorConfigDirectives contents relative of
                         Nothing -> []
@@ -614,7 +614,7 @@ ioInterface options files = do
         addTrailingSlash dir
             | null dir = dir
             | last dir == '/' = dir
-            | otherwise = dir ++ "/"
+            | otherwise = dir <> "/"
 
         collectDirConfigs dir = do
             current <- readConfig (dir </> ".editorconfig")
@@ -623,7 +623,7 @@ ioInterface options files = do
             rest <- if next /= dir && not isRoot
                     then collectDirConfigs next
                     else return []
-            return $ maybeToList current ++ rest
+            return $ (maybeToList current <> rest)
 
         readGlobalEditorConfig = do
             path <- (getXdgDirectory XdgConfig "editorconfig.ini")
