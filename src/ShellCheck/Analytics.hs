@@ -293,7 +293,7 @@ optionalTreeChecks = [
         cdDescription = "Notify when set -e is suppressed during function invocation",
         cdPositive = "set -e; func() { cp *.txt ~/backup; rm *.txt; }; func && echo ok; x=$(func)",
         cdNegative = "set -e; func() { cp *.txt ~/backup; rm *.txt; }; func; echo ok; x=$(set -e; func)"
-    }, checkSetESuppressed)
+    }, checkErrexitSuppressed)
 
     ,(newCheckDescription {
         cdName = "check-extra-masked-returns",
@@ -5005,26 +5005,26 @@ checkArrayValueUsedAsIndex params _ =
 
             _ -> Nothing
 
-prop_checkSetESuppressed1  = verifyTree    checkSetESuppressed "set -e; f(){ :; }; x=$(f)"
-prop_checkSetESuppressed2  = verifyNotTree checkSetESuppressed "f(){ :; }; x=$(f)"
-prop_checkSetESuppressed3  = verifyNotTree checkSetESuppressed "set -e; f(){ :; }; x=$(set -e; f)"
-prop_checkSetESuppressed4  = verifyTree    checkSetESuppressed "set -e; f(){ :; }; baz=$(set -e; f) || :"
-prop_checkSetESuppressed5  = verifyNotTree checkSetESuppressed "set -e; f(){ :; }; baz=$(echo \"\") || :"
-prop_checkSetESuppressed6  = verifyTree    checkSetESuppressed "set -e; f(){ :; }; f && echo"
-prop_checkSetESuppressed7  = verifyTree    checkSetESuppressed "set -e; f(){ :; }; f || echo"
-prop_checkSetESuppressed8  = verifyNotTree checkSetESuppressed "set -e; f(){ :; }; echo && f"
-prop_checkSetESuppressed9  = verifyNotTree checkSetESuppressed "set -e; f(){ :; }; echo || f"
-prop_checkSetESuppressed10 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; ! f"
-prop_checkSetESuppressed11 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; if f; then :; fi"
-prop_checkSetESuppressed12 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; if set -e; f; then :; fi"
-prop_checkSetESuppressed13 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; while f; do :; done"
-prop_checkSetESuppressed14 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; while set -e; f; do :; done"
-prop_checkSetESuppressed15 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; until f; do :; done"
-prop_checkSetESuppressed16 = verifyTree    checkSetESuppressed "set -e; f(){ :; }; until set -e; f; do :; done"
-prop_checkSetESuppressed17 = verifyNotTree checkSetESuppressed "set -e; f(){ :; }; g(){ :; }; g f"
-prop_checkSetESuppressed18 = verifyNotTree checkSetESuppressed "set -e; shopt -s inherit_errexit; f(){ :; }; x=$(f)"
-prop_checkSetESuppressed19 = verifyNotTree checkSetESuppressed "set -e; set -o posix; f(){ :; }; x=$(f)"
-checkSetESuppressed params t =
+prop_checkErrexitSuppressed1  = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; x=$(f)"
+prop_checkErrexitSuppressed2  = verifyNotTree checkErrexitSuppressed "f(){ :; }; x=$(f)"
+prop_checkErrexitSuppressed3  = verifyNotTree checkErrexitSuppressed "set -e; f(){ :; }; x=$(set -e; f)"
+prop_checkErrexitSuppressed4  = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; baz=$(set -e; f) || :"
+prop_checkErrexitSuppressed5  = verifyNotTree checkErrexitSuppressed "set -e; f(){ :; }; baz=$(echo \"\") || :"
+prop_checkErrexitSuppressed6  = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; f && echo"
+prop_checkErrexitSuppressed7  = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; f || echo"
+prop_checkErrexitSuppressed8  = verifyNotTree checkErrexitSuppressed "set -e; f(){ :; }; echo && f"
+prop_checkErrexitSuppressed9  = verifyNotTree checkErrexitSuppressed "set -e; f(){ :; }; echo || f"
+prop_checkErrexitSuppressed10 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; ! f"
+prop_checkErrexitSuppressed11 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; if f; then :; fi"
+prop_checkErrexitSuppressed12 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; if set -e; f; then :; fi"
+prop_checkErrexitSuppressed13 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; while f; do :; done"
+prop_checkErrexitSuppressed14 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; while set -e; f; do :; done"
+prop_checkErrexitSuppressed15 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; until f; do :; done"
+prop_checkErrexitSuppressed16 = verifyTree    checkErrexitSuppressed "set -e; f(){ :; }; until set -e; f; do :; done"
+prop_checkErrexitSuppressed17 = verifyNotTree checkErrexitSuppressed "set -e; f(){ :; }; g(){ :; }; g f"
+prop_checkErrexitSuppressed18 = verifyNotTree checkErrexitSuppressed "set -e; shopt -s inherit_errexit; f(){ :; }; x=$(f)"
+prop_checkErrexitSuppressed19 = verifyNotTree checkErrexitSuppressed "set -e; set -o posix; f(){ :; }; x=$(f)"
+checkErrexitSuppressed params t =
     if hasErrexit params then runNodeAnalysis checkNode params t else []
   where
     checkNode _ (T_SimpleCommand _ _ (cmd:_)) = when (isFunction cmd) (checkCmd cmd)
