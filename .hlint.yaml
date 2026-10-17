@@ -22,7 +22,7 @@
 - ignore: {name: "Use ++"} # 1 hint
 - ignore: {name: "Use :"} # 2 hints
 - ignore: {name: "Use <$>"} # 10 hints
-- ignore: {name: "Use any"} # 1 hint
+- suggest: {name: "Use any"} # 1 hint
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use elem"} # 2 hints
@@ -39,7 +39,6 @@
 - ignore: {name: "Use maybe"} # 1 hint
 - ignore: {name: "Use newtype instead of data"} # 3 hints
 - ignore: {name: "Use notElem"} # 2 hints
-- suggest: {name: "Use null"} # 10 hints
 - ignore: {name: "Use record patterns"} # 4 hints
 - ignore: {name: "Use second"} # 4 hints
 - ignore: {name: "Use section"} # 2 hints
