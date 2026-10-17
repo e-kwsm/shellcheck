@@ -22,7 +22,6 @@
 - ignore: {name: "Use ++"} # 1 hint
 - ignore: {name: "Use :"} # 2 hints
 - ignore: {name: "Use <$>"} # 10 hints
-- suggest: {name: "Use any"} # 1 hint
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use elem"} # 2 hints
@@ -43,7 +42,7 @@
 - ignore: {name: "Use second"} # 4 hints
 - ignore: {name: "Use section"} # 2 hints
 - ignore: {name: "Use tuple-section"} # 11 hints
-- ignore: {name: "Use unless"} # 3 hints
+- suggest: {name: "Use unless"} # 3 hints
 
 
 # Specify additional command line arguments
