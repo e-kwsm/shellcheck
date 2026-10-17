@@ -8,7 +8,7 @@
 
 # Warnings currently triggered by your code
 - ignore: {name: "Avoid lambda"} # 4 hints
-- ignore: {name: "Avoid lambda using `infix`"} # 11 hints
+- suggest: {name: "Avoid lambda using `infix`"} # 11 hints
 - ignore: {name: "Eta reduce"} # 18 hints
 - ignore: {name: "Evaluate"} # 1 hint
 - ignore: {name: "Move brackets to avoid $"} # 40 hints
@@ -17,7 +17,6 @@
 - ignore: {name: "Redundant <$>"} # 2 hints
 - ignore: {name: "Redundant bracket"} # 73 hints
 - ignore: {name: "Replace case with maybe"} # 1 hint
-- suggest: {name: "Use $>"} # 1 hint
 - ignore: {name: "Use ++"} # 1 hint
 - ignore: {name: "Use :"} # 2 hints
 - ignore: {name: "Use <$>"} # 10 hints
