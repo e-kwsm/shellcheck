@@ -16,7 +16,6 @@
 - ignore: {name: "Redundant $"} # 51 hints
 - ignore: {name: "Redundant <$>"} # 2 hints
 - ignore: {name: "Redundant bracket"} # 73 hints
-- ignore: {name: "Redundant map"} # 2 hints
 - ignore: {name: "Replace case with maybe"} # 1 hint
 - ignore: {name: "Use $>"} # 1 hint
 - ignore: {name: "Use ++"} # 1 hint
@@ -24,12 +23,11 @@
 - ignore: {name: "Use <$>"} # 10 hints
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
-- suggest: {name: "Use elem"} # 2 hints
 - ignore: {name: "Use first"} # 2 hints
 - ignore: {name: "Use fmap"} # 1 hint
 - ignore: {name: "Use for_"} # 4 hints
 - ignore: {name: "Use fromRight"} # 4 hints
-- ignore: {name: "Use isNothing"} # 1 hint
+- suggest: {name: "Use isNothing"} # 1 hint
 - ignore: {name: "Use lambda-case"} # 3 hints
 - ignore: {name: "Use list comprehension"} # 3 hints
 - ignore: {name: "Use map with tuple-section"} # 1 hint
