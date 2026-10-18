@@ -7,13 +7,8 @@
 
 
 # Warnings currently triggered by your code
-- suggest: {name: "Avoid lambda"} # 2 hints
-- suggest: {name: "Avoid lambda using `infix`"} # 2 hints
-- suggest: {name: "Eta reduce"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
-- suggest: {name: "Use first"} # 1 hint
 - ignore: {name: "Use for_"} # 4 hints
-- suggest: {name: "Use second"} # 1 hint
 
 
 # Specify additional command line arguments
