@@ -11,7 +11,7 @@
 - ignore: {name: "Avoid lambda using `infix`"} # 11 hints
 - ignore: {name: "Eta reduce"} # 18 hints
 - ignore: {name: "Evaluate"} # 1 hint
-- ignore: {name: "Hoist not"} # 4 hints
+- ignore: {name: "Hoist not"} # 6 hints
 - ignore: {name: "Move brackets to avoid $"} # 40 hints
 - ignore: {name: "Move reverse out"} # 3 hints
 - ignore: {name: "Redundant $"} # 51 hints
@@ -22,7 +22,7 @@
 - ignore: {name: "Use $>"} # 1 hint
 - ignore: {name: "Use ++"} # 1 hint
 - ignore: {name: "Use :"} # 2 hints
-- ignore: {name: "Use <$>"} # 10 hints
+- ignore: {name: "Use <$>"} # 11 hints
 - ignore: {name: "Use any"} # 1 hint
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
