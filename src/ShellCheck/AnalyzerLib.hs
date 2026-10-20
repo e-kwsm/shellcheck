@@ -156,7 +156,7 @@ pScript s =
 
 -- For testing. If parsed, returns whether there are any comments
 producesComments :: Checker -> String -> Maybe Bool
-producesComments c s = fmap (not . null) $ runAndGetCodes c s
+producesComments c s = not . null <$> runAndGetCodes c s
 
 -- If parsed, returns the list of codes
 runAndGetCodes :: Checker -> String -> Maybe [Integer]

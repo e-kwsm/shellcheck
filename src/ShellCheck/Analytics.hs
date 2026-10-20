@@ -103,8 +103,8 @@ runNodeAnalysis f p t = execWriter (doAnalysis (f p) t)
 -- Perform multiple node checks in a single iteration over the tree
 nodeChecksToTreeCheck checkList =
     runNodeAnalysis
-        (\p t -> (mapM_ ((\ f -> f t) . (\ f -> f p))
-            checkList))
+        (\p t -> mapM_ ((\ f -> f t) . (\ f -> f p))
+            checkList)
 
 nodeChecks :: [Parameters -> Token -> Writer [TokenComment] ()]
 nodeChecks = [
@@ -223,7 +223,7 @@ prop_verifyOptionalExamples = all check optionalTreeChecks
         && verifyNotTree check (cdNegative desc)
 
 
-optionalTreeChecks :: [(CheckDescription, (Parameters -> Token -> [TokenComment]))]
+optionalTreeChecks :: [(CheckDescription, Parameters -> Token -> [TokenComment])]
 optionalTreeChecks = [
     (newCheckDescription {
         cdName = "quote-safe-variables",
@@ -868,7 +868,7 @@ prop_checkRedirectToSame8 = verifyNot checkRedirectToSame "while read -r line; d
 prop_checkRedirectToSame9 = verifyNot checkRedirectToSame "while read -r line; do cat < \"$fname\"; done <\"$fname\""
 prop_checkRedirectToSame10 = verifyNot checkRedirectToSame "mapfile -t foo <foo"
 checkRedirectToSame params s@(T_Pipeline _ _ list) =
-    mapM_ (\l -> (mapM_ (\x -> doAnalysis (checkOccurrences x) l) (getAllRedirs list))) list
+    mapM_ (\l -> mapM_ (\x -> doAnalysis (checkOccurrences x) l) (getAllRedirs list)) list
   where
     note x = makeComment InfoC x 2094
                 "Make sure not to read and write the same file in the same pipeline."
@@ -958,7 +958,7 @@ checkDollarStar p t@(T_NormalWord _ [T_DollarBraced id _ l])
       let str = concat (oversimplify l)
       when ("*" `isPrefixOf` str) $
             warn id 2048 "Use \"$@\" (with quotes) to prevent whitespace problems."
-      when ("[*]" `isPrefixOf` (getBracedModifier str) && isVariableChar (headOrDefault '!' str)) $
+      when ("[*]" `isPrefixOf` getBracedModifier str && isVariableChar (headOrDefault '!' str)) $
             warn id 2048 "Use \"${array[@]}\" (with quotes) to prevent whitespace problems."
 
 checkDollarStar _ _ = return ()
@@ -1389,7 +1389,7 @@ checkNumberComparisons _ _ = return ()
 prop_checkSingleBracketOperators1 = verify checkSingleBracketOperators "[ test =~ foo ]"
 checkSingleBracketOperators params (TC_Binary id SingleBracket "=~" lhs rhs)
     | shellType params `elem` [Bash, Ksh] =
-        err id 2074 $ "Can't use =~ in [ ]. Use [[..]] instead."
+        err id 2074 "Can't use =~ in [ ]. Use [[..]] instead."
 checkSingleBracketOperators _ _ = return ()
 
 prop_checkDoubleBracketOperators1 = verify checkDoubleBracketOperators "[[ 3 \\< 4 ]]"
@@ -1618,7 +1618,7 @@ checkComparisonAgainstGlob params (TC_Binary _ SingleBracket op _ word)
         | op `elem` ["=", "==", "!="] && isGlob word =
     err (getId word) 2081 msg
   where
-    msg = if (shellType params) `elem` [Bash, Ksh]  -- Busybox does not support glob matching
+    msg = if shellType params `elem` [Bash, Ksh]  -- Busybox does not support glob matching
             then "[ .. ] can't match globs. Use [[ .. ]] or case statement."
             else "[ .. ] can't match globs. Use a case statement."
 
@@ -2105,7 +2105,7 @@ checkSshHereDoc _ (T_Redirecting _ redirs cmd)
     hasVariables = mkRegex "[`$]"
     checkHereDoc (T_FdRedirect _ _ (T_HereDoc id _ Unquoted token tokens))
         | not (all isConstant tokens) =
-        warn id 2087 $ "Quote '" ++ (e4m token) ++ "' to make here document expansions happen on the server side rather than on the client."
+        warn id 2087 $ "Quote '" ++ e4m token ++ "' to make here document expansions happen on the server side rather than on the client."
     checkHereDoc _ = return ()
 checkSshHereDoc _ _ = return ()
 
@@ -2224,10 +2224,10 @@ doVariableFlowAnalysis readFunc writeFunc empty flow = evalState (
 quotesMayConflictWithSC2281 params t =
     case getPath (parentMap params) t of
         _ NE.:| T_NormalWord parentId (me:T_Literal _ ('=':_):_) : T_SimpleCommand _ _ (cmd:_) : _ ->
-            (getId t) == (getId me) && (parentId == getId cmd)
+            getId t == getId me && (parentId == getId cmd)
         _ -> False
 
-addDoubleQuotesAround params token = (surroundWith (getId token) params "\"")
+addDoubleQuotesAround params token = surroundWith (getId token) params "\""
 
 prop_checkSpacefulnessCfg1 = verify checkSpacefulnessCfg "a='cow moo'; echo $a"
 prop_checkSpacefulnessCfg2 = verifyNot checkSpacefulnessCfg "a='cow moo'; [[ $a ]]"
@@ -2467,7 +2467,7 @@ checkFunctionsUsedExternally params t =
             _ -> return ()
     checkCommand _ _ = return ()
 
-    skipOver t list = drop 1 $ dropWhile (\c -> getId c /= id) $ list
+    skipOver t list = drop 1 $ dropWhile (\c -> getId c /= id) list
       where id = getId t
 
     -- Try to pick out the argument[s] that may be commands
@@ -3098,7 +3098,7 @@ checkUnpassedInFunctions params root =
 
     suggestParams (name, _, thing) =
         info (getId thing) 2119 $
-            "Use " ++ (e4m name) ++ " \"$@\" if function's $1 should mean script's $1."
+            "Use " ++ e4m name ++ " \"$@\" if function's $1 should mean script's $1."
     warnForDeclaration func name =
         warn (getId func) 2120 $
             name ++ " references arguments, but none are ever passed."
@@ -3279,10 +3279,9 @@ checkTestArgumentSplitting params t =
             if op == "-v"
             then
                 when (typ == SingleBracket) $
-                    err (getId token) 2208 $
-                      "Use [[ ]] or quote arguments to -v to avoid glob expansion."
+                    err (getId token) 2208 "Use [[ ]] or quote arguments to -v to avoid glob expansion."
             else
-                if (typ == SingleBracket && shellType params == Ksh)
+                if typ == SingleBracket && shellType params == Ksh
                 then
                     -- Ksh appears to stop processing after unrecognized tokens, so operators
                     -- will effectively work with globs, but only the first match.
@@ -3557,7 +3556,7 @@ checkReturnAgainstZero params token =
             T_AndIf _ x _ -> f x
             T_OrIf _ x _ -> f x
             T_Pipeline _ _ (x:_) -> f x
-            T_Redirecting _ _ (T_IfExpression _ (((x:_),_):_) _) -> f x
+            T_Redirecting _ _ (T_IfExpression _ ((x:_,_):_) _) -> f x
             x -> x
 
     isFirstCommandInFunction = fromMaybe False $ do
@@ -3884,8 +3883,7 @@ checkPipeToNowhere params t =
             let inputWarning = sequence_ $ do
                     guard $ input /= NoPipe && not hasConsumers
                     (override:_) <- Map.lookup 0 fdMap
-                    return $ err (getOpId override) 2259 $
-                        "This redirection overrides piped input. To use both, merge or pass filenames."
+                    return $ err (getOpId override) 2259 "This redirection overrides piped input. To use both, merge or pass filenames."
 
             -- Only produce output warnings for regular pipes, since these are
             -- way more common, and  `foo > out 2> err |& foo` can still write
@@ -3893,8 +3891,7 @@ checkPipeToNowhere params t =
             let outputWarning = sequence_ $ do
                     guard $ output == StdoutPipe && not hasProducers
                     (override:_) <- Map.lookup 1 fdMap
-                    return $ err (getOpId override) 2260 $
-                        "This redirection overrides the output pipe. Use 'tee' to output to both."
+                    return $ err (getOpId override) 2260 "This redirection overrides the output pipe. Use 'tee' to output to both."
 
             return $ do
                 inputWarning
@@ -4043,7 +4040,7 @@ checkUseBeforeDefinition params t = fromMaybe [] $ do
                 let invocations = map fst definitions
                 -- Bats loads the whole file before running a test, so functions
                 -- defined outside of tests are available in all of them.
-                guard . not $ isInBatsTest t && any (not . snd) definitions
+                guard . not $ isInBatsTest t && not (all snd definitions)
                 -- Is the function definitely being defined later?
                 guard $ any (\c -> CF.doesPostDominate cfga c id) invocations
                 -- Was one already defined, so it's actually a re-definition?
@@ -4077,7 +4074,7 @@ prop_checkSubshelledTests8 = verify checkSubshelledTests "# shellcheck disable=S
 
 checkSubshelledTests params t =
     case t of
-        T_Subshell id list | all isTestStructure list && (not (hasAssignment t))  ->
+        T_Subshell id list | all isTestStructure list && not (hasAssignment t)  ->
             case () of
                 -- Special case for if (test) and while (test)
                 _ | isCompoundCondition (getPath (parentMap params) t) ->
@@ -4222,7 +4219,7 @@ checkUnnecessarilyInvertedTest _ t =
         return $
             if bangInside
                 then style id 2335 $ "Use " ++ newExpr ++ " instead of ! " ++ oldExpr ++ "."
-                else style id 2335 $ "Use " ++ (bracket newExpr) ++ " instead of ! " ++ (bracket oldExpr) ++ "."
+                else style id 2335 $ "Use " ++ bracket newExpr ++ " instead of ! " ++ bracket oldExpr ++ "."
 
 
 prop_checkRedirectionToCommand1 = verify checkRedirectionToCommand "ls > rm"
@@ -4404,7 +4401,7 @@ checkAliasUsedInSameParsingUnit params root =
     lineSpan t =
         let m = tokenPositions params in do
             (start, end) <- Map.lookup t m
-            return $ (posLine start, posLine end)
+            return (posLine start, posLine end)
 
     followsOnLine a b = fromMaybe False $ do
         (_, end) <- lineSpan (getId a)
@@ -4412,7 +4409,7 @@ checkAliasUsedInSameParsingUnit params root =
         return $ end == start
 
     checkUnit :: [Token] -> Writer [TokenComment] ()
-    checkUnit unit = evalStateT (mapM_ (doAnalysis findCommands) unit) (Map.empty)
+    checkUnit unit = evalStateT (mapM_ (doAnalysis findCommands) unit) Map.empty
 
     findCommands :: Token -> StateT (Map.Map String Token) (Writer [TokenComment]) ()
     findCommands t = case t of
@@ -4491,8 +4488,8 @@ checkBlatantRecursion params t =
         guard $ name == invoked
         return $
             errWithFix (getId t) 2264
-                ("This function unconditionally re-invokes itself. Missing 'command'?")
-                (fixWith [replaceStart (getId t) params 0 $ "command "])
+                "This function unconditionally re-invokes itself. Missing 'command'?"
+                (fixWith [replaceStart (getId t) params 0 "command "])
 
 
 prop_checkBadTestAndOr1 = verify checkBadTestAndOr "[ x ] & [ y ]"
@@ -4527,8 +4524,7 @@ checkBadTestAndOr params t =
             T_OrIf _ _ rhs -> checkAnds id rhs
             T_Pipeline _ _ list | not (null list) -> checkAnds id (last list)
             cmd -> when (isTestCommand cmd) $
-                errWithFix id 2265 "Use && for logical AND. Single & will background and return true." $
-                    (fixWith [replaceEnd id params 0 "&"])
+                errWithFix id 2265 "Use && for logical AND. Single & will background and return true." (fixWith [replaceEnd id params 0 "&"])
 
 
 prop_checkComparisonWithLeadingX1 = verify checkComparisonWithLeadingX "[ x$foo = xlol ]"
@@ -4634,7 +4630,7 @@ checkEqualsInCommand params originalToken =
 
     check t@(T_NormalWord _ list) | any hasEquals list =
         case break hasEquals list of
-            (leading, (eq:_)) -> msg t (stripSinglePlus leading) eq
+            (leading, eq:_) -> msg t (stripSinglePlus leading) eq
             _ -> return ()
     check _ = return ()
 
@@ -4788,14 +4784,11 @@ checkSecondArgIsComparison _ t =
             case argString of
                 '=':'=':'=':'=':_ -> Nothing -- Don't warn about `echo ======` and such
                 '+':'=':_ ->
-                        return $ err (headId t) 2285 $
-                            "Remove spaces around += to assign (or quote '+=' if literal)."
+                        return $ err (headId t) 2285 "Remove spaces around += to assign (or quote '+=' if literal)."
                 '=':'=':_ ->
-                        return $ err (getId t) 2284 $
-                            "Use [ x = y ] to compare values (or quote '==' if literal)."
+                        return $ err (getId t) 2284 "Use [ x = y ] to compare values (or quote '==' if literal)."
                 '=':_ ->
-                        return $ err (headId arg) 2283 $
-                            "Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal)."
+                        return $ err (headId arg) 2283 "Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal)."
                 _ -> Nothing
         _ -> return ()
   where
@@ -4829,7 +4822,7 @@ checkCommandWithTrailingSymbol _ t =
                     "//" -> return () -- Probably caught by SC1127
                     "" -> err (getId cmd) 2286 "This empty string is interpreted as a command name. Double check syntax (or use 'true' as a no-op)."
                     _ | last == '/' -> err (getId cmd) 2287 "This is interpreted as a command name ending with '/'. Double check syntax."
-                    _ | last `elem` "\\.,([{<>}])#\"\'% " -> warn (getId cmd) 2288 ("This is interpreted as a command name ending with " ++ (format last) ++ ". Double check syntax.")
+                    _ | last `elem` "\\.,([{<>}])#\"\'% " -> warn (getId cmd) 2288 ("This is interpreted as a command name ending with " ++ format last ++ ". Double check syntax.")
                     _ | '\t' `elem` str -> err (getId cmd) 2289 "This is interpreted as a command name containing a tab. Double check syntax."
                     _ | '\n' `elem` str -> err (getId cmd) 2289 "This is interpreted as a command name containing a linefeed. Double check syntax."
                     _ -> return ()
@@ -4850,7 +4843,7 @@ prop_checkRequireDoubleBracket4 = verifyNotTree checkRequireDoubleBracket "[[ -x
 prop_checkRequireDoubleBracket5 = verifyTreeFix checkRequireDoubleBracket "[ -x foo ]" "[[ -x foo ]]"
 prop_checkRequireDoubleBracket6 = verifyTreeFix checkRequireDoubleBracket "[ -x foo ]]" "[[ -x foo ]]"
 checkRequireDoubleBracket params =
-    if (shellType params) `elem` [Bash, Ksh, BusyboxSh]
+    if shellType params `elem` [Bash, Ksh, BusyboxSh]
     then nodeChecksToTreeCheck [check] params
     else const []
   where
@@ -4959,7 +4952,7 @@ checkArrayValueUsedAsIndex params _ =
             guard $ any (\t -> loopId == getId t) (getPath parents t)
             return [
                 makeComment WarningC (getId loopWord) 2302 "This loops over values. To loop over keys, use \"${!array[@]}\".",
-                makeComment WarningC (getId arrayRef) 2303 $ (e4m name) ++ " is an array value, not a key. Use directly or loop over keys instead."
+                makeComment WarningC (getId arrayRef) 2303 $ e4m name ++ " is an array value, not a key. Use directly or loop over keys instead."
                 ]
 
     parents = parentMap params
