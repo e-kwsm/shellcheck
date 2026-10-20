@@ -19,10 +19,6 @@
 -}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
-{-# LANGUAGE CPP #-}
-#if __GLASGOW_HASKELL__ >= 810
-{-# LANGUAGE StandaloneKindSignatures #-}
-#endif
 
 -- Constructs a Control Flow Graph from an AST
 module ShellCheck.CFG (
@@ -54,7 +50,6 @@ import Control.Monad
 import Control.Monad.Identity
 import Data.Array.Unboxed
 import Data.Array.ST
-import Data.Kind (Type)
 import Data.List hiding (map)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
@@ -73,11 +68,9 @@ import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
 
 
 -- Our basic Graph type
-type CFGraph :: Type
 type CFGraph = G.Gr CFNode CFEdge
 
 -- Node labels in a Control Flow Graph
-type CFNode :: Type
 data CFNode =
     -- A no-op node for structural purposes
     CFStructuralNode
@@ -107,7 +100,6 @@ data CFNode =
   deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Edge labels in a Control Flow Graph
-type CFEdge :: Type
 data CFEdge =
     CFEErrExit
     -- Regular control flow edge
@@ -119,7 +111,6 @@ data CFEdge =
   deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Actions we track
-type CFEffect :: Type
 data CFEffect =
     CFSetProps (Maybe Scope) String (S.Set CFVariableProp)
     | CFUnsetProps (Maybe Scope) String (S.Set CFVariableProp)
@@ -139,12 +130,10 @@ data CFEffect =
     | CFHintDefined String
   deriving (Eq, Ord, Show, Generic, NFData)
 
-type IdTagged :: Type -> Type
 data IdTagged a = IdTagged Id a
   deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Where a variable's value comes from
-type CFValue :: Type
 data CFValue =
     -- The special 'uninitialized' value
     CFValueUninitialized
@@ -159,7 +148,6 @@ data CFValue =
   deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Simplified computed strings
-type CFStringPart :: Type
 data CFStringPart =
     -- A known literal string value, like 'foo'
     CFStringLiteral String
@@ -172,12 +160,10 @@ data CFStringPart =
   deriving (Eq, Ord, Show, Generic, NFData)
 
 -- The properties of a variable
-type CFVariableProp :: Type
 data CFVariableProp = CFVPExport | CFVPArray | CFVPAssociative | CFVPInteger
   deriving (Eq, Ord, Show, Generic, NFData)
 
 -- Options when generating CFG
-type CFGParameters :: Type
 data CFGParameters = CFGParameters {
     -- Whether the last element in a pipeline runs in the current shell
     cfLastpipe :: Bool,
@@ -185,7 +171,6 @@ data CFGParameters = CFGParameters {
     cfPipefail :: Bool
 }
 
-type CFGResult :: Type
 data CFGResult = CFGResult {
     -- The graph itself
     cfGraph :: CFGraph,
@@ -355,11 +340,9 @@ remapEdge :: M.Map Node Node -> LEdge CFEdge -> LEdge CFEdge
 remapEdge map (from, to, label) = (remapHelper map from, remapHelper map to, label)
 remapHelper map n = M.findWithDefault n n map
 
-type Range :: Type
 data Range = Range Node Node
   deriving (Eq, Show)
 
-type CFContext :: Type
 data CFContext = CFContext {
     cfIsCondition :: Bool,
     cfIsFunction :: Bool,
@@ -380,9 +363,7 @@ newCFContext params = CFContext {
 }
 
 -- The monad we generate a graph in
-type CFM :: Type -> Type
 type CFM a = RWS CFContext CFW Int a
-type CFW :: Type
 type CFW = ([LNode CFNode], [LEdge CFEdge], [(Id, (Node, Node))], [(Id, Node)])
 
 newNode :: CFNode -> CFM Node
@@ -1223,7 +1204,6 @@ handleCommand cmd vars args literalCmd = do
 
 none = newStructuralNode
 
-type Scope :: Type
 data Scope = GlobalScope | LocalScope | PrefixScope
   deriving (Eq, Ord, Show, Generic, NFData)
 

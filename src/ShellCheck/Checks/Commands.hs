@@ -21,10 +21,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE CPP #-}
-#if __GLASGOW_HASKELL__ >= 810
-{-# LANGUAGE StandaloneKindSignatures #-}
-#endif
 
 -- This module contains checks that examine specific commands by name.
 module ShellCheck.Checks.Commands (checker, optionalChecks, ShellCheck.Checks.Commands.runTests) where
@@ -45,7 +41,6 @@ import Control.Monad.RWS
 import Data.Char
 import Data.Functor.Identity
 import qualified Data.Graph.Inductive.Graph as G
-import Data.Kind (Type)
 import Data.List
 import Data.Maybe
 import qualified Data.List.NonEmpty as NE
@@ -56,11 +51,9 @@ import Test.QuickCheck.Test (quickCheckWithResult, stdArgs, maxSuccess)
 
 import Debug.Trace -- STRIP
 
-type CommandName :: Type
 data CommandName = Exactly String | Basename String
     deriving (Eq, Ord)
 
-type CommandCheck :: Type
 data CommandCheck =
     CommandCheck CommandName (Token -> Analysis)
 

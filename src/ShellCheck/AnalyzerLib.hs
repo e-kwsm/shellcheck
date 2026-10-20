@@ -19,10 +19,6 @@
 -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell  #-}
-{-# LANGUAGE CPP #-}
-#if __GLASGOW_HASKELL__ >= 810
-{-# LANGUAGE StandaloneKindSignatures #-}
-#endif
 module ShellCheck.AnalyzerLib where
 
 import ShellCheck.AST
@@ -42,7 +38,6 @@ import Control.Monad.RWS
 import Control.Monad.State
 import Control.Monad.Writer
 import Data.Char
-import Data.Kind (Type)
 import Data.List
 import Data.Maybe
 import Data.Semigroup
@@ -52,14 +47,11 @@ import qualified Data.Map as Map
 import Test.QuickCheck.All (forAllProperties)
 import Test.QuickCheck.Test (maxSuccess, quickCheckWithResult, stdArgs)
 
-type Analysis :: Type
 type Analysis = AnalyzerM ()
-type AnalyzerM :: Type -> Type
 type AnalyzerM a = RWS Parameters [TokenComment] Cache a
 nullCheck = const $ return ()
 
 
-type Checker :: Type
 data Checker = Checker {
     perScript :: Root -> Analysis,
     perToken  :: Token -> Analysis
@@ -88,7 +80,6 @@ instance Monoid Checker where
 composeAnalyzers :: (a -> Analysis) -> (a -> Analysis) -> a -> Analysis
 composeAnalyzers f g x = f x >> g x
 
-type Parameters :: Type
 data Parameters = Parameters {
     -- Whether this script has 'set -a' or 'set -o allexport' anywhere.
     hasAllexport       :: Bool,
@@ -123,12 +114,9 @@ data Parameters = Parameters {
     } deriving (Show)
 
 -- TODO: Cache results of common AST ops here
-type Cache :: Type
 data Cache = Cache {}
 
-type Scope :: Type
 data Scope = SubshellScope String | FunctionScope | NoneScope deriving (Show, Eq)
-type StackData :: Type
 data StackData =
     StackScope Scope
     | StackScopeEnd
@@ -137,11 +125,9 @@ data StackData =
     | Reference (Token, Token, String)
   deriving (Show)
 
-type DataType :: Type
 data DataType = DataString DataSource | DataArray DataSource
   deriving (Show)
 
-type DataSource :: Type
 data DataSource =
     SourceFrom [Token]
     | SourceExternal
@@ -150,7 +136,6 @@ data DataSource =
     | SourceChecked
   deriving (Show)
 
-type VariableState :: Type
 data VariableState = Dead Token String | Alive deriving (Show)
 
 defaultSpec pr = spec {

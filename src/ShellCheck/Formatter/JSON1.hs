@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-
     Copyright 2012-2019 Vidar Holen
 
@@ -27,7 +26,6 @@ import ShellCheck.Formatter.Format
 import Control.DeepSeq
 import Data.Aeson
 import Data.IORef
-import Data.Kind (Type)
 import Data.Monoid
 import System.IO
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -43,7 +41,6 @@ format = do
         footer = finish ref
     }
 
-type Json1Output :: Type
 data Json1Output = Json1Output {
     comments :: [PositionedComment]
     }

@@ -18,8 +18,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TemplateHaskell #-}
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
@@ -36,8 +36,13 @@ import Data.Semigroup
 import GHC.Exts (sortWith)
 import Test.QuickCheck
 
--- The Ranged class is used for types that has a start and end position.
+#if __GLASGOW_HASKELL__ >= 810
 type Ranged :: Type -> Constraint
+type Fixer :: Type -> Type
+type PSTree :: Type -> Type
+#endif
+
+-- The Ranged class is used for types that has a start and end position.
 class Ranged a where
     start   :: a -> Position
     end     :: a -> Position
@@ -223,7 +228,6 @@ testFixes expected original fixes =
 
 -- A Fixer allows doing repeated modifications of a string where each
 -- replacement automatically accounts for shifts from previous ones.
-type Fixer :: Type -> Type
 type Fixer a =  State (PSTree Int) a
 
 -- Apply a single replacement using its indices into the original string.
@@ -271,7 +275,6 @@ runFixer f = evalState f newPSTree
 -- A Prefix Sum Tree that lets you look up the sum of values at and below an index.
 -- It's implemented essentially as a Fenwick tree without the bit-based balancing.
 -- The last Num is the sum of the left branch plus current element.
-type PSTree :: Type -> Type
 data PSTree n = PSBranch n (PSTree n) (PSTree n) n | PSLeaf
     deriving (Show)
 

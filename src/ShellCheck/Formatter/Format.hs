@@ -35,8 +35,11 @@ import System.IO
 import System.Info
 import System.Environment
 
--- A formatter that carries along an arbitrary piece of data
+#if __GLASGOW_HASKELL__ >= 810
 type Formatter :: Type
+#endif
+
+-- A formatter that carries along an arbitrary piece of data
 data Formatter = Formatter {
     header ::  IO (),
     onResult :: CheckResult -> SystemInterface IO -> IO (),
