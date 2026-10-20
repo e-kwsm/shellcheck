@@ -79,7 +79,9 @@ type ColorFunc :: Type
 type ColorFunc = (Int -> String -> String)
 type LFStatus :: Type
 data LFStatus = LinefeedMissing | LinefeedOk
+type DiffDoc :: Type -> Type
 data DiffDoc a = DiffDoc String LFStatus [DiffRegion a]
+type DiffRegion :: Type -> Type
 data DiffRegion a = DiffRegion (Int, Int) (Int, Int) [Diff a]
 
 reportResult :: (IORef Bool) -> (IORef Bool) -> ColorFunc -> CheckResult -> SystemInterface IO -> IO ()

@@ -169,7 +169,7 @@ data Context =
         | ContextSource String
     deriving (Show)
 
-type HereDocContext :: Type
+-- type HereDocContext :: Type
 data HereDocContext =
         HereDocPending Id Dashed Quoted String [Context] -- on linefeed, read this T_HereDoc
     deriving (Show)
