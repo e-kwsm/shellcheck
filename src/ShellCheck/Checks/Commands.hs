@@ -1160,7 +1160,7 @@ checkCatastrophicRm = CommandCheck (Basename "rm") $ \t ->
     isRecursive = any ((`elem` ["r", "R", "recursive"]) . snd) . getAllFlags
 
     checkWord token =
-        case getLiteralString token of
+        case getGlobOrLiteralString token of
             Just str ->
                 when (fixPath str `elem` importantPaths) $
                     warn (getId token) 2114 "Warning: deletes a system directory."
