@@ -708,6 +708,8 @@ checkShebang params (T_Script _ (T_Literal id sb) _) = execWriter $ do
             err id 2148 "Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive."
         when (executableFromShebang sb == "ash") $
             warn id 2187 "Ash scripts will be checked as Dash. Add '# shellcheck shell=dash' to silence."
+        when (executableFromShebang sb == "rbash") $
+            warn id 2337 "rbash will be checked as bash, but restriction is not checked."
     unless (null sb) $ do
         unless ("/" `isPrefixOf` sb) $
             err id 2239 "Ensure the shebang uses an absolute path to the interpreter."

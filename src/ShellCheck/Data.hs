@@ -166,6 +166,7 @@ shellForExecutable name =
         "ksh"   -> return Ksh
         "ksh88" -> return Ksh
         "ksh93" -> return Ksh
+        "loksh" -> return Ksh
         "mksh"  -> return Ksh
         "oksh"  -> return Ksh
         _ -> Nothing
