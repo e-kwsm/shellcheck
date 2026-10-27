@@ -19,7 +19,7 @@
 - ignore: {name: "Replace case with maybe"} # 1 hint
 - ignore: {name: "Use ++"} # 1 hint
 - ignore: {name: "Use :"} # 2 hints
-- ignore: {name: "Use <$>"} # 10 hints
+- ignore: {name: "Use <$>"} # 11 hints
 - ignore: {name: "Use bimap"} # 2 hints
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use first"} # 1 hint
