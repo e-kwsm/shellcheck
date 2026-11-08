@@ -5329,7 +5329,7 @@ checkOverwrittenExitCode params t =
         let token = Map.lookup tokenId (idMap params)
         in maybe False (\tok -> any isAssignmentToken $ getPath (parentMap params) tok) token
       where
-        isAssignmentToken (T_Assignment _ _ _ _ _) = True
+        isAssignmentToken (T_Assignment {}) = True
         isAssignmentToken _ = False
 
     conditionContainsDollarQuestion tokenId exitIds =
