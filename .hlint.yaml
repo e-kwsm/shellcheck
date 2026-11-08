@@ -7,10 +7,8 @@
 
 
 # Warnings currently triggered by your code
-- suggest: {name: "Avoid lambda"} # 1 hint
 - ignore: {name: "Use camelCase"} # 122 hints
 - ignore: {name: "Use for_"} # 4 hints
-- suggest: {name: "Use record patterns"} # 1 hint
 
 
 # Specify additional command line arguments
