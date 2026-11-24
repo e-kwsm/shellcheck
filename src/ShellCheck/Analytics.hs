@@ -384,7 +384,7 @@ dist a b
           lowers = eachDiag b a (mainDiag : lowers) -- lower diagonals
           eachDiag a [] diags = []
           eachDiag a (bch:bs) (lastDiag:diags) = oneDiag a bs nextDiag lastDiag : eachDiag a bs diags
-              where nextDiag = head (drop 1 diags)
+              where nextDiag = diags !! 1
           oneDiag a b diagAbove diagBelow = thisdiag
               where doDiag [] b nw n w = []
                     doDiag a [] nw n w = []
