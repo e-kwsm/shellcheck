@@ -615,7 +615,7 @@ build t = do
             token <- build t
             branches <- mapM (buildBranch end) (hd NE.:| tl)
 
-            let neighbors = zip (NE.toList branches) $ (NE.tail branches ++ [(end, end, undefined, undefined)])
+            let neighbors = zip (NE.toList branches) (NE.tail branches ++ [(end, end, undefined, undefined)])
             let (firstCond, _, _, _) = NE.head branches
 
             linkRange start token
