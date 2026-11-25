@@ -313,7 +313,7 @@ removeUnnecessaryStructuralNodes (nodes, edges, mapping, association) =
     filterEdges (a,b,_) =
         a `S.member` candidateNodes && b `S.member` candidateNodes
 
-    counter = M.fromListWith (+) . map (\key -> (key, 1))
+    counter = M.fromListWith (+) . map (, 1)
     isRegularEdge (_, _, CFEFlow) = True
     isRegularEdge _ = False
 
