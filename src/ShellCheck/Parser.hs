@@ -569,11 +569,11 @@ readConditionContents single =
             fail "Missing space before )"
         void spacing
         return x
-      where endedWith str (T_NormalWord id s@(_:_)) =
-                case last s of T_Literal id s -> str `isSuffixOf` s
+      where endedWith str (T_NormalWord _id s@(_:_)) =
+                case last s of T_Literal _id s -> str `isSuffixOf` s
                                _ -> False
             endedWith _ _ = False
-            notArrayIndex (T_NormalWord id s@(_:T_Literal _ t:_)) = t /= "["
+            notArrayIndex (T_NormalWord _id _s@(_:T_Literal _ t:_)) = t /= "["
             notArrayIndex _ = True
             containsLiteral x s = s `isInfixOf` onlyLiteralString x
 
@@ -1333,7 +1333,7 @@ readBackTicked quoted = called "backtick expansion" $ do
     id <- endSpan start
 
     optional $ do
-        c <- try . lookAhead $ suspectCharAfterQuotes
+        _c <- try . lookAhead $ suspectCharAfterQuotes
         when ('\n' `elem` subString && not ("\n" `isPrefixOf` subString)) $
             suggestForgotClosingQuote startPos endPos "backtick expansion"
 
@@ -1578,7 +1578,7 @@ readSingleEscaped = do
     return [s]
 
 readDoubleEscaped = do
-    pos <- getPosition
+    _pos <- getPosition
     bs <- backslash
     (linefeed >> return "")
         <|> fmap return doubleQuotable
@@ -1695,7 +1695,7 @@ readDollarArithmetic = called "$((..)) expression" $ do
     start <- startSpan
     try (string "$((")
     c <- readArithmeticContents
-    pos <- getPosition
+    _pos <- getPosition
     char ')'
     char ')' <|> fail "Expected a double )) to end the $((..))"
     id <- endSpan start
@@ -2111,7 +2111,7 @@ readSeparatorOp = do
                     char '&'
                     optional $ choice [
                         do
-                            s <- lookAhead . choice . map (try . string) $
+                            _s <- lookAhead . choice . map (try . string) $
                                 ["amp;", "gt;", "lt;"]
                             parseProblemAt pos ErrorC 1109 "This is an unquoted HTML entity. Replace with corresponding character.",
 
@@ -2205,7 +2205,7 @@ readSimpleCommand = called "simple command" $ do
   where
     isCommand strings (T_NormalWord _ [T_Literal _ s]) = s `elem` strings
     isCommand _ _ = False
-    getParser def cmd [] = def
+    getParser def _cmd [] = def
     getParser def cmd ((list, action):rest) =
         if isCommand list cmd
         then action
@@ -2223,13 +2223,13 @@ readSimpleCommand = called "simple command" $ do
 
     syntaxCheckTrap cmd =
         case cmd of
-            (T_Redirecting _ _ (T_SimpleCommand _ _ (cmd:arg:_))) -> checkArg arg (getLiteralString arg)
+            (T_Redirecting _ _ (T_SimpleCommand _ _ (_cmd:arg:_))) -> checkArg arg (getLiteralString arg)
             _ -> return ()
       where
         checkArg _ Nothing = return ()
-        checkArg arg (Just ('-':_)) = return ()
+        checkArg _arg (Just ('-':_)) = return ()
         checkArg arg (Just str) = do
-            (start,end) <- getSpanForId (getId arg)
+            (start,_end) <- getSpanForId (getId arg)
             subParse start (tryWithErrors (readCompoundListOrEmpty >> verifyEof) <|> return ()) str
 
     commentWarning id =
@@ -2359,7 +2359,7 @@ readPipeline = do
     readBanged readPipeSequence
 
 readBanged parser = do
-    pos <- getPosition
+    _pos <- getPosition
     (T_Bang id) <- g_Bang
     next <- readBanged parser
     return $ T_Banged id next
@@ -2615,7 +2615,7 @@ readBatsTest = called "bats @test" $ do
 
     -- We want everything before the last " {" in a string, so we find everything after "{ " in its reverse
     f ('{':' ':rest) = dropWhile isSpace rest
-    f (a:rest) = f rest
+    f (_a:rest) = f rest
     f [] = ""
 
 prop_readWhileClause = isOk readWhileClause "while [[ -e foo ]]; do sleep 1; done"
@@ -2678,7 +2678,7 @@ prop_readForClause10 = isOk readForClause "for ((;;)) { true; }"
 prop_readForClause12 = isWarning readForClause "for $a in *; do echo \"$a\"; done"
 prop_readForClause13 = isOk readForClause "for foo\nin\\\n  bar\\\n  baz\ndo true; done"
 readForClause = called "for loop" $ do
-    pos <- getPosition
+    _pos <- getPosition
     (T_For id) <- g_For
     spacing
     readArithmetic id <|> readRegular id
@@ -2991,7 +2991,7 @@ readLetSuffix = many1 (readIoRedirect <|> try readLetExpression <|> readCmdWord)
                     if first `elem` "'\"" && first == last
                     then (middle, updatePosChar p first)
                     else (s, p)
-            x -> (s, p)
+            _x -> (s, p)
 
 
 -- bash allows a=(b), ksh allows $a=(b). dash allows neither. Let's warn.
@@ -3037,7 +3037,7 @@ readAssignmentWordExt lenient = called "variable assignment" $ do
     -- Parse up to and including the = in a 'try'
     (id, variable, op, indices) <- try $ do
         start <- startSpan
-        pos <- getPosition
+        _pos <- getPosition
         -- Check for a leading $ at parse time, to warn for $foo=(bar) which
         -- would otherwise cause a parse failure so it can't be checked later.
         leadingDollarPos <-
@@ -3047,10 +3047,10 @@ readAssignmentWordExt lenient = called "variable assignment" $ do
         variable <- readVariableName
         indices <- many readArrayIndex
         hasLeftSpace <- fmap (not . null) spacing
-        opStart <- getPosition
+        _opStart <- getPosition
         id <- endSpan start
         op <- readAssignmentOp
-        opEnd <- getPosition
+        _opEnd <- getPosition
 
         when (isJust leadingDollarPos || hasLeftSpace) $ do
             hasParen <- isFollowedBy (spacing >> char '(')
@@ -3548,7 +3548,7 @@ parseWithNotes parser = do
     state <- getState
     return (item, state)
 
-compareNotes (ParseNote pos1 pos1' level1 _ s1) (ParseNote pos2 pos2' level2 _ s2) = compare (pos1, pos1', level1) (pos2, pos2', level2)
+compareNotes (ParseNote pos1 pos1' level1 _ _s1) (ParseNote pos2 pos2' level2 _ _s2) = compare (pos1, pos1', level1) (pos2, pos2', level2)
 sortNotes = sortBy compareNotes
 
 
@@ -3564,10 +3564,10 @@ getStringFromParsec errors =
     where
         f err =
             case err of
-                UnExpect s    ->  Nothing -- Due to not knowing Parsec, none of these
-                SysUnExpect s ->  Nothing -- are actually helpful. <?> has been hidden
-                Expect s      ->  Nothing -- and we only show explicit fail statements.
-                Message s     ->  if null s then Nothing else return $ s ++ "."
+                UnExpect _s    ->  Nothing -- Due to not knowing Parsec, none of these
+                SysUnExpect _s ->  Nothing -- are actually helpful. <?> has been hidden
+                Expect _s      ->  Nothing -- and we only show explicit fail statements.
+                Message s      ->  if null s then Nothing else return $ s ++ "."
 
 runParser :: Monad m =>
     Environment m ->
@@ -3646,7 +3646,7 @@ reparseIndices root = process root
 
     fixAssignmentIndex name word =
         case word of
-            T_UnparsedIndex id pos src -> do
+            T_UnparsedIndex _id pos src -> do
                 idx <- parsed name pos src
                 process idx -- Recursively parse for cases like x[y[z=1]]=1
             _ -> return word
